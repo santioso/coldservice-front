@@ -2,18 +2,18 @@
   <div class="content-block">
     <div class="block-header">
       <!-- breadcrumb -->
-      <app-breadcrumb [title]="'Dashboad'" [items]="['Home']" [active_item]="'Dashboad'"></app-breadcrumb>
+      <app-breadcrumb [title]="'Dashboard'" [items]="['Home']" [active_item]="'Dashboard'"></app-breadcrumb>
     </div>
     <div class="row">
       <div class="col-md-6 col-xl-3">
         <div class="card info-card">
           <div class="info-box8">
-            <i class="material-icons bg-purple card1-icon">shopping_cart</i>
-            <h5 class="col-deep-purple">Total Sales</h5>
-            <h4>258</h4>
+            <i class="material-icons bg-purple card1-icon">system_update_alt</i>
+            <h5 class="col-purple">Total Órdenes de Entrada</h5>
+            <h4>{{totalEntries}}</h4>
             <div>
-              <i class="material-icons col-red float-start me-1 ms-1">trending_down</i>
-              <p class="float-start m-0"><span class="col-orange">10%</span> Decrease
+              <i class="material-icons col-green float-start me-1 ms-1">trending_up</i>
+              <p class="float-start m-0"><span class="col-green">10%</span> Increase
             </div>
           </div>
         </div>
@@ -21,9 +21,9 @@
       <div class="col-md-6 col-xl-3">
         <div class="card info-card">
           <div class="info-box8">
-            <i class="material-icons bg-orange card1-icon">people</i>
-            <h5 class="col-orange">Customers</h5>
-            <h4>1,287</h4>
+            <i class="material-icons bg-orange card1-icon">view_in_ar</i>
+            <h5 class="col-orange">Activos en patio</h5>
+            <h4>{{totalActives}}</h4>
             <div>
               <i class="material-icons col-green float-start me-1 ms-1">trending_up</i>
               <p class="float-start m-0"><span class="col-green">25%</span> Increase
@@ -31,7 +31,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-6 col-xl-3">
+      <!-- <div class="col-md-6 col-xl-3">
         <div class="card info-card">
           <div class="info-box8">
             <i class="material-icons bg-green card1-icon">local_activity</i>
@@ -43,8 +43,8 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="col-md-6 col-xl-3">
+      </div> -->
+      <!-- <div class="col-md-6 col-xl-3">
         <div class="card info-card">
           <div class="info-box8">
             <i class="material-icons bg-blue card1-icon">attach_money</i>
@@ -56,13 +56,14 @@
             </div>
           </div>
         </div>
-      </div>
+      </div> -->
     </div>
+
     <div class="row ">
-      <div class="col-xs-12 col-sm-12 col-md-8 col-lg-8">
+      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
         <div class="card">
           <div class="header">
-            <h2>Earning Chart</h2>
+            <h2>Órdenes de entrada</h2>
             <button mat-icon-button [matMenuTriggerFor]="menu" class="header-dropdown">
               <mat-icon>more_vert</mat-icon>
             </button>
@@ -83,33 +84,50 @@
           </div>
           <div class="body p-5">
             <ul class="list-inline text-center m-b-0">
-              <li class="list-inline-item p-r-30">
-                <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
-                <h5 class="m-b-0">$675</h5>
-                <p class="text-muted font-14 m-b-0">Weekly Earnings</p>
+              <li class="list-inline-item p-r-30" *ngIf="chart3Stats">
+                <ng-container *ngIf="chart3Stats.currentWeek; else downIcon">
+                  <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                </ng-container>
+                <ng-template #downIcon>
+                  <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                </ng-template>
+                <h5 class="m-b-0">{{chart3Stats.totalWeek}}</h5>
+                <p class="text-muted font-14 m-b-0">Órdenes esta semana</p>
+
               </li>
-              <li class="list-inline-item p-r-30">
-                <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'">
-                </app-feather-icons>
-                <h5 class="m-b-0">$1,587</h5>
-                <p class="text-muted font-14 m-b-0">Monthly Earnings</p>
-              </li>
-              <li class="list-inline-item p-r-30">
+              <li class="list-inline-item p-r-30" *ngIf="chart3Stats">
+              <ng-container *ngIf="chart3Stats.currentMonth; else downIcon">
                 <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
-                <h5 class="mb-0 m-b-0">$45,965</h5>
-                <p class="text-muted font-14 m-b-0">Yearly Earnings</p>
+              </ng-container>
+              <ng-template #downIcon>
+                <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+              </ng-template>
+              <h5 class="m-b-0">{{chart3Stats.totalMonth}}</h5>
+              <p class="text-muted font-14 m-b-0">Órdenes este mes</p>
+              </li>
+              <li class="list-inline-item p-r-30" *ngIf="chart3Stats">
+                <ng-container *ngIf="chart3Stats.currentYear; else downIcon">
+                  <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                </ng-container>
+                <ng-template #downIcon>
+                  <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                </ng-template>
+                <h5 class="mb-0 m-b-0">{{chart3Stats.totalYear}}</h5>
+                <p class="text-muted font-14 m-b-0">Órdenes este año</p>
               </li>
             </ul>
-            <apx-chart [series]="earningOptions.series!" [chart]="earningOptions.chart!" [xaxis]="earningOptions.xaxis!"
-              [stroke]="earningOptions.stroke!" [tooltip]="earningOptions.tooltip!"
-              [dataLabels]="earningOptions.dataLabels!" [legend]="earningOptions.legend!"
-              [markers]="earningOptions.markers!" [grid]="earningOptions.grid!" [yaxis]="earningOptions.yaxis!"
-              [title]="earningOptions.title!">
-            </apx-chart>
+            <div *ngIf="earningOptions?.series">
+              <apx-chart [series]="earningOptions.series!" [chart]="earningOptions.chart!"
+                [xaxis]="earningOptions.xaxis!" [stroke]="earningOptions.stroke!" [tooltip]="earningOptions.tooltip!"
+                [dataLabels]="earningOptions.dataLabels!" [legend]="earningOptions.legend!"
+                [markers]="earningOptions.markers!" [grid]="earningOptions.grid!" [yaxis]="earningOptions.yaxis!"
+                [title]="earningOptions.title!">
+              </apx-chart>
+            </div>
           </div>
         </div>
       </div>
-      <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+      <!-- <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
         <div class="card">
           <div class="header">
             <h2>Transactions</h2>
@@ -205,9 +223,80 @@
             </ng-scrollbar>
           </div>
         </div>
+      </div> -->
+    </div>
+
+    <div class="row ">
+      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+        <div class="card">
+          <div class="header">
+            <h2>Activos</h2>
+            <button mat-icon-button [matMenuTriggerFor]="menu" class="header-dropdown">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+              <button mat-menu-item>
+                <mat-icon>add_circle_outline</mat-icon>
+                <span>Add</span>
+              </button>
+              <button mat-menu-item disabled>
+                <mat-icon>delete_outline</mat-icon>
+                <span>Delete</span>
+              </button>
+              <button mat-menu-item>
+                <mat-icon>refresh</mat-icon>
+                <span>Refresh</span>
+              </button>
+            </mat-menu>
+          </div>
+          <div class="body p-5">
+            <ul class="list-inline text-center m-b-0">
+              <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
+                <ng-container *ngIf="chart3ActivesStats.currentWeek; else downIcon">
+                  <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                </ng-container>
+                <ng-template #downIcon>
+                  <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                </ng-template>
+                <h5 class="m-b-0">{{chart3ActivesStats.totalWeek}}</h5>
+                <p class="text-muted font-14 m-b-0">Activos esta semana</p>
+
+              </li>
+              <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
+              <ng-container *ngIf="chart3ActivesStats.currentMonth; else downIcon">
+                <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+              </ng-container>
+              <ng-template #downIcon>
+                <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+              </ng-template>
+              <h5 class="m-b-0">{{chart3ActivesStats.totalMonth}}</h5>
+              <p class="text-muted font-14 m-b-0">Activos este mes</p>
+              </li>
+              <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
+                <ng-container *ngIf="chart3ActivesStats.currentYear; else downIcon">
+                  <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                </ng-container>
+                <ng-template #downIcon>
+                  <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                </ng-template>
+                <h5 class="mb-0 m-b-0">{{chart3ActivesStats.totalYear}}</h5>
+                <p class="text-muted font-14 m-b-0">Activos este año</p>
+              </li>
+            </ul>
+            <div *ngIf="earningOptionsActives?.series">
+              <apx-chart [series]="earningOptionsActives.series!" [chart]="earningOptionsActives.chart!"
+                [xaxis]="earningOptionsActives.xaxis!" [stroke]="earningOptionsActives.stroke!" [tooltip]="earningOptionsActives.tooltip!"
+                [dataLabels]="earningOptionsActives.dataLabels!" [legend]="earningOptionsActives.legend!"
+                [markers]="earningOptionsActives.markers!" [grid]="earningOptionsActives.grid!" [yaxis]="earningOptionsActives.yaxis!"
+                [title]="earningOptionsActives.title!">
+              </apx-chart>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="row clearfix">
+
+    <!-- <div class="row clearfix">
       <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
         <div class="card">
           <div class="card-body">
@@ -343,8 +432,9 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="row clearfix">
+    </div> -->
+
+    <!-- <div class="row clearfix">
       <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
         <div class="card">
           <div class="header">
@@ -584,8 +674,9 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="row">
+    </div> -->
+
+    <!-- <div class="row">
       <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12">
         <div class="card">
           <div class="header">
@@ -629,8 +720,9 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="row clearfix">
+    </div> -->
+
+    <!-- <div class="row clearfix">
       <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
         <div class="card">
           <div class="header">
@@ -909,6 +1001,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
+
   </div>
 </section>

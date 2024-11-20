@@ -8,7 +8,7 @@
           </button>
         </li>
       </ul>
-      <ul class="float-start navbar-nav navbar-left">
+      <!-- <ul class="float-start navbar-nav navbar-left">
         <li class="nav-item btnAppList" ngbDropdown>
           <button mat-icon-button [matMenuTriggerFor]="appDropdownMenu" class="nav-notification-icons">
             <app-feather-icons [icon]="'grid'" [class]="'header-icon'"></app-feather-icons>
@@ -61,7 +61,7 @@
             </div>
           </mat-menu>
         </li>
-      </ul>
+      </ul> -->
     </div>
     <div class="collapse navbar-collapse" [ngClass]="isNavbarCollapsed ? '' : 'show'">
       <ul class="nav navbar-nav navbar-right">
@@ -131,8 +131,8 @@
         <li class="nav-item user_profile">
           <button mat-button [matMenuTriggerFor]="profilemenu">
             <div class="chip dropdown-toggle" ngbDropdownToggle class="">
-              <span>Ella Jones</span>
-              <img src="{{userImg}}" class="user_img" width="25" height="25" alt="User">
+              <span>{{ userFullName }}</span>
+              <img src="{{ userImg }}" class="user_img" width="25" height="25" alt="User">
             </div>
           </button>
           <mat-menu #profilemenu="matMenu" class="profile-menu">

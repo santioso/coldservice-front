@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import {
   ApexAxisChartSeries,
   ApexChart,
@@ -34,6 +34,9 @@ export type ChartOptions = {
   title: ApexTitleSubtitle;
 };
 import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { DashboardService } from '../dashboard.services';
+import { OrderEntryActivitiesDatesModel } from '../models/order-entry.model';
+import { ActivesByYearAndMonthModel, Chart3StatsModel, SeriesDataModel } from '../models/chart3.model';
 @Component({
   selector: 'app-dashboard1',
   templateUrl: './dashboard1.component.html',
@@ -43,16 +46,114 @@ export class Dashboard1Component implements OnInit {
   public areaChartOptions!: Partial<ChartOptions>;
   public barChartOptions!: Partial<ChartOptions>;
   public earningOptions!: Partial<ChartOptions>;
+  public earningOptionsActives!: Partial<ChartOptions>;
   public performanceRateChartOptions!: Partial<ChartOptions>;
 
-  constructor() {
+  dataDashboard!: OrderEntryActivitiesDatesModel;
+  totalEntries = 0;
+  totalActives = 0;
+  chart3Data!: ActivesByYearAndMonthModel;
+  chart3Stats!: Chart3StatsModel;
+  chart3ActivesData!: ActivesByYearAndMonthModel;
+  chart3ActivesStats!: Chart3StatsModel;
+  seriesOrders: SeriesDataModel[] = [];
+  seriesActives: SeriesDataModel[] = [];
+
+  constructor(
+    private readonly dashboardService: DashboardService,
+    private readonly cdr: ChangeDetectorRef
+  ) {
     //constructor
   }
+
   ngOnInit() {
     this.chart1();
-    this.chart3();
     this.chart2();
     this.chart4();
+    this.getOrderEntryActiviesAndDates();
+    this.getOrdersByYearAndMonth();
+    this.getActiviesByYearAndMonth();
+  }
+
+  getOrderEntryActiviesAndDates() {
+    this.dashboardService.getOrderEntryActiviesAndDates().subscribe({
+      next: (data) => {
+        this.dataDashboard = data;
+        this.totalEntries = this.dataDashboard.totalEntries;
+        this.totalActives = this.dataDashboard.totalActives;
+        console.log('this.dataDashboard', this.dataDashboard);
+      },
+      error: (error) => {
+        console.error('Error al obtener los datos del dashboard', error);
+      },
+
+      // (data: OrderEntryActivitiesDatesModel) => {
+      // this.cdr.detectChanges(); // Fuerza una nueva verificación de cambios
+    });
+  }
+
+  getOrdersByYearAndMonth() {
+    this.dashboardService.getOrdersByYearAndMonth().subscribe({
+      next: (data: ActivesByYearAndMonthModel) => {
+        this.chart3Data = data;
+        console.log('chart3Data', this.chart3Data);
+        this.seriesOrders = this.buildSeriesData(this.chart3Data);
+        this.getChart3stats();
+        this.chart3Orders();
+      },
+      error: (error) => {
+        console.error('Error al obtener los datos del dashboard', error);
+      },
+    });
+  }
+
+  getActiviesByYearAndMonth() {
+    this.dashboardService.getActiviesByYearAndMonth().subscribe({
+      next: (data: ActivesByYearAndMonthModel) => {
+        this.chart3ActivesData = data;
+        console.log('chart3ActivesData', this.chart3ActivesData);
+        this.seriesActives = this.buildSeriesData(this.chart3ActivesData);
+        this.getChart3ActivesStats();
+        this.chart3Actives();
+      },
+      error: (error) => {
+        console.error('Error al obtener los datos del dashboard', error);
+      },
+    });
+  }
+
+  buildSeriesData(serie: ActivesByYearAndMonthModel): SeriesDataModel[] {
+    if (serie?.series) {
+      return serie.series.map((item) => ({
+        name: item.name,
+        data: item.data,
+      }));
+    }
+    return [];
+  }
+
+  getChart3stats() {
+    this.dashboardService.getChart3Stats().subscribe({
+      next: (data) => {
+        this.chart3Stats = data;
+        console.log('chart3Stats', this.chart3Stats);
+      },
+      error: (error) => {
+        console.error('Error al obtener los datos del dashboard', error);
+      }
+      });
+  }
+
+  getChart3ActivesStats() {
+    this.dashboardService.getChart3ActivesStats().subscribe({
+      next: (data) => {
+        this.chart3ActivesStats = data;
+        console.log('chart3ActivesStats', this.chart3ActivesStats);
+      },
+      error: (error) => {
+        console.error('Error al obtener los datos del dashboard', error);
+      }
+      });
   }
 
   private chart1() {
@@ -195,18 +296,10 @@ export class Dashboard1Component implements OnInit {
       },
     };
   }
-  private chart3() {
+
+  private chart3Orders() {
     this.earningOptions = {
-      series: [
-        {
-          name: '2019',
-          data: [15, 48, 36, 20, 40, 60, 35, 20, 16, 31, 22, 11],
-        },
-        {
-          name: '2018',
-          data: [8, 22, 60, 35, 17, 24, 48, 37, 56, 22, 32, 38],
-        },
-      ],
+      series: this.seriesOrders,
       chart: {
         height: 240,
         type: 'line',
@@ -237,18 +330,88 @@ export class Dashboard1Component implements OnInit {
       },
       xaxis: {
         categories: [
-          'Jan',
+          'Ene',
           'Feb',
           'Mar',
-          'Apr',
+          'Abr',
           'May',
           'Jun',
           'Jul',
-          'Aug',
+          'Ago',
           'Sep',
           'Oct',
           'Nov',
-          'Dec',
+          'Dic',
+        ],
+        labels: {
+          style: {
+            colors: '#8e8da4',
+          },
+        },
+      },
+      yaxis: {
+        labels: {
+          style: {
+            colors: '#8e8da4',
+          },
+        },
+      },
+      grid: {
+        show: true,
+        borderColor: '#9aa0ac',
+        strokeDashArray: 1,
+      },
+      tooltip: {
+        theme: 'dark',
+      },
+    };
+  }
+
+  private chart3Actives() {
+    this.earningOptionsActives = {
+      series: this.seriesActives,
+      chart: {
+        height: 240,
+        type: 'line',
+        zoom: {
+          enabled: false,
+        },
+        toolbar: {
+          show: false,
+        },
+      },
+      dataLabels: {
+        enabled: false,
+      },
+      stroke: {
+        width: 3,
+        curve: 'smooth',
+        dashArray: [0, 8],
+      },
+      colors: ['#8793ea', '#4caf50'],
+      fill: {
+        opacity: [1, 0.5],
+      },
+      markers: {
+        size: 0,
+        hover: {
+          sizeOffset: 6,
+        },
+      },
+      xaxis: {
+        categories: [
+          'Ene',
+          'Feb',
+          'Mar',
+          'Abr',
+          'May',
+          'Jun',
+          'Jul',
+          'Ago',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dic',
         ],
         labels: {
           style: {

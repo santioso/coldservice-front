@@ -1,0 +1,132 @@
+<div class="addContainer">
+  <div class="modalHeader">
+    <div class="editRowModal">
+      <div class="modalHeader clearfix">
+        <div class="modal-about">
+          {{dialogTitle}}
+        </div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="dialogRef.close()" class="modal-close-button" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <div mat-dialog-content class="dialogo">
+    <form class="register-form mx-4 my-2" [formGroup]="ordenesEntradaTableForm" (ngSubmit)="submit()">
+      <!-- <div class="row">
+         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Placa No.</mat-label>
+            <input aria-label="id" matInput formControlName="id" readonly>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesEntradaTableForm.get('fName')?.hasError('required')">
+              La placa del activo es obligataria
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div> -->
+      <div class="row">
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Fecha</mat-label>
+            <input aria-label="Fecha" matInput [matDatepicker]="picker" formControlName="fecha" required>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-error *ngIf="ordenesEntradaTableForm.get('fecha')?.hasError('required')">
+              La fecha del orden es obligatoria
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Placa del vehículo</mat-label>
+            <input aria-label="placa_vehiculo" matInput formControlName="placa_vehiculo">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesEntradaTableForm.get('placa_vehiculo')?.hasError('required')">
+              La placa del vehículo es requerida
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Entrega</mat-label>
+            <input aria-label="entrega" matInput formControlName="entrega">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Recibe</mat-label>
+            <input aria-label="recibe" matInput formControlName="recibe">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Observaciones</mat-label>
+            <input aria-label="observaciones" matInput formControlName="observaciones">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesEntradaTableForm.get('observaciones')?.hasError('required')">
+              Las observaciones no son requeridas
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div formArrayName="activosEntrada" class="">
+        <div class="table-responsive">
+          <div class="table-container">
+            <div class="table-row header">
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Placa</div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Descripción</div>
+              <div class="table-cell col-xl-1 col-lg-1 col-md-4 col-sm-6">Pies</div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Fabricante</div>
+              <div class="table-cell col-xl-5 col-lg-4 col-md-12 col-sm-12">Observaciones</div>
+            </div>
+
+            <div *ngFor="let activo of activosEntrada.controls; let i = index" [formGroupName]="i" class="table-row my-0">
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="id" matInput formControlName="id" class="no-margin no-border"  (blur)="onIdBlur(i)">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="descripcion" matInput formControlName="descripcion" class="no-margin no-border">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-1 col-lg-1 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="capacidad" matInput formControlName="capacidad" class="no-margin no-border">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="fabricante" matInput formControlName="fabricante" class="no-margin no-border">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-5 col-lg-4 col-md-12 col-sm-12">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="observaciones" matInput formControlName="observaciones"
+                    class="no-margin no-border">
+                </mat-form-field>
+              </div>
+            </div>
+
+
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <div class="example-button-row">
+            <button type="button" mat-raised-button color="primary" [disabled]="!ordenesEntradaTableForm.valid"
+              [mat-dialog-close]="1" (click)="confirmAdd()">Guardar</button>
+            <button type="button" mat-raised-button color="warn" (click)="onNoClick()" tabindex="-1">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

@@ -17,9 +17,9 @@ const users: User[] = [
     img: 'assets/images/user/admin.jpg',
     username: 'admin@software.com',
     password: 'admin@123',
-    firstName: 'Sarah',
-    lastName: 'Smith',
-    token: 'admin-token',
+    firstname: 'Sarah',
+    lastname: 'Smith',
+    access_token: 'admin-token',
   },
 ];
 
@@ -57,9 +57,9 @@ export class FakeBackendInterceptor implements HttpInterceptor {
         id: user.id,
         img: user.img,
         username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        token: user.token,
+        firstName: user.firstname,
+        lastName: user.lastname,
+        token: user.access_token || '',
       });
     }
 

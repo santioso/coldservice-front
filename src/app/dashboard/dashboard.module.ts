@@ -10,9 +10,13 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { NgApexchartsModule } from 'ng-apexcharts';
 import { SharedModule } from '@shared';
 import { ComponentsModule } from '@shared/components/components.module';
+import { DashboardService } from './dashboard.services';
 
 @NgModule({
   declarations: [Dashboard1Component, Dashboard2Component],
+  providers: [
+    DashboardService,
+  ],
   imports: [
     CommonModule,
     DashboardRoutingModule,

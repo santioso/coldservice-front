@@ -72,9 +72,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
   ngOnInit() {
     if (this.authService.currentUserValue) {
       this.userFullName =
-        this.authService.currentUserValue.firstName +
+        this.authService.currentUserValue.firstname +
         ' ' +
-        this.authService.currentUserValue.lastName;
+        this.authService.currentUserValue.lastname;
       this.userImg = this.authService.currentUserValue.img;
       this.userType = 'Admin';
       this.sidebarItems = ROUTES.filter((sidebarItem) => sidebarItem);

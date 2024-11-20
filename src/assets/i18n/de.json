@@ -11,6 +11,12 @@
     "MAIN": {
       "TEXT": "Main"
     },
+    "ASSETS": {
+      "TEXT": "Activos"
+    },
+    "ENTRY-ORDER": {
+      "TEXT": "Órden de entrada"
+    },
     "DASHBOARD": {
       "TEXT": "Zuhause",
       "LIST": {

@@ -28,9 +28,9 @@ export class LockedComponent implements OnInit {
     });
     this.userImg = this.authService.currentUserValue.img;
     this.userFullName =
-      this.authService.currentUserValue.firstName +
+      this.authService.currentUserValue.firstname +
       ' ' +
-      this.authService.currentUserValue.lastName;
+      this.authService.currentUserValue.lastname;
   }
   get f() {
     return this.authForm.controls;

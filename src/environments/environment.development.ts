@@ -4,6 +4,7 @@
 
 export const environment = {
   production: false,
+//  apiUrl: 'http://coldservice.prointelsi.com',
   apiUrl: 'http://localhost:8080',
 };
 

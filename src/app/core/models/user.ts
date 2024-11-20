@@ -3,7 +3,8 @@ export class User {
   img!: string;
   username!: string;
   password!: string;
-  firstName!: string;
-  lastName!: string;
-  token!: string;
+  firstname!: string;
+  lastname!: string;
+  access_token?: string;
+  userdata?: any;
 }

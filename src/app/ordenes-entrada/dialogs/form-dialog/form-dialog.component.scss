@@ -1,0 +1,126 @@
+.dialogo {
+  max-height: 100% !important;
+}
+
+.table-container {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-row {
+  display: table-row;
+  padding: 0; /* Eliminar padding */
+  margin: 0; /* Eliminar margen */
+}
+
+.table-cell {
+  display: table-cell;
+  padding: 0; /* Eliminar padding */
+  margin: 0; /* Eliminar margen */
+  vertical-align: middle;
+}
+
+.header .table-cell {
+  font-weight: bold;
+  background-color: #f2f2f2;
+}
+
+.no-margin {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.no-border input {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+input {
+  padding: 0 !important;
+  margin: 0 !important; /* Eliminar margen */
+  border: none;
+}
+
+.mat-form-field-wrapper {
+  padding-bottom: 0 !important; /* Eliminar padding inferior */
+}
+
+.mat-form-field-flex {
+  padding: 0 !important; /* Eliminar padding */
+  margin: 0 !important; /* Eliminar margen */
+}
+
+.mat-form-field-infix {
+  padding: 0 !important; /* Eliminar padding */
+  margin: 0 !important; /* Eliminar margen */
+}
+
+.mat-form-field-underline {
+  display: none !important; /* Eliminar la línea inferior */
+}
+
+.mat-form-field-subscript-wrapper {
+  margin: 0 !important; /* Eliminar margen */
+  padding: 0 !important; /* Eliminar padding */
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+@media (max-width: 1200px) {
+  .table-container {
+    display: block;
+  }
+
+  .table-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #ddd;
+    padding: 0; /* Eliminar padding */
+    margin: 0; /* Eliminar margen */
+  }
+
+  .table-cell {
+    display: flex;
+    flex: 1 1 100%;
+    justify-content: space-between;
+    padding: 0; /* Eliminar padding */
+    margin: 0; /* Eliminar margen */
+    border: none;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .header .table-cell {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-container {
+    display: block;
+  }
+
+  .table-row {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid #ddd;
+    padding: 0; /* Eliminar padding */
+    margin: 0; /* Eliminar margen */
+  }
+
+  .table-cell {
+    display: flex;
+    justify-content: space-between;
+    padding: 0; /* Eliminar padding */
+    margin: 0; /* Eliminar margen */
+    border: none;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .header .table-cell {
+    display: none;
+  }
+}

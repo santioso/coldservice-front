@@ -17,6 +17,20 @@ const routes: Routes = [
           import('./dashboard/dashboard.module').then((m) => m.DashboardModule),
       },
       {
+        path: 'activos',
+        loadChildren: () =>
+          import('./activos/activos.module').then(
+            (m) => m.ActivosModule
+          ),
+      },
+      {
+        path: 'orden-entrada',
+        loadChildren: () =>
+          import('./ordenes-entrada/ordenes-entrada.module').then(
+            (m) => m.OrdenesEntradaModule
+          ),
+      },
+      {
         path: 'advance-table',
         loadChildren: () =>
           import('./advance-table/advance-table.module').then(
@@ -37,13 +51,13 @@ const routes: Routes = [
             (m) => m.MultilevelModule
           ),
       },
-      {
-        path: 'business',
-        loadChildren: () =>
-          import('./business/business.module').then(
-            (m) => m.BusinessModule
-          ),
-      },
+      // {
+      //   path: 'business',
+      //   loadChildren: () =>
+      //     import('./business/business.module').then(
+      //       (m) => m.BusinessModule
+      //     ),
+      // },
     ],
   },
   {
