@@ -31,6 +31,13 @@ const routes: Routes = [
           ),
       },
       {
+        path: 'orden-servicio',
+        loadChildren: () =>
+          import('./ordenes-servicio/ordenes-servicio.module').then(
+            (m) => m.OrdenesServicioModule
+          ),
+      },
+      {
         path: 'advance-table',
         loadChildren: () =>
           import('./advance-table/advance-table.module').then(

@@ -68,7 +68,7 @@ export class OrdenesEntradaService extends UnsubscribeOnDestroyAdapter {
   }
 
 printOrder():  void {
-  
+  console.log('first')
 }
 
 }

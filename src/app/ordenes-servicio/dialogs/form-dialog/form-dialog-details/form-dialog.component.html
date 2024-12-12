@@ -1,0 +1,156 @@
+<div class="addContainer">
+  <div class="modalHeader">
+    <div class="editRowModal">
+      <div class="modalHeader clearfix">
+        <div class="modal-about">
+          {{dialogTitle}}
+        </div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="dialogRef.close()" class="modal-close-button" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <div mat-dialog-content class="dialogo">
+    <form class="register-form mx-4 my-2" [formGroup]="ordenesServicioTableForm" (ngSubmit)="submit()">
+      <!-- <div class="row">
+         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Placa No.</mat-label>
+            <input aria-label="id" matInput formControlName="id" readonly>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesEntradaTableForm.get('fName')?.hasError('required')">
+              La placa del activo es obligataria
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div> -->
+      <div class="row">
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Fecha</mat-label>
+            <input aria-label="dateStart" matInput [matDatepicker]="picker" formControlName="dateStart" required>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-error *ngIf="ordenesServicioTableForm.get('dateStart')?.hasError('required')">
+              La fecha de la órden es obligatoria
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Placa del activo</mat-label>
+            <input aria-label="activoId" matInput formControlName="activoId">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesServicioTableForm.get('activoId')?.hasError('required')">
+              La placa del activo es requerida es requerida
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Activo</mat-label>
+            <input aria-label="activo" matInput formControlName="activo">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Capacidad</mat-label>
+            <input aria-label="capacidad" matInput formControlName="capacidad">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Descripción</mat-label>
+            <input aria-label="descripcion" matInput formControlName="descripcion">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Diagnóstico</mat-label>
+            <input aria-label="diagnosis" matInput formControlName="diagnosis">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesServicioTableForm.get('diagnosis')?.hasError('required')">
+              El diagnóstico es requerido
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Estado de la orden</mat-label>
+            <input aria-label="status" matInput formControlName="status">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesServicioTableForm.get('status')?.hasError('required')">
+              El estado de la orden es requerido
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Observaciones</mat-label>
+            <input aria-label="observaciones" matInput formControlName="observaciones">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- <div formArrayName="activosEntrada" class="">
+        <div class="table-responsive">
+          <div class="table-container">
+            <div class="table-row header">
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Placa</div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Descripción</div>
+              <div class="table-cell col-xl-1 col-lg-1 col-md-4 col-sm-6">Pies</div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Fabricante</div>
+              <div class="table-cell col-xl-5 col-lg-4 col-md-12 col-sm-12">Observaciones</div>
+            </div>
+
+            <!-- <div *ngFor="let activo of activosEntrada.controls; let i = index" [formGroupName]="i" class="table-row my-0">
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="id" matInput formControlName="id" class="no-margin no-border"  (blur)="onIdBlur(i)">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="descripcion" matInput formControlName="descripcion" class="no-margin no-border">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-1 col-lg-1 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="capacidad" matInput formControlName="capacidad" class="no-margin no-border">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="fabricante" matInput formControlName="fabricante" class="no-margin no-border">
+                </mat-form-field>
+              </div>
+              <div class="table-cell col-xl-5 col-lg-4 col-md-12 col-sm-12">
+                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
+                  <input aria-label="observaciones" matInput formControlName="observaciones"
+                    class="no-margin no-border">
+                </mat-form-field>
+              </div>
+            </div> -->
+
+
+      <!--->    </div>
+        </div>
+      </div> -->
+
+      <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <div class="example-button-row">
+            <button type="button" mat-raised-button color="primary" [disabled]="!ordenesServicioTableForm.valid"
+              [mat-dialog-close]="1" (click)="confirmAdd()">Guardar</button>
+            <button type="button" mat-raised-button color="warn" (click)="onNoClick()" tabindex="-1">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

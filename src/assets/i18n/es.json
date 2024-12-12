@@ -17,6 +17,9 @@
     "ENTRY-ORDER": {
       "TEXT": "Órden de entrada"
     },
+    "SERVICE-ORDER": {
+      "TEXT": "Órden de servicio"
+    },
     "DASHBOARD": {
       "TEXT": "Casa",
       "LIST": {

@@ -1,0 +1,99 @@
+<div class="addContainer">
+  <div class="modalHeader">
+    <div class="editRowModal">
+      <div class="modalHeader clearfix">
+        <div class="modal-about title title-modal">
+          {{dialogTitle}}
+        </div>
+      </div>
+    </div>
+    <button mat-icon-button (click)="dialogRef.close()" class="modal-close-button" aria-label="Close dialog">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <div mat-dialog-content class="dialogo">
+    <form class="register-form mx-4 my-2" [formGroup]="ordenesServicioTableForm">
+      <div class="row">
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Fecha</mat-label>
+            <input aria-label="dateStart" matInput [matDatepicker]="picker" formControlName="dateStart" required>
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+            <mat-error *ngIf="ordenesServicioTableForm.get('dateStart')?.hasError('required')">
+              La fecha de la órden es obligatoria
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Estado de la orden</mat-label>
+            <input aria-label="status" matInput formControlName="status">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesServicioTableForm.get('status')?.hasError('required')">
+              El estado de la orden es requerido
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Placa del activo</mat-label>
+            <input aria-label="activoId" matInput formControlName="activoId">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesServicioTableForm.get('activoId')?.hasError('required')">
+              La placa del activo es requerida
+            </mat-error>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Activo</mat-label>
+            <input aria-label="activo" matInput formControlName="activo">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+        <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Capacidad</mat-label>
+            <input aria-label="capacidad" matInput formControlName="capacidad">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Observaciones</mat-label>
+            <input aria-label="observaciones" matInput formControlName="observaciones">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <mat-form-field class="example-full-width" appearance="outline">
+            <mat-label>Diagnóstico</mat-label>
+            <input aria-label="diagnosis" matInput formControlName="diagnosis">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-error *ngIf="ordenesServicioTableForm.get('diagnosis')?.hasError('required')">
+              El diagnóstico es requerido
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
+          <div class="example-button-row">
+            <!-- <button type="button" mat-raised-button color="primary" [disabled]="!ordenesServicioTableForm.valid" -->
+            <button type="button" mat-raised-button color="primary" [mat-dialog-close]="1" (click)="confirmAdd()">Guardar</button>
+            <!-- [mat-dialog-close]="1" (click)="confirmAdd()">Guardar</button> -->
+            <button type="button" mat-raised-button color="warn" (click)="onNoClick()" tabindex="-1">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

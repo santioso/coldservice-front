@@ -78,11 +78,6 @@ export class OrdenesEntradaComponent
   }
 
   loadOrdenesEntrada(): void {
-    // this.ordenesEntradaService.getAllOrdenesEntrada().subscribe((data: OrdenesEntradaModel[]) => {
-    //   this.ordenesEntrada = data;
-    //   this.cdr.detectChanges(); // Fuerza una nueva verificación de cambios
-    // });
-
     this.ordenesEntradaService.fetchData();
     this.ordenesEntradaService.dataChange.subscribe((data: OrdenesEntradaModel[]) => {
       this.ordenesEntrada = data;
@@ -123,7 +118,7 @@ export class OrdenesEntradaComponent
   }
 
   editCall(row: OrdenesEntradaModel) {
-    let ordenesEntrada = null;
+    const ordenesEntrada = null;
     this.id = row.id;
 
     firstValueFrom(this.ordenesEntradaService.getOrdenById(this.id))
@@ -135,7 +130,6 @@ export class OrdenesEntradaComponent
         tempDirection = 'ltr';
       }
 
-      console.log('ordenesEntrada', ordenesEntrada)
       const dialogRef = this.dialog.open(FormDialogComponent, {
         data: {
           ordenesEntradaModel: ordenesEntrada,
