@@ -177,12 +177,6 @@ export class OrdenesEntradaComponent
         this.ordenesEntradaService.deleteOrden(this.id!).subscribe(() => {
           this.loadData();
           this.utilPopupService.mostrarMensaje(`La orden de entrada se eliminó correctamente`, 'success', 'Orden de entrada eliminada', false);
-          this.showNotification(
-            'snackbar-danger',
-            'Delete Record Successfully...!!!',
-            'bottom',
-            'center'
-          );
         });
       }
     });

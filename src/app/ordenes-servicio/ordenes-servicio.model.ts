@@ -1,11 +1,11 @@
 export class OrdenesServicioModel {
   id: number;
   dateStart: string;
-  descripcion: string;
   activoId: string;
-  capacidad: number;
-  status: string;
+  descripcion: string;
   diagnosis: string;
+  status: string;
+  capacidad: number;
   ordenEntradaId: number;
   observaciones: string;
 
@@ -20,11 +20,29 @@ export class OrdenesServicioModel {
       this.ordenEntradaId = ordenesServicioModel.ordenEntradaId || 0;
       this.observaciones = ordenesServicioModel.observaciones || '';
     }
-  public getRandomID(): number {
-    const S4 = () => {
-      return ((1 + Math.random()) * 0x10000) | 0;
-    };
-    return S4() + S4();
+}
+
+export class ActivesEntryModel {
+  ordenEntradaId: number;
+  activoId: string;
+  serviceOrderId: number;
+  ordenSalidaId: number;
+  status: string;
+  observaciones: string;
+  descripcion: string;
+  capacidad: number;
+  activoEntradaId: number;
+
+  constructor(activesEntryModel: ActivesEntryModel) {
+    this.ordenEntradaId = activesEntryModel.ordenEntradaId || 0;
+    this.activoId = activesEntryModel.activoId || '';
+    this.serviceOrderId = activesEntryModel.serviceOrderId || 0;
+    this.ordenSalidaId = activesEntryModel.ordenSalidaId || 0;
+    this.status = activesEntryModel.status || '';
+    this.observaciones = activesEntryModel.observaciones || '';
+    this.descripcion = activesEntryModel.descripcion || '';
+    this.capacidad = activesEntryModel.capacidad || 0;
+    this.activoEntradaId = activesEntryModel.activoEntradaId || 0;
   }
 }
 

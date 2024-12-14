@@ -12,7 +12,7 @@ import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { UtilPopupService } from '@shared/services/util-popup.service';
 import { ActivosService } from 'app/activos/activos.service';
 import { ActivosModel } from 'app/activos/activos.model';
-import { CreateOrdenesServicioModel, OrdenesServicioModel } from 'app/ordenes-servicio/ordenes-servicio.model';
+import { ActivesEntryModel, CreateOrdenesServicioModel, OrdenesServicioModel } from 'app/ordenes-servicio/ordenes-servicio.model';
 import { OrdenesServicioService } from 'app/ordenes-servicio/ordenes-servicio.service';
 
 export interface DialogData {
@@ -34,6 +34,8 @@ export class FormDialogComponent implements OnInit {
   ordenesServicioModel: OrdenesServicioModel;
   soloLectura: boolean;
   displayedColumns: string[] = ['dateStart', 'activoId', 'descripcion', 'capacidad', 'diagnosis', 'status', 'observaciones', 'actions'];
+  statusService: any = [];
+  activosEntrada: any[] = [];
 
   constructor(
     public dialogRef: MatDialogRef<FormDialogComponent>,
@@ -58,12 +60,42 @@ export class FormDialogComponent implements OnInit {
   }
 
   formControl = new UntypedFormControl('', [
-    // Validators.required,
+    Validators.required,
     // Validators.email,
   ]);
 
   ngOnInit(): void {
-    console.log('data', this.data)
+    console.log('data', this.data);
+    this.loadActivosEntrada();
+    this.loadStatus();
+  }
+
+  loadActivosEntrada(): void {
+    this.ordenesServiceService.getActivesEntry().subscribe({
+      next: (data) => {
+        const activos = data;
+        this.activosEntrada = activos.map((x) => {
+          return { id: x.activo_entrada_id, descripcion: x.activo_id, value: x.descripcion };
+        });
+        console.log('this.activosEntrada', this.activosEntrada)
+      },
+    })
+  }
+
+  loadStatus(): void {
+    this.ordenesServiceService.getStatus().subscribe({
+      next: (data) => {
+        const status = data;
+        this.statusService = this.createArrayStatus(status);
+      },
+    })
+  }
+
+  createArrayStatus(status: any): Array<any> {
+    this.statusService = status.map((x: any) => {
+      return { id: x, value: x };
+    });
+    return this.statusService;
   }
 
   getErrorMessage() {
@@ -77,13 +109,14 @@ export class FormDialogComponent implements OnInit {
   }
 
   createForm(): UntypedFormGroup {
+    console.log('this.ordenesServicioModel', this.ordenesServicioModel)
     return this.fb.group({
-        id: [this.ordenesServicioModel.id, this.ordenesServicioModel.id],
-        dateStart: [this.convertirFechaAObjetoDate(this.ordenesServicioModel.dateStart)],
-        activoId: [this.ordenesServicioModel.activoId],
-        activo: [this.ordenesServicioModel.descripcion],
+        id: [this.ordenesServicioModel.id, Validators.required],
+        dateStart: [this.ordenesServicioModel.dateStart, Validators.required],
+        activoEntradaId: [this.ordenesServicioModel.activoId, Validators.required],
+        descripcion: [this.ordenesServicioModel.descripcion],
         diagnosis: [this.ordenesServicioModel.diagnosis, Validators.required],
-        status: [this.ordenesServicioModel.status],
+        status: [this.ordenesServicioModel.status, Validators.required],
         capacidad: [this.ordenesServicioModel.capacidad],
         ordenEntradaId: [this.ordenesServicioModel.ordenEntradaId],
         observaciones: [this.ordenesServicioModel.observaciones],
@@ -95,30 +128,26 @@ export class FormDialogComponent implements OnInit {
   }
 
   public confirmAdd(): void {
-    let datosForm: CreateOrdenesServicioModel = {
-      id: 0,
-      date_start: new Date(),
-      date_finish: null,
-      diagnosis: '',
-      activo_entrada_id: null
-    };
     const datosFormulario = this.ordenesServicioTableForm.getRawValue();
-    datosForm.id = this.ordenesServicioModel.id;
-    datosForm.date_start = datosFormulario.dateStart;
-    datosForm.date_finish = null;
-    datosForm.diagnosis = datosFormulario.diagnosis;
-    datosForm.activo_entrada_id = datosFormulario.activoId;
+    console.log('datosFormulario  ', datosFormulario)
+    let datosForm: CreateOrdenesServicioModel = {
+      id: this.ordenesServicioModel.id,
+      date_start: datosFormulario.dateStart,
+      date_finish: null,
+      diagnosis: datosFormulario.diagnosis,
+      activo_entrada_id: datosFormulario.activoEntradaId,
+    };
 
     if (this.action === 'add') {
       this.ordenesServiceService.addOrden(datosForm).subscribe({
         next: (resp) => {
           this.utilPopupService.mostrarMensaje('La orden de servicio se guardó correctamente', 'success', 'Orden de servicio guardada', false);
+          this.dialogRef.close();
         },
         error: (err) => {
           this.utilPopupService.mostrarMensaje(err, 'error', 'Error al guardar', false);
         },
         complete: () => {
-          this.dialogRef.close();
         },
       });
     }
@@ -126,23 +155,19 @@ export class FormDialogComponent implements OnInit {
       console.log(datosForm)
       this.ordenesServiceService.updateOrden(datosForm).subscribe({
         next: (resp) => {
+          console.log('resp....', resp)
           this.utilPopupService.mostrarMensaje('La orden de servicio se editó correctamente', 'success', 'Orden de servicio editada', false);
+          this.dialogRef.close();
         },
         error: (err) => {
           this.utilPopupService.mostrarMensaje(err, 'error', 'Error al editar', false);
         },
         complete: () => {
-          this.dialogRef.close();
+
         },
-      });    
+      });
     }
   }
-
-
-
-
-
-
 
   private mostrarMensajeError(value: string, idControl: any): void {
     this.utilPopupService.mostrarMensaje(`La placa ${value} ya está en la orden de entrada, no se puede ingresar mas de una vez`, 'error', 'Placa duplicada', false);

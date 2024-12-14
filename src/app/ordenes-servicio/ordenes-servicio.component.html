@@ -103,7 +103,8 @@
                 <!-- status Column -->
                 <ng-container matColumnDef="status">
                   <mat-header-cell *matHeaderCellDef mat-sort-header>Estado</mat-header-cell>
-                  <mat-cell *matCellDef="let row">{{row.status}}</mat-cell>
+                  <mat-cell *matCellDef="let row">{{row.status}}
+                  </mat-cell>
                 </ng-container>
                 <!-- Diagnosis Column -->
                 <ng-container matColumnDef="diagnosis">
@@ -200,7 +201,7 @@
               [style.display]="dataSource.renderedData.length === 0 ? '' : 'none'">
               No hay resultados
             </div>
-            <mat-paginator #paginator [length]="dataSource.filterData.length" [pageIndex]="0" [pageSize]="10"
+            <mat-paginator #paginator [length]="dataSource.filteredData.length" [pageIndex]="0" [pageSize]="10"
               [pageSizeOptions]="[5, 10, 25, 100]">
             </mat-paginator>
           </div>

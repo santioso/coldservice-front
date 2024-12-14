@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { UnsubscribeOnDestroyAdapter } from '@shared';
 import { environment } from 'environments/environment';
-import { CreateOrdenesServicioModel, OrdenesServicioDetailsModel, OrdenesServicioModel } from './ordenes-servicio.model';
+import { ActivesEntryModel, CreateOrdenesServicioModel, OrdenesServicioDetailsModel, OrdenesServicioModel } from './ordenes-servicio.model';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 
@@ -49,7 +49,11 @@ export class OrdenesServicioService extends UnsubscribeOnDestroyAdapter {
 
   updateOrden(ordenesServicioModel: CreateOrdenesServicioModel): Observable<OrdenesServicioModel> {
     this.dialogDataCreate = ordenesServicioModel;
-    return this.httpClient.patch<OrdenesServicioModel>(`${this.API_URL}/${ordenesServicioModel.id}`, OrdenesServicioModel)
+    return this.httpClient.put<OrdenesServicioModel>(`${this.API_URL}/${ordenesServicioModel.id}`, ordenesServicioModel)
+  }
+
+  deleteOrden(id: number) {
+    return this.httpClient.delete(`${this.API_URL}/${id}`)
   }
 
   fetchData(): void {
@@ -65,9 +69,12 @@ export class OrdenesServicioService extends UnsubscribeOnDestroyAdapter {
     });
   }
 
+  getStatus(): Observable<any> {
+    return this.httpClient.get<any>(`${this.API_URL}/show-column-status`)
+  }
 
-
-
-
+  getActivesEntry(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${this.API_URL}/actives-for-service-order`)
+  }
 
 }

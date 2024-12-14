@@ -19,11 +19,24 @@ import { UtilPopupService } from '@shared/services/util-popup.service';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatMenuTrigger } from '@angular/material/menu';
-import { BehaviorSubject, firstValueFrom, fromEvent, map, merge, Observable } from 'rxjs';
+import {
+  BehaviorSubject,
+  firstValueFrom,
+  fromEvent,
+  map,
+  merge,
+  Observable,
+} from 'rxjs';
+import { TableExportUtil, TableElement } from '@shared';
 import { DataSource, SelectionModel } from '@angular/cdk/collections';
-import { CreateOrdenesServicioModel, OrdenesServicioDetailsModel, OrdenesServicioModel } from './ordenes-servicio.model';
+import {
+  CreateOrdenesServicioModel,
+  OrdenesServicioDetailsModel,
+  OrdenesServicioModel,
+} from './ordenes-servicio.model';
 import { Direction } from '@angular/cdk/bidi';
 import { FormDialogComponent } from './dialogs/form-dialog/form-dialog.component';
+import { DeleteDialogComponent } from './dialogs/delete/delete.component';
 
 @Component({
   selector: 'app-ordenes-servicio',
@@ -41,6 +54,7 @@ export class OrdenesServicioComponent
   implements OnInit
 {
   displayedColumns = [
+    'select',
     'id',
     'dateStart',
     'activoEntradaId',
@@ -58,6 +72,7 @@ export class OrdenesServicioComponent
   id?: number;
   ordenesServicioModel?: OrdenesServicioModel;
   ordenesServicio: OrdenesServicioModel[] = [];
+  statusService: any[] = [];
 
   constructor(
     public httpClient: HttpClient,
@@ -77,6 +92,7 @@ export class OrdenesServicioComponent
   contextMenuPosition = { x: '0px', y: '0px' };
 
   ngOnInit() {
+    this.loadStatus();
     this.loadData();
     this.loadOrdenesServicio();
   }
@@ -93,6 +109,23 @@ export class OrdenesServicioComponent
         this.cdr.detectChanges();
       }
     );
+  }
+
+  loadStatus(): void {
+    this.ordenesServicioService.getStatus().subscribe({
+      next: (data) => {
+        const status = data;
+        this.statusService = this.createArrayStatus(status);
+      },
+    })
+  }
+
+  createArrayStatus(status: any): Array<any> {
+    this.statusService = status.map((x: any) => {
+      return { id: x, value: x };
+    });
+    console.log('statusService', this.statusService);
+    return this.statusService;
   }
 
   public loadData() {
@@ -112,6 +145,7 @@ export class OrdenesServicioComponent
     );
     this.loadOrdenesServicio();
   }
+
   showNotification(
     colorName: string,
     text: string,
@@ -135,7 +169,8 @@ export class OrdenesServicioComponent
     }
     const dialogRef = this.dialog.open(FormDialogComponent, {
       data: {
-        ordenesServiciosModel: this.ordenesServicioModel as OrdenesServicioModel,
+        ordenesServiciosModel: this
+          .ordenesServicioModel as OrdenesServicioModel,
         action: 'add',
       },
       direction: tempDirection,
@@ -149,17 +184,16 @@ export class OrdenesServicioComponent
 
   editService(row: OrdenesServicioDetailsModel) {
     this.id = row.id;
-    console.log('row... ', row)
-
-    firstValueFrom(this.ordenesServicioService.getOrderServicedetails(this.id))
-    .then((ordenServicio) => {
+    firstValueFrom(
+      this.ordenesServicioService.getOrderServicedetails(this.id)
+    ).then((ordenServicio) => {
       let tempDirection: Direction;
       if (localStorage.getItem('isRtl') === 'true') {
         tempDirection = 'rtl';
       } else {
         tempDirection = 'ltr';
       }
-      console.log('ordenesServicio', ordenServicio)
+      console.log('ordenesServicio', ordenServicio);
       const dialogRef = this.dialog.open(FormDialogComponent, {
         data: {
           ordenesServicioModel: ordenServicio,
@@ -173,15 +207,41 @@ export class OrdenesServicioComponent
       this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
         this.loadData();
       });
-    })
+    });
   }
 
   deleteItem(row: OrdenesServicioModel) {
-    console.log('Eliminar orden de servicio', row);
+    const id = row.id;
+    let tempDirection: Direction;
+    if (localStorage.getItem('isRtl') === 'true') {
+      tempDirection = 'rtl';
+    } else {
+      tempDirection = 'ltr';
+    }
+    const dialogRef = this.dialog.open(DeleteDialogComponent, {
+      data: row,
+      direction: tempDirection,
+    });
+    this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
+      console.log(result)
+      this.loadData();
+    });
   }
 
   removeSelectedRows() {
-    console.log('Eliminar orden de servicio');
+    const totalSelect = this.selection.selected.length;
+    this.utilPopupService.mostrarMensaje(`Esta seguro que quiere borrar las órdenes de servicio seleccionadas?<br>Este proceso no se puede deshacer`,'question', 'Borrar registros seleccionados', true)
+    .then((result) => {
+      if (result.isConfirmed) {
+        this.selection.selected.forEach((item) => {
+        this.ordenesServicioService.deleteOrden(item.id).subscribe(() => {
+          this.loadData();
+          this.selection = new SelectionModel<OrdenesServicioModel>(true, []);
+        });
+        });
+      this.utilPopupService.mostrarMensaje(`Se eliminaron las ${totalSelect} órdenes seleccionadas`, 'success', 'Órdenes de entrada eliminadas', false);
+      }
+    });
   }
 
   printOrder(row: OrdenesServicioModel) {
@@ -209,7 +269,20 @@ export class OrdenesServicioComponent
   }
 
   exportExcel() {
-    console.log('Exportar orden de servicio');
+    const exportData: Partial<TableElement>[] =
+      this.dataSource.filteredData.map((x) => ({
+        'Orden de servicio': x.id,
+        'Fecha' : x.dateStart,
+     //   'Placa Activo' : x.activoEntradaId,
+        'Activo' : x.descripcion,
+        'Capacidad' : x.capacidad,
+        'Estado' : x.status,
+        'Diagnóstico' : x.diagnosis,
+        'Orden de entrada' : x.ordenEntradaId,
+        'Observaciones' : x.observaciones,
+
+      }))
+      TableExportUtil.exportToExcel(exportData, 'excel')
   }
 
   formatDate(date: string | Date): string {
@@ -232,7 +305,7 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
     this.filterChange.next(filter);
   }
 
-  filterData: OrdenesServicioModel[] = [];
+  filteredData: OrdenesServicioModel[] = [];
   renderedData: OrdenesServicioModel[] = [];
 
   constructor(
@@ -257,7 +330,7 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
     return merge(...displayDataChanges).pipe(
       map(() => {
         // Filter data
-        this.filterData = this.ordenesServicioService.data
+        this.filteredData = this.ordenesServicioService.data
           .slice()
           .filter((ordenesServicesModel: OrdenesServicioModel) => {
             const searchStr = (
@@ -269,7 +342,7 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
             return searchStr.indexOf(this.filter.toLowerCase()) !== -1;
           });
         // Sort filtered data
-        const sortedData = this.sortData(this.filterData.slice());
+        const sortedData = this.sortData(this.filteredData.slice());
         // Grab the page's slice of the data.
         const startIndex = this.paginator.pageIndex * this.paginator.pageSize;
         this.renderedData = sortedData.splice(

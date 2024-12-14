@@ -22,7 +22,7 @@ export class UtilPopupService {
                 title: 'mat-headline-3 font-normal text-lime',
                 actions: "flex flex-col flex-auto w-full px-8",
                 confirmButton: 'w-full bg-white text-primary',
-                cancelButton: 'w-full bg-lime text-primary'
+                cancelButton: 'w-full bg-white text-primary'
             }
         });
     }
@@ -35,19 +35,16 @@ export class UtilPopupService {
      * @param mostrarConfirmacion Indicates whether to display the confirmation button.
      * @returns typeof @Swal
      */
-    mostrarMensaje(mensaje: string, tipo: SweetAlertIcon, titulo = '', mostrarConfirmacion = true) {
+    mostrarMensaje(mensaje: string, tipo: SweetAlertIcon, titulo = '', mostrarConfirmacion = true): Promise<any> {
         const options: SweetAlertOptions = {
             title: titulo,
             html: mensaje,
             icon: tipo,
+            showCancelButton: mostrarConfirmacion,
+            showCloseButton: !mostrarConfirmacion,
+            confirmButtonText: mostrarConfirmacion ? 'Si' : 'Continuar',
+            cancelButtonText: 'No'
         };
-
-        if (!mostrarConfirmacion) {
-            // Add options related to the confirmation button
-            options.showCancelButton = false;
-            options.showCloseButton = true;
-            options.confirmButtonText = 'Continuar';
-        }
 
         return this.swal.fire(options);
     }

@@ -1,16 +1,22 @@
 <div class="container">
-    <h3 mat-dialog-title>¿Está seguro de borrar la orden de entrada?<br>Este proceso es irreversible</h3>
+    <h3 mat-dialog-title>¿Está seguro de borrar la orden de servicio?<br>Este proceso es irreversible</h3>
     <div mat-dialog-content>
         <ul class="clearfix">
-            <li>
-                <p><span class="font-weight-bold"> Placa: </span>{{data.id}}</p>
-            </li>
-            <li>
-                <p><span class="font-weight-bold"> Fecha: </span>{{data.fecha}}</p>
-            </li>
-            <li>
-                <p><span class="font-weight-bold"> Observaciones: </span>{{ data.observaciones }}</p>
-            </li>
+          <li>
+            <p><span class="font-weight-bold"> No.: {{data.id}} de fecha </span>{{data.dateStart}}</p>
+          </li>
+          <li>
+            <p><span class="font-weight-bold"> Diagnóstico: {{data.diagnosis}}</span></p>
+          </li>
+          <li>
+            <p><span class="font-weight-bold"> Estado: {{data.status}}</span></p>
+          </li>
+        </ul>
+        <hr>
+        <ul class="clearfix">
+          <li>
+            <p><span class="font-weight-bold"> Activo: </span>{{data.activoId}} <br>{{data.descripcion}}</p>
+          </li>
         </ul>
     </div>
     <div mat-dialog-actions class="mb-1">
