@@ -36,6 +36,7 @@ import {
 } from './ordenes-servicio.model';
 import { Direction } from '@angular/cdk/bidi';
 import { FormDialogComponent } from './dialogs/form-dialog/form-dialog.component';
+import { FormDialogDetailsComponent } from './dialogs/form-dialog/form-dialog-details/form-dialog.component';
 import { DeleteDialogComponent } from './dialogs/delete/delete.component';
 
 @Component({
@@ -201,7 +202,35 @@ export class OrdenesServicioComponent
         },
         direction: tempDirection,
         width: '80%',
-        height: '75%',
+        height: '60%',
+      });
+
+      this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
+        this.loadData();
+      });
+    });
+  }
+
+  verDetails(row: OrdenesServicioDetailsModel) {
+    this.id = row.id;
+    firstValueFrom(
+      this.ordenesServicioService.getOrderServicedetails(this.id)
+    ).then((ordenServicio) => {
+      let tempDirection: Direction;
+      if (localStorage.getItem('isRtl') === 'true') {
+        tempDirection = 'rtl';
+      } else {
+        tempDirection = 'ltr';
+      }
+      console.log('ordenesServicio', ordenServicio);
+      const dialogRef = this.dialog.open(FormDialogDetailsComponent, {
+        data: {
+          ordenesServicioModel: ordenServicio,
+          action: 'edit',
+        },
+        direction: tempDirection,
+        width: '65%',
+        height: '90%',
       });
 
       this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
@@ -245,7 +274,7 @@ export class OrdenesServicioComponent
   }
 
   printOrder(row: OrdenesServicioModel) {
-    console.log(row);
+    console.log(row); 
     //    reporte-orden/orden-entrada
   }
 

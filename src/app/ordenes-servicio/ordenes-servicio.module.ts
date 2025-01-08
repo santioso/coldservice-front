@@ -7,16 +7,20 @@ import { SharedModule } from '@shared';
 import { OrdenesServicioService } from './ordenes-servicio.service';
 import { OrdenesServicioRoutingModule } from './ordenes-servicio-routing.module';
 import { FormDialogComponent } from './dialogs/form-dialog/form-dialog.component';
-import { FormDialogComponent  as FormDialogDetailsComponent} from './dialogs/form-dialog/form-dialog-details/form-dialog.component';
+import { FormDialogDetailsComponent as FormDialogDetailsComponent } from './dialogs/form-dialog/form-dialog-details/form-dialog.component';
 import { ActivosService } from 'app/activos/activos.service';
 import { DeleteDialogComponent } from './dialogs/delete/delete.component';
+import { AddDetailDialogComponent } from './dialogs/form-dialog/form-dialog-details/add-detail-dialog/add-detail-dialog.component';
+import { DeleteDialogDetailComponent } from './dialogs/form-dialog/form-dialog-details/delete/delete.component';
 
 @NgModule({
   declarations: [
     OrdenesServicioComponent,
     FormDialogComponent,
     FormDialogDetailsComponent,
-    DeleteDialogComponent
+    AddDetailDialogComponent,
+    DeleteDialogComponent,
+    DeleteDialogDetailComponent,
   ],
   imports: [
     CommonModule,
@@ -26,11 +30,8 @@ import { DeleteDialogComponent } from './dialogs/delete/delete.component';
 
     ComponentsModule,
     SharedModule,
-    OrdenesServicioRoutingModule
+    OrdenesServicioRoutingModule,
   ],
-  providers: [
-    OrdenesServicioService,
-    ActivosService
-  ],
+  providers: [OrdenesServicioService, ActivosService],
 })
 export class OrdenesServicioModule {}

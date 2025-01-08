@@ -103,7 +103,14 @@
                 <!-- status Column -->
                 <ng-container matColumnDef="status">
                   <mat-header-cell *matHeaderCellDef mat-sort-header>Estado</mat-header-cell>
-                  <mat-cell *matCellDef="let row">{{row.status}}
+                  <mat-cell *matCellDef="let row">
+                    <div [ngClass]="{
+                      'estado-disponible': row.status === 'Disponible',
+                      'estado-no-disponible': row.status !== 'Disponible' && row.status !== 'Baja',
+                      'estado-baja': row.status === 'Baja'
+                      }">
+                        {{row.status}}
+                      </div>
                   </mat-cell>
                 </ng-container>
                 <!-- Diagnosis Column -->
@@ -133,14 +140,14 @@
                       (click)="deleteItem(row)" class="tbl-action-btn">
                       <app-feather-icons [icon]="'trash-2'" [class]="'tbl-fav-delete'"></app-feather-icons>
                     </button>
-                    <button aria-label="borrar" mat-icon-button color="accent" (click)="$event.stopPropagation()"
+                    <!-- <button aria-label="borrar" mat-icon-button color="accent" (click)="$event.stopPropagation()"
                       (click)="printOrder(row)" class="tbl-action-btn">
-                      <app-feather-icons [icon]="'printer'" [class]="'tbl-fav-print'"></app-feather-icons>
-                    </button>
+                      <app-feather-icons [icon]="'printer'" [class]="'tbl-fav-print'" ></app-feather-icons>
+                    </button> -->
                   </mat-cell>
                 </ng-container>
                 <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-                <mat-row *matRowDef="let row; columns: displayedColumns;" (click)="editService(row)"
+                <mat-row *matRowDef="let row; columns: displayedColumns;" (click)="verDetails(row)"
                   [style.cursor]="'pointer'" matRipple>
                 </mat-row>
               </table>
@@ -160,7 +167,7 @@
                   <mat-icon>add_box</mat-icon>
                   <span>Agregar Registro</span>
                 </button>
-                <button mat-menu-item (click)="editService(item)">
+                <button mat-menu-item (click)="verDetails(item)">
                   <mat-icon>create</mat-icon>
                   <span>Editar Registro</span>
                 </button>

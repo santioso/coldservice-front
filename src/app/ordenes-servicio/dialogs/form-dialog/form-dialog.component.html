@@ -25,7 +25,7 @@
             </mat-error>
           </mat-form-field>
         </div>
-        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
+        <div class="col-xl-9 col-lg-9 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Estado de la orden</mat-label>
             <mat-select aria-label="status" formControlName="status">
@@ -33,7 +33,7 @@
                 {{ status.value }}
               </mat-option>
             </mat-select>
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>fact_check</mat-icon>
             <mat-error *ngIf="ordenesServicioTableForm.get('status')?.hasError('required')">
               El estado de la orden es requerido
             </mat-error>
@@ -46,11 +46,10 @@
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Placa del activo</mat-label>
             <mat-select aria-label="Placa del activo" formControlName="activoEntradaId">
-              <mat-option *ngFor="let activo of activosEntrada" [value]="activo.activoEntradaId"> {{ activo.descripcion
-                }} </mat-option>
+              <mat-option *ngFor="let activo of activosEntrada" [value]="activo.id"> {{ activo.value }} </mat-option>
             </mat-select>
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
-            <mat-error *ngIf="ordenesServicioTableForm.get('activoId')?.hasError('required')">
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>pin</mat-icon>
+            <mat-error *ngIf="ordenesServicioTableForm.get('activoEntradaId')?.hasError('required')">
               La placa del activo es requerida
             </mat-error>
           </mat-form-field>
@@ -59,23 +58,23 @@
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Activo</mat-label>
             <input aria-label="descripcion" matInput formControlName="descripcion">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>view_in_ar</mat-icon>
           </mat-form-field>
         </div>
         <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Capacidad</mat-label>
             <input aria-label="capacidad" matInput formControlName="capacidad">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>format_quote</mat-icon>
           </mat-form-field>
         </div>
       </div>
       <div class="row">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
-            <mat-label>Observaciones</mat-label>
+            <mat-label>Observaciones del activo en la entrada</mat-label>
             <input aria-label="observaciones" matInput formControlName="observaciones">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>comment</mat-icon>
           </mat-form-field>
         </div>
       </div>
@@ -84,7 +83,7 @@
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Diagnóstico</mat-label>
             <input aria-label="diagnosis" matInput formControlName="diagnosis">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>dehaze</mat-icon>
             <mat-error *ngIf="ordenesServicioTableForm.get('diagnosis')?.hasError('required')">
               El diagnóstico es requerido
             </mat-error>
@@ -94,10 +93,7 @@
       <div class="row">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
           <div class="example-button-row">
-            <!-- <button type="button" mat-raised-button color="primary" [disabled]="!ordenesServicioTableForm.valid" -->
-            <button type="button" mat-raised-button color="primary" [mat-dialog-close]="1"
-              (click)="confirmAdd()">Guardar</button>
-            <!-- [mat-dialog-close]="1" (click)="confirmAdd()">Guardar</button> -->
+            <button type="button" mat-raised-button color="primary" [mat-dialog-close]="1" (click)="confirmAdd()">Guardar</button>
             <button type="button" mat-raised-button color="warn" (click)="onNoClick()" tabindex="-1">Cancelar</button>
           </div>
         </div>

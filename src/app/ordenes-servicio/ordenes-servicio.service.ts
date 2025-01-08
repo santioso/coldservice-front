@@ -56,6 +56,18 @@ export class OrdenesServicioService extends UnsubscribeOnDestroyAdapter {
     return this.httpClient.delete(`${this.API_URL}/${id}`)
   }
 
+  addServiceOrderDetail(detail: any): Observable<any> {
+    return this.httpClient.post(`${this.API_URL_BASICO}/service-order-details/`, detail);
+  }
+
+  updateServiceOrderDetail(id: number, detail: any): Observable<any> {
+    return this.httpClient.put(`${this.API_URL_BASICO}/service-order-details/${id}`, detail);
+  }
+
+  deleteServiceOrderDetail(id: number) {
+    return this.httpClient.delete(`${this.API_URL_BASICO}/service-order-details/${id}`)
+  }
+
   fetchData(): void {
     this.getAllOrdenes().subscribe({
       next: (data) => {
@@ -75,6 +87,10 @@ export class OrdenesServicioService extends UnsubscribeOnDestroyAdapter {
 
   getActivesEntry(): Observable<any[]> {
     return this.httpClient.get<any[]>(`${this.API_URL}/actives-for-service-order`)
+  }
+
+  getTechnicals(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${this.API_URL_BASICO}/technicals`)
   }
 
 }

@@ -8,6 +8,8 @@ export class OrdenesServicioModel {
   capacidad: number;
   ordenEntradaId: number;
   observaciones: string;
+  activoEntradaId: number;
+  details: Detail[];
 
   constructor(ordenesServicioModel: OrdenesServicioModel) {
       this.id = ordenesServicioModel.id || 0;
@@ -19,6 +21,8 @@ export class OrdenesServicioModel {
       this.diagnosis = ordenesServicioModel.diagnosis || '';
       this.ordenEntradaId = ordenesServicioModel.ordenEntradaId || 0;
       this.observaciones = ordenesServicioModel.observaciones || '';
+      this.activoEntradaId = ordenesServicioModel.activoEntradaId || 0;
+      this.details = ordenesServicioModel.details || [];
     }
 }
 

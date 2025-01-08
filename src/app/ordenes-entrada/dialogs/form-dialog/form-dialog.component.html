@@ -41,7 +41,7 @@
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Placa del vehículo</mat-label>
             <input aria-label="placa_vehiculo" matInput formControlName="placa_vehiculo">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>pin</mat-icon>
             <mat-error *ngIf="ordenesEntradaTableForm.get('placa_vehiculo')?.hasError('required')">
               La placa del vehículo es requerida
             </mat-error>
@@ -51,21 +51,21 @@
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Entrega</mat-label>
             <input aria-label="entrega" matInput formControlName="entrega">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>local_shipping</mat-icon>
           </mat-form-field>
         </div>
         <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Recibe</mat-label>
             <input aria-label="recibe" matInput formControlName="recibe">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>email</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>directions_walk</mat-icon>
           </mat-form-field>
         </div>
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Observaciones</mat-label>
             <input aria-label="observaciones" matInput formControlName="observaciones">
-            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
+            <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>comment</mat-icon>
             <mat-error *ngIf="ordenesEntradaTableForm.get('observaciones')?.hasError('required')">
               Las observaciones no son requeridas
             </mat-error>

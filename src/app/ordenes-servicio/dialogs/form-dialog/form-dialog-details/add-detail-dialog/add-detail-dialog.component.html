@@ -1,0 +1,34 @@
+<h1 mat-dialog-title>Agregar Detalle</h1>
+<div mat-dialog-content>
+  <form [formGroup]="addDetailForm">
+    <mat-form-field class="example-full-width">
+      <mat-label>Observaciones</mat-label>
+      <input matInput formControlName="observaciones" placeholder="Ingrese observaciones">
+    </mat-form-field>
+    <mat-form-field class="example-full-width">
+      <mat-label>Estado</mat-label>
+      <mat-select formControlName="status">
+        <mat-option *ngFor="let status of statusOptions" [value]="status">
+          {{ status }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div formArrayName="technicals">
+      <div *ngFor="let technical of technicals.controls; let i = index" [formGroupName]="i">
+        <mat-form-field class="example-full-width">
+          <mat-label>Técnico</mat-label>
+          <mat-select formControlName="id">
+            <mat-option *ngFor="let tech of technicalOptions" [value]="tech.id">
+              {{ tech.name }} - {{ tech.position }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+  </form>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onNoClick()">Cancelar</button>
+  <button mat-button (click)="onSaveClick()" [disabled]="!addDetailForm.valid">Guardar</button>
+</div>

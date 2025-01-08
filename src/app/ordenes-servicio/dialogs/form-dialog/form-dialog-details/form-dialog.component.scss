@@ -36,10 +36,28 @@
   box-shadow: none !important;
 }
 
+.title-modal {
+  font-size: 30px;
+  font-weight: bold;
+  color: #2ca8ffcc;
+}
+
+.details-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.details-div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 input {
   padding: 0 !important;
   margin: 0 !important; /* Eliminar margen */
   border: none;
+
 }
 
 .mat-form-field-wrapper {
@@ -68,6 +86,70 @@ input {
 .table-responsive {
   overflow-x: auto;
 }
+
+.highlight-section {
+  background-color: #f9f9f9; /* Fondo claro */
+  border: 1px solid #ddd; /* Borde gris claro */
+  padding: 15px; /* Espaciado interno */
+  border-radius: 5px; /* Bordes redondeados */
+  margin-bottom: 20px; /* Espaciado inferior */
+}
+
+.highlight-section label {
+  font-weight: bold; /* Negrita para las etiquetas */
+  display: block; /* Asegura que las etiquetas estén sobre los datos */
+  margin-bottom: 5px; /* Espaciado inferior para las etiquetas */
+}
+
+.highlight-section div {
+  margin-bottom: 10px; /* Espaciado inferior para los datos */
+}
+
+.estado-disponible {
+  color: green;
+}
+
+.estado-no-disponible {
+  color: orange;
+}
+
+.estado-baja {
+  color: red;
+}
+
+// Tamaños de las columnas
+.table {
+  width: 100%;
+}
+
+.id-column {
+  width: 5%;
+  align-items: center;
+}
+
+.date-column {
+  width: 10%;
+}
+
+.status-column {
+  width: 15%;
+}
+
+.observaciones-column {
+  width: 40%;
+}
+
+.technical-column {
+  width: 20%;
+}
+
+.actions-column {
+  width: 10%;
+}
+
+// Fin tamaño  de las columnas
+
+
 
 @media (max-width: 1200px) {
   .table-container {

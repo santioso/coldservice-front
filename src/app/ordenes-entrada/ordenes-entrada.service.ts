@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpResponse } from '@angular/common/http';
 import { UnsubscribeOnDestroyAdapter } from '../shared/UnsubscribeOnDestroyAdapter';
 import { environment } from 'environments/environment';
 import { OrdenesEntradaModel } from './ordenes-entrada.model';
@@ -67,8 +67,11 @@ export class OrdenesEntradaService extends UnsubscribeOnDestroyAdapter {
     });
   }
 
-printOrder():  void {
-  console.log('first')
+printOrder(id: number): Observable<HttpResponse<Blob>> {
+  return this.httpClient.get(`${this.API_URL_BASICO}/reporte-orden/orden-entrada/${id}`, {
+    responseType: 'blob',
+    observe: 'response',
+  })
 }
 
 }

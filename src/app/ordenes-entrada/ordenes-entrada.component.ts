@@ -21,6 +21,7 @@ import { TableExportUtil, TableElement } from '@shared';
 import { OrdenesEntradaService } from './ordenes-entrada.service';
 import { OrdenesEntradaModel } from './ordenes-entrada.model';
 import { UtilPopupService } from '@shared/services/util-popup.service';
+import { HttpResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-ordenes-entrada',
@@ -152,11 +153,26 @@ export class OrdenesEntradaComponent
     });
   }
 
-  printOrder( row: OrdenesEntradaModel){
+  printOrder(row: OrdenesEntradaModel): void {
+    this.ordenesEntradaService.printOrder(row.id).subscribe({
+      next: (response: HttpResponse<Blob>) => {
+        console.log('response', response)
 
-
-//    reporte-orden/orden-entrada
-
+        if (response.body) {
+          const blob = new Blob([response.body], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          window.open(url, '_blank');
+          window.URL.revokeObjectURL(url);
+        } else {
+          console.error('La respuesta no contiene un cuerpo válido.');
+          this.utilPopupService.mostrarMensaje('Hubo un problema al imprimir la orden', 'error', 'Error de impresión', false);
+        }
+      },
+      error: (error) => {
+        console.error('Error al imprimir la orden:', error);
+        this.utilPopupService.mostrarMensaje('Hubo un problema al imprimir la orden', 'error', 'Error de impresión', false);
+      }
+    });
   }
 
 

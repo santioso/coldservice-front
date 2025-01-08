@@ -34,8 +34,8 @@ export class FormDialogComponent implements OnInit {
   ordenesServicioModel: OrdenesServicioModel;
   soloLectura: boolean;
   displayedColumns: string[] = ['dateStart', 'activoId', 'descripcion', 'capacidad', 'diagnosis', 'status', 'observaciones', 'actions'];
-  statusService: any = [];
-  activosEntrada: any[] = [];
+  statusService: { id: string, value: string }[] = [];
+  activosEntrada: { id: number, descripcion: string, value: string, capacidad: string }[] = [];
 
   constructor(
     public dialogRef: MatDialogRef<FormDialogComponent>,
@@ -47,7 +47,7 @@ export class FormDialogComponent implements OnInit {
   ) {
     this.action = data.action;
     if (this.action === 'edit') {
-      this.dialogTitle = 'Orden de servicio No. ' + data.ordenesServicioModel.id;
+      this.dialogTitle = 'Editar orden de servicio No. ' + data.ordenesServicioModel.id;
       this.ordenesServicioModel = data.ordenesServicioModel;
       this.soloLectura = true;
     } else {
@@ -68,6 +68,11 @@ export class FormDialogComponent implements OnInit {
     console.log('data', this.data);
     this.loadActivosEntrada();
     this.loadStatus();
+    this.onActivoEntradaIdChange();
+    this.ordenesServicioTableForm.get('status')?.disable();
+    this.ordenesServicioTableForm.get('descripcion')?.disable();
+    this.ordenesServicioTableForm.get('capacidad')?.disable();
+    this.ordenesServicioTableForm.get('observaciones')?.disable();
   }
 
   loadActivosEntrada(): void {
@@ -75,9 +80,8 @@ export class FormDialogComponent implements OnInit {
       next: (data) => {
         const activos = data;
         this.activosEntrada = activos.map((x) => {
-          return { id: x.activo_entrada_id, descripcion: x.activo_id, value: x.descripcion };
+          return { id: x.activo_entrada_id, descripcion: x.descripcion, value: x.activo_id, capacidad: x.capacidad };
         });
-        console.log('this.activosEntrada', this.activosEntrada)
       },
     })
   }
@@ -112,11 +116,11 @@ export class FormDialogComponent implements OnInit {
     console.log('this.ordenesServicioModel', this.ordenesServicioModel)
     return this.fb.group({
         id: [this.ordenesServicioModel.id, Validators.required],
-        dateStart: [this.ordenesServicioModel.dateStart, Validators.required],
-        activoEntradaId: [this.ordenesServicioModel.activoId, Validators.required],
+        dateStart: [this.ordenesServicioModel.dateStart || new Date(), Validators.required],
+        activoEntradaId: [this.ordenesServicioModel.activoEntradaId, Validators.required],
         descripcion: [this.ordenesServicioModel.descripcion],
         diagnosis: [this.ordenesServicioModel.diagnosis, Validators.required],
-        status: [this.ordenesServicioModel.status, Validators.required],
+        status: [this.ordenesServicioModel.status || 'Pendiente diagnóstico', Validators.required],
         capacidad: [this.ordenesServicioModel.capacidad],
         ordenEntradaId: [this.ordenesServicioModel.ordenEntradaId],
         observaciones: [this.ordenesServicioModel.observaciones],
@@ -125,6 +129,16 @@ export class FormDialogComponent implements OnInit {
 
   onNoClick(): void {
     this.dialogRef.close();
+  }
+
+  onActivoEntradaIdChange(): void {
+    this.ordenesServicioTableForm.get('activoEntradaId')?.valueChanges.subscribe((value) => {
+      const activo = this.activosEntrada.find((x) => x.id === value);
+      if (activo) {
+        this.ordenesServicioTableForm.get('descripcion')?.setValue(activo.descripcion);
+        this.ordenesServicioTableForm.get('capacidad')?.setValue(activo.capacidad);
+      }
+    });
   }
 
   public confirmAdd(): void {
