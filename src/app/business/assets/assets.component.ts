@@ -56,7 +56,6 @@ export class AssetsComponent
     const input = event.target as HTMLInputElement;
     if (input) {
       const filterValue = input.value.trim().toLowerCase();
-      console.log('Applying filter:', filterValue);
       this.dataSource.filter = filterValue;
 
       if (this.dataSource.paginator) {
@@ -99,7 +98,6 @@ export class AssetsComponent
       tempDirection = 'ltr';
     }
     await this.getLastId();
-    console.log('this.lastId', this.lastId);
     const dialogRef = this.dialog.open(FormDialogComponent, {
       data: {
         assetData: this.dataSource,
@@ -127,7 +125,6 @@ export class AssetsComponent
   }
 
   editCall(row: AssetModel) {
-    console.log('row', row)
     this.id = row.id;
 
     const tempDirection: Direction = localStorage.getItem('isRtl') === 'true' ? 'rtl' : 'ltr';
@@ -207,7 +204,6 @@ export class AssetsComponent
   getLastId() {
     this.dataSource.data.sort((a, b) => b.id - a.id);
     this.lastId = this.dataSource.data[0].id;
-    console.log('this.lastId', this.lastId)
   }
 
   private refreshTable() {

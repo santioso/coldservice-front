@@ -20,6 +20,9 @@
     "SERVICE-ORDER": {
       "TEXT": "Órden de servicio"
     },
+    "ENTRY-EXIT": {
+      "TEXT": "Órden de salida"
+    },
     "DASHBOARD": {
       "TEXT": "Casa",
       "LIST": {

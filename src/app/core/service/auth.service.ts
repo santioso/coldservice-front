@@ -40,7 +40,6 @@ export class AuthService {
             localStorage.setItem('currentUser', JSON.stringify(userdata));
             localStorage.setItem('access_token', access_token);
             this.currentUserSubject.next(decodedUserdata);
-          console.log('user', decodedUserdata)
           }
           return decodedUserdata;
         })

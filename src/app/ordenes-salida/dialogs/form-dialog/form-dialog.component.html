@@ -12,16 +12,16 @@
     </button>
   </div>
   <div mat-dialog-content class="dialogo">
-    <form class="register-form mx-4 my-2" [formGroup]="ordenesEntradaTableForm" (ngSubmit)="submit()">
+    <form class="register-form mx-4 my-2" [formGroup]="ordenesSalidaTableForm">
 
       <div class="row">
         <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Fecha</mat-label>
-            <input aria-label="Fecha" matInput [matDatepicker]="picker" formControlName="fecha" required>
+            <input matInput [matDatepicker]="picker" formControlName="fecha" aria-label="Fecha" required>
             <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-datepicker #picker></mat-datepicker>
-            <mat-error *ngIf="ordenesEntradaTableForm.get('fecha')?.hasError('required')">
+            <mat-error *ngIf="ordenesSalidaTableForm.get('fecha')?.hasError('required')">
               La fecha del orden es obligatoria
             </mat-error>
           </mat-form-field>
@@ -32,7 +32,7 @@
             <mat-label>Placa del vehículo</mat-label>
             <input aria-label="placa_vehiculo" matInput formControlName="placa_vehiculo">
             <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>pin</mat-icon>
-            <mat-error *ngIf="ordenesEntradaTableForm.get('placa_vehiculo')?.hasError('required')">
+            <mat-error *ngIf="ordenesSalidaTableForm.get('placa_vehiculo')?.hasError('required')">
               La placa del vehículo es requerida
             </mat-error>
           </mat-form-field>
@@ -54,22 +54,23 @@
           </mat-form-field>
         </div>
 
+
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Observaciones</mat-label>
             <input aria-label="observaciones" matInput formControlName="observaciones">
             <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>comment</mat-icon>
-            <mat-error *ngIf="ordenesEntradaTableForm.get('observaciones')?.hasError('required')">
+            <mat-error *ngIf="ordenesSalidaTableForm.get('observaciones')?.hasError('required')">
               Las observaciones no son requeridas
             </mat-error>
           </mat-form-field>
         </div>
       </div>
 
-      <div formArrayName="activosEntrada" class="">
+      <div formArrayName="activosSalida" class="">
         <div class="table-responsive">
           <div class="table-container">
-            <div class="table-row header">
+            <div class="table-row header border-2 border-black border-solid">
               <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Placa</div>
               <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">Descripción</div>
               <div class="table-cell col-xl-1 col-lg-1 col-md-4 col-sm-6">Pies</div>
@@ -77,13 +78,19 @@
               <div class="table-cell col-xl-5 col-lg-4 col-md-12 col-sm-12">Observaciones</div>
             </div>
 
-            <div *ngFor="let activo of activosEntrada.controls; let i = index" [formGroupName]="i"
+            <div *ngFor="let activo of activosSalida.controls; let i = index" [formGroupName]="i"
               class="table-row my-0">
-              <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
-                <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
-                  <input aria-label="id" matInput formControlName="id" class="no-margin no-border" (blur)="onIdBlur(i)">
-                </mat-form-field>
-              </div>
+              <mat-form-field class="example-full-width">
+                <mat-label>Activo</mat-label>
+                <mat-select formControlName="idEntrada" (selectionChange)="onIdBlur(i)">
+                  <mat-option *ngFor="let activo of activosEnOrdenEntrada" [value]="activo.idEntrada">
+                    {{ activo.idActivo }}
+                  </mat-option>
+                </mat-select>
+                <mat-error *ngIf="activo.get('idEntrada')?.hasError('required')">
+                  El activo es obligatorio
+                </mat-error>
+              </mat-form-field>
               <div class="table-cell col-xl-2 col-lg-2 col-md-4 col-sm-6">
                 <mat-form-field class="example-full-width no-margin no-border" appearance="outline">
                   <input aria-label="descripcion" matInput formControlName="descripcion" class="no-margin no-border">
@@ -115,7 +122,7 @@
       <div class="row">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
           <div class="example-button-row">
-            <button type="button" mat-raised-button color="primary" [disabled]="!ordenesEntradaTableForm.valid"
+            <button type="button" mat-raised-button color="primary" [disabled]="!ordenesSalidaTableForm.valid || !activoValid"
               [mat-dialog-close]="1" (click)="confirmAdd()">Guardar</button>
             <button type="button" mat-raised-button color="warn" (click)="onNoClick()" tabindex="-1">Cancelar</button>
           </div>

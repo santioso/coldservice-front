@@ -58,7 +58,6 @@ export class ClientsComponent
     const input = event.target as HTMLInputElement;
     if (input) {
       const filterValue = input.value.trim().toLowerCase();
-      console.log('Applying filter:', filterValue);
       this.dataSource.filter = filterValue;
 
       if (this.dataSource.paginator) {
@@ -101,7 +100,6 @@ export class ClientsComponent
       tempDirection = 'ltr';
     }
     await this.getLastId();
-    console.log('this.lastId', this.lastId);
     const dialogRef = this.dialog.open(FormDialogClientComponent, {
       data: {
         clientData: this.dataSource,
@@ -129,7 +127,6 @@ export class ClientsComponent
   }
 
   editCall(row: ClientModel) {
-    console.log('row', row)
     this.id = row.id;
 
     const tempDirection: Direction = localStorage.getItem('isRtl') === 'true' ? 'rtl' : 'ltr';
@@ -261,8 +258,6 @@ export class ClientsComponent
   }
 
   removeSelectedRows() {
-    console.log('delete')
-    console.log('5',  - 3 )
   }
 
 

@@ -125,7 +125,6 @@ export class OrdenesServicioComponent
     this.statusService = status.map((x: any) => {
       return { id: x, value: x };
     });
-    console.log('statusService', this.statusService);
     return this.statusService;
   }
 
@@ -194,7 +193,6 @@ export class OrdenesServicioComponent
       } else {
         tempDirection = 'ltr';
       }
-      console.log('ordenesServicio', ordenServicio);
       const dialogRef = this.dialog.open(FormDialogComponent, {
         data: {
           ordenesServicioModel: ordenServicio,
@@ -222,7 +220,6 @@ export class OrdenesServicioComponent
       } else {
         tempDirection = 'ltr';
       }
-      console.log('ordenesServicio', ordenServicio);
       const dialogRef = this.dialog.open(FormDialogDetailsComponent, {
         data: {
           ordenesServicioModel: ordenServicio,
@@ -252,7 +249,6 @@ export class OrdenesServicioComponent
       direction: tempDirection,
     });
     this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
-      console.log(result)
       this.loadData();
     });
   }
@@ -274,7 +270,6 @@ export class OrdenesServicioComponent
   }
 
   printOrder(row: OrdenesServicioModel) {
-    console.log(row); 
     //    reporte-orden/orden-entrada
   }
 

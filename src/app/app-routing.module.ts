@@ -38,6 +38,13 @@ const routes: Routes = [
           ),
       },
       {
+        path: 'orden-salida',
+        loadChildren: () =>
+          import('./ordenes-salida/ordenes-salida.module').then(
+            (m) => m.OrdenesSalidaModule
+          ),
+      },
+      {
         path: 'advance-table',
         loadChildren: () =>
           import('./advance-table/advance-table.module').then(

@@ -7,7 +7,7 @@ import { environment } from 'environments/environment';
 
 @Injectable()
 export class ActivosService extends UnsubscribeOnDestroyAdapter {
-  private readonly API_URL = `${environment.apiUrl}/activos`; 
+  private readonly API_URL = `${environment.apiUrl}/activos`;
   isTblLoading = true;
   dataChange: BehaviorSubject<ActivosModel[]> = new BehaviorSubject<ActivosModel[]>([]);
   // Temporarily stores data from dialogs
@@ -45,7 +45,6 @@ export class ActivosService extends UnsubscribeOnDestroyAdapter {
   }
 
   deleteActivos(id: string): Observable<string> {
-    console.log(id);
     return this.httpClient.delete<string>(`${this.API_URL}/${id}`)
   }
 

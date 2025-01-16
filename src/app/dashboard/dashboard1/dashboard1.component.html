@@ -5,7 +5,7 @@
       <app-breadcrumb [title]="'Dashboard'" [items]="['Home']" [active_item]="'Dashboard'"></app-breadcrumb>
     </div>
     <div class="row">
-      <div class="col-md-6 col-xl-3">
+      <div class="col-md-6 col-xl-4">
         <div class="card info-card">
           <div class="info-box8">
             <i class="material-icons bg-purple card1-icon">system_update_alt</i>
@@ -18,7 +18,20 @@
           </div>
         </div>
       </div>
-      <div class="col-md-6 col-xl-3">
+      <div class="col-md-6 col-xl-4">
+        <div class="card info-card">
+          <div class="info-box8">
+            <i class="material-icons bg-green card1-icon">output</i>
+            <h5 class="col-green">Total órdenes de salida</h5>
+            <h4>{{totalOutputs}}</h4>
+            <div>
+              <i class="material-icons col-green float-start me-1 ms-1">trending_up</i>
+              <p class="float-start m-0"><span class="col-green">25%</span> Increase
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-4">
         <div class="card info-card">
           <div class="info-box8">
             <i class="material-icons bg-orange card1-icon">view_in_ar</i>
@@ -92,18 +105,18 @@
                   <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
                 </ng-template>
                 <h5 class="m-b-0">{{chart3Stats.totalWeek}}</h5>
-                <p class="text-muted font-14 m-b-0">Órdenes esta semana</p>
+                <p class="text-muted font-14 m-b-0">Esta semana</p>
 
               </li>
               <li class="list-inline-item p-r-30" *ngIf="chart3Stats">
-              <ng-container *ngIf="chart3Stats.currentMonth; else downIcon">
-                <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
-              </ng-container>
-              <ng-template #downIcon>
-                <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
-              </ng-template>
-              <h5 class="m-b-0">{{chart3Stats.totalMonth}}</h5>
-              <p class="text-muted font-14 m-b-0">Órdenes este mes</p>
+                <ng-container *ngIf="chart3Stats.currentMonth; else downIcon">
+                  <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                </ng-container>
+                <ng-template #downIcon>
+                  <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                </ng-template>
+                <h5 class="m-b-0">{{chart3Stats.totalMonth}}</h5>
+                <p class="text-muted font-14 m-b-0">Este mes</p>
               </li>
               <li class="list-inline-item p-r-30" *ngIf="chart3Stats">
                 <ng-container *ngIf="chart3Stats.currentYear; else downIcon">
@@ -113,7 +126,7 @@
                   <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
                 </ng-template>
                 <h5 class="mb-0 m-b-0">{{chart3Stats.totalYear}}</h5>
-                <p class="text-muted font-14 m-b-0">Órdenes este año</p>
+                <p class="text-muted font-14 m-b-0">Este año</p>
               </li>
             </ul>
             <div *ngIf="earningOptions?.series">
@@ -127,7 +140,80 @@
           </div>
         </div>
       </div>
-      <!-- <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
+
+      <div class="row ">
+        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+          <div class="card">
+            <div class="header">
+              <h2>Órdenes de salida</h2>
+              <button mat-icon-button [matMenuTriggerFor]="menu" class="header-dropdown">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #menu="matMenu">
+                <button mat-menu-item>
+                  <mat-icon>add_circle_outline</mat-icon>
+                  <span>Add</span>
+                </button>
+                <button mat-menu-item disabled>
+                  <mat-icon>delete_outline</mat-icon>
+                  <span>Delete</span>
+                </button>
+                <button mat-menu-item>
+                  <mat-icon>refresh</mat-icon>
+                  <span>Refresh</span>
+                </button>
+              </mat-menu>
+            </div>
+            <div class="body p-5">
+              <ul class="list-inline text-center m-b-0">
+                <li class="list-inline-item p-r-30" *ngIf="chart3OutputsStats">
+                  <ng-container *ngIf="chart3OutputsStats.currentWeek; else downIcon">
+                    <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                  </ng-container>
+                  <ng-template #downIcon>
+                    <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                  </ng-template>
+                  <h5 class="m-b-0">{{chart3OutputsStats.totalWeek}}</h5>
+                  <p class="text-muted font-14 m-b-0">Esta semana</p>
+
+                </li>
+                <li class="list-inline-item p-r-30" *ngIf="chart3OutputsStats">
+                  <ng-container *ngIf="chart3OutputsStats.currentMonth; else downIcon">
+                    <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                  </ng-container>
+                  <ng-template #downIcon>
+                    <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                  </ng-template>
+                  <h5 class="m-b-0">{{chart3OutputsStats.totalMonth}}</h5>
+                  <p class="text-muted font-14 m-b-0">Este mes</p>
+                </li>
+                <li class="list-inline-item p-r-30" *ngIf="chart3OutputsStats">
+                  <ng-container *ngIf="chart3OutputsStats.currentYear; else downIcon">
+                    <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                  </ng-container>
+                  <ng-template #downIcon>
+                    <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                  </ng-template>
+                  <h5 class="mb-0 m-b-0">{{chart3OutputsStats.totalYear}}</h5>
+                  <p class="text-muted font-14 m-b-0">Este año</p>
+                </li>
+              </ul>
+              <div *ngIf="earningOptions?.series">
+                <apx-chart [series]="earningOptions.series!" [chart]="earningOptions.chart!"
+                  [xaxis]="earningOptions.xaxis!" [stroke]="earningOptions.stroke!" [tooltip]="earningOptions.tooltip!"
+                  [dataLabels]="earningOptions.dataLabels!" [legend]="earningOptions.legend!"
+                  [markers]="earningOptions.markers!" [grid]="earningOptions.grid!" [yaxis]="earningOptions.yaxis!"
+                  [title]="earningOptions.title!">
+                </apx-chart>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+
+        <!-- <div class="col-xs-12 col-sm-12 col-md-4 col-lg-4">
         <div class="card">
           <div class="header">
             <h2>Transactions</h2>
@@ -224,72 +310,74 @@
           </div>
         </div>
       </div> -->
-    </div>
+      </div>
 
-    <div class="row ">
-      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-        <div class="card">
-          <div class="header">
-            <h2>Activos</h2>
-            <button mat-icon-button [matMenuTriggerFor]="menu" class="header-dropdown">
-              <mat-icon>more_vert</mat-icon>
-            </button>
-            <mat-menu #menu="matMenu">
-              <button mat-menu-item>
-                <mat-icon>add_circle_outline</mat-icon>
-                <span>Add</span>
+      <div class="row ">
+        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+          <div class="card">
+            <div class="header">
+              <h2>Activos</h2>
+              <button mat-icon-button [matMenuTriggerFor]="menu" class="header-dropdown">
+                <mat-icon>more_vert</mat-icon>
               </button>
-              <button mat-menu-item disabled>
-                <mat-icon>delete_outline</mat-icon>
-                <span>Delete</span>
-              </button>
-              <button mat-menu-item>
-                <mat-icon>refresh</mat-icon>
-                <span>Refresh</span>
-              </button>
-            </mat-menu>
-          </div>
-          <div class="body p-5">
-            <ul class="list-inline text-center m-b-0">
-              <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
-                <ng-container *ngIf="chart3ActivesStats.currentWeek; else downIcon">
-                  <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
-                </ng-container>
-                <ng-template #downIcon>
-                  <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
-                </ng-template>
-                <h5 class="m-b-0">{{chart3ActivesStats.totalWeek}}</h5>
-                <p class="text-muted font-14 m-b-0">Activos esta semana</p>
+              <mat-menu #menu="matMenu">
+                <button mat-menu-item>
+                  <mat-icon>add_circle_outline</mat-icon>
+                  <span>Add</span>
+                </button>
+                <button mat-menu-item disabled>
+                  <mat-icon>delete_outline</mat-icon>
+                  <span>Delete</span>
+                </button>
+                <button mat-menu-item>
+                  <mat-icon>refresh</mat-icon>
+                  <span>Refresh</span>
+                </button>
+              </mat-menu>
+            </div>
+            <div class="body p-5">
+              <ul class="list-inline text-center m-b-0">
+                <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
+                  <ng-container *ngIf="chart3ActivesStats.currentWeek; else downIcon">
+                    <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                  </ng-container>
+                  <ng-template #downIcon>
+                    <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                  </ng-template>
+                  <h5 class="m-b-0">{{chart3ActivesStats.totalWeek}}</h5>
+                  <p class="text-muted font-14 m-b-0">Activos esta semana</p>
 
-              </li>
-              <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
-              <ng-container *ngIf="chart3ActivesStats.currentMonth; else downIcon">
-                <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
-              </ng-container>
-              <ng-template #downIcon>
-                <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
-              </ng-template>
-              <h5 class="m-b-0">{{chart3ActivesStats.totalMonth}}</h5>
-              <p class="text-muted font-14 m-b-0">Activos este mes</p>
-              </li>
-              <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
-                <ng-container *ngIf="chart3ActivesStats.currentYear; else downIcon">
-                  <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
-                </ng-container>
-                <ng-template #downIcon>
-                  <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
-                </ng-template>
-                <h5 class="mb-0 m-b-0">{{chart3ActivesStats.totalYear}}</h5>
-                <p class="text-muted font-14 m-b-0">Activos este año</p>
-              </li>
-            </ul>
-            <div *ngIf="earningOptionsActives?.series">
-              <apx-chart [series]="earningOptionsActives.series!" [chart]="earningOptionsActives.chart!"
-                [xaxis]="earningOptionsActives.xaxis!" [stroke]="earningOptionsActives.stroke!" [tooltip]="earningOptionsActives.tooltip!"
-                [dataLabels]="earningOptionsActives.dataLabels!" [legend]="earningOptionsActives.legend!"
-                [markers]="earningOptionsActives.markers!" [grid]="earningOptionsActives.grid!" [yaxis]="earningOptionsActives.yaxis!"
-                [title]="earningOptionsActives.title!">
-              </apx-chart>
+                </li>
+                <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
+                  <ng-container *ngIf="chart3ActivesStats.currentMonth; else downIcon">
+                    <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                  </ng-container>
+                  <ng-template #downIcon>
+                    <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                  </ng-template>
+                  <h5 class="m-b-0">{{chart3ActivesStats.totalMonth}}</h5>
+                  <p class="text-muted font-14 m-b-0">Activos este mes</p>
+                </li>
+                <li class="list-inline-item p-r-30" *ngIf="chart3ActivesStats">
+                  <ng-container *ngIf="chart3ActivesStats.currentYear; else downIcon">
+                    <app-feather-icons [icon]="'arrow-up-circle'" [class]="'col-green'"></app-feather-icons>
+                  </ng-container>
+                  <ng-template #downIcon>
+                    <app-feather-icons [icon]="'arrow-down-circle'" [class]="'col-orange'"></app-feather-icons>
+                  </ng-template>
+                  <h5 class="mb-0 m-b-0">{{chart3ActivesStats.totalYear}}</h5>
+                  <p class="text-muted font-14 m-b-0">Activos este año</p>
+                </li>
+              </ul>
+              <div *ngIf="earningOptionsActives?.series">
+                <apx-chart [series]="earningOptionsActives.series!" [chart]="earningOptionsActives.chart!"
+                  [xaxis]="earningOptionsActives.xaxis!" [stroke]="earningOptionsActives.stroke!"
+                  [tooltip]="earningOptionsActives.tooltip!" [dataLabels]="earningOptionsActives.dataLabels!"
+                  [legend]="earningOptionsActives.legend!" [markers]="earningOptionsActives.markers!"
+                  [grid]="earningOptionsActives.grid!" [yaxis]="earningOptionsActives.yaxis!"
+                  [title]="earningOptionsActives.title!">
+                </apx-chart>
+              </div>
             </div>
           </div>
         </div>

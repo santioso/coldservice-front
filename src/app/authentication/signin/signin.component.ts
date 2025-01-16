@@ -50,9 +50,6 @@ export class SigninComponent
     const username = this.f['username'].value;
     const password = this.f['password'].value;
 
-    console.log('username', username)
-    console.log('password', password)
-
     this.subs.sink = this.authService.login(username, password).subscribe({
       next: (user) => {
         if (user && user.access_token) {

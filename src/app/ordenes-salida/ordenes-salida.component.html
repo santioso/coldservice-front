@@ -1,0 +1,168 @@
+<section class="content">
+  <div class="content-block">
+    <div class="block-header">
+      <app-breadcrumb [title]="'Ordenes de Salida'" [items]="['Inicio']"
+        [active_item]="'Órdenes de salida'"></app-breadcrumb>
+    </div>
+    <div class="alert alert-info">
+      Este componente administra las salidas de los activos
+      permite:<br><br>
+      <ul class="fa-ul">
+        <li class="font-15"><span class="fa-li"><i class="fas fa-angle-double-right"></i></span>Agregar, editar y
+          eliminar las órdenes de salidas </li>
+        <li class="font-15"><span class="fa-li"><i class="fas fa-angle-double-right"></i></span>Exportar todos las
+          órdenes de salida a un archivo de excel</li>
+      </ul>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+        <div class="card">
+          <div class="materialTableHeader">
+            <div class="left">
+              <ul class="header-buttons-left ms-0">
+                <li class="tbl-title">
+                  <h2>Órdenes de salida</h2>
+                </li>
+                <li class="tbl-search-box">
+                  <label for="search-input"><i class="material-icons search-icon">search</i></label>
+                  <input placeholder="Buscar" type="text" #filter class="browser-default search-field"
+                    aria-label="Search box">
+                </li>
+              </ul>
+            </div>
+            <div class="right">
+              <ul class="tbl-export-btn">
+                <li class="tbl-header-btn">
+                  <div class="m-l-10" matTooltip="AGREGAR">
+                    <button mat-mini-fab color="primary" (click)="addNew()">
+                      <mat-icon class="col-white">add</mat-icon>
+                    </button>
+                  </div>
+                </li>
+                <li class="tbl-header-btn">
+                  <div class="m-l-10" matTooltip="ACTUALIZAR">
+                    <button mat-mini-fab color="primary" (click)="refresh()">
+                      <mat-icon class="col-white">refresh</mat-icon>
+                    </button>
+                  </div>
+                </li>
+                <li class="tbl-header-btn">
+                  <div class="m-l-10" [hidden]="!selection.hasValue()" matTooltip="ELIMINAR">
+                    <button mat-mini-fab color="warn" (click)="removeSelectedRows()">
+                      <mat-icon class="col-white">delete</mat-icon>
+                    </button>
+                  </div>
+                </li>
+                <li>
+                  <div class="export-button m-l-10" matTooltip="XLSX">
+                    <img src="assets/images/icons/xlsx.png" alt="" (click)="exportExcel()" />
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+
+
+
+
+      <div class="body overflow-auto">
+        <div class="table-responsive">
+
+          <table mat-table #table [dataSource]="dataSource" matSort class="table mat-cell">
+            <!-- Checkbox Column -->
+            <ng-container matColumnDef="select">
+              <mat-header-cell *matHeaderCellDef [ngClass]="'tbl-col-width-per-6'">
+                <mat-checkbox (change)="$event ? masterToggle() : null"
+                  [checked]="selection.hasValue() && isAllSelected()"
+                  [indeterminate]="selection.hasValue() && !isAllSelected()" [ngClass]="'tbl-checkbox'">
+                </mat-checkbox>
+              </mat-header-cell>
+              <mat-cell *matCellDef="let row" [ngClass]="'tbl-col-width-per-6'">
+                <mat-checkbox (click)="$event.stopPropagation()" (change)="$event ? selection.toggle(row) : null"
+                  [checked]="selection.isSelected(row)" [ngClass]="'tbl-checkbox'">
+                </mat-checkbox>
+              </mat-cell>
+            </ng-container>
+
+            <!-- Columnas de la tabla -->
+            <ng-container matColumnDef="id">
+              <mat-header-cell *matHeaderCellDef> ID </mat-header-cell>
+              <mat-cell *matCellDef="let element"> {{element.id}} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="fecha">
+              <mat-header-cell *matHeaderCellDef> Fecha </mat-header-cell>
+              <mat-cell *matCellDef="let element"> {{element.fecha}} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="placa_vehiculo">
+              <mat-header-cell *matHeaderCellDef> Placa Vehículo </mat-header-cell>
+              <mat-cell *matCellDef="let element"> {{element.placa_vehiculo}} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="observaciones">
+              <mat-header-cell *matHeaderCellDef> Observaciones </mat-header-cell>
+              <mat-cell *matCellDef="let element"> {{element.observaciones}} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="entrega">
+              <mat-header-cell *matHeaderCellDef> Entrega </mat-header-cell>
+              <mat-cell *matCellDef="let element"> {{element.entrega}} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="recibe">
+              <mat-header-cell *matHeaderCellDef> Recibe </mat-header-cell>
+              <mat-cell *matCellDef="let element"> {{element.recibe}} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="cantidad_activos">
+              <mat-header-cell *matHeaderCellDef> Cantidad Activos </mat-header-cell>
+              <mat-cell *matCellDef="let element"> {{element.cantidad_activos}} </mat-cell>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <mat-header-cell *matHeaderCellDef> Acciones </mat-header-cell>
+              <mat-cell *matCellDef="let element">
+                <button aria-label="editar" mat-icon-button color="accent" (click)="$event.stopPropagation()"
+                      (click)="editCall(element)" class="tbl-action-btn">
+                      <app-feather-icons [icon]="'edit'" [class]="'tbl-fav-edit'"></app-feather-icons>
+                    </button>
+                <button aria-label="borrar" mat-icon-button color="accent" (click)="$event.stopPropagation()"
+                      (click)="deleteItem(element)" class="tbl-action-btn">
+                      <app-feather-icons [icon]="'trash-2'" [class]="'tbl-fav-delete'"></app-feather-icons>
+                    </button>
+                <button aria-label="Imprimir" mat-icon-button color="accent" (click)="$event.stopPropagation()"
+                      (click)="printOrder(element)" class="tbl-action-btn">
+                      <app-feather-icons [icon]="'printer'" [class]="'tbl-fav-print'"></app-feather-icons>
+                    </button>
+
+              </mat-cell>
+            </ng-container>
+
+            <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+          </table>
+        </div>
+        <!-- Loading spinner -->
+        <div *ngIf="ordenesSalidaService.isTblLoading" class="tbl-spinner">
+          <mat-progress-spinner color="primary" [diameter]="40" mode="indeterminate">
+          </mat-progress-spinner>
+        </div>
+        <!-- context menu start -->
+        <div *ngIf="!ordenesSalidaService.isTblLoading" class="no-results"
+              [style.display]="dataSource.renderedData.length === 0 ? '' : 'none'">
+              No hay resultados
+            </div>
+            <mat-paginator #paginator [length]="dataSource.filteredData.length" [pageIndex]="0" [pageSize]="10"
+              [pageSizeOptions]="[5, 10, 25, 100]">
+            </mat-paginator>
+      </div>
+    </div>
+  </div>
+</section>

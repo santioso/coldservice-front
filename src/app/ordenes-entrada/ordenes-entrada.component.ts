@@ -1,4 +1,10 @@
-import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator } from '@angular/material/paginator';
@@ -9,8 +15,16 @@ import {
   MatSnackBarHorizontalPosition,
   MatSnackBarVerticalPosition,
 } from '@angular/material/snack-bar';
-import { BehaviorSubject, firstValueFrom, fromEvent, merge, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import {
+  BehaviorSubject,
+  firstValueFrom,
+  forkJoin,
+  fromEvent,
+  merge,
+  Observable,
+  of,
+} from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { FormDialogComponent } from './dialogs/form-dialog/form-dialog.component';
 import { DeleteDialogComponent } from './dialogs/delete/delete.component';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
@@ -27,14 +41,17 @@ import { HttpResponse } from '@angular/common/http';
   selector: 'app-ordenes-entrada',
   templateUrl: './ordenes-entrada.component.html',
   styleUrls: ['./ordenes-entrada.component.scss'],
-  providers: [{
-    provide: MAT_DATE_LOCALE,
-    useValue: 'es-CO'
-  }],
+  providers: [
+    {
+      provide: MAT_DATE_LOCALE,
+      useValue: 'es-CO',
+    },
+  ],
 })
 export class OrdenesEntradaComponent
   extends UnsubscribeOnDestroyAdapter
-  implements OnInit {
+  implements OnInit
+{
   displayedColumns = [
     'select',
     'id',
@@ -59,7 +76,7 @@ export class OrdenesEntradaComponent
     public ordenesEntradaService: OrdenesEntradaService,
     private readonly snackBar: MatSnackBar,
     private readonly cdr: ChangeDetectorRef,
-    private readonly utilPopupService: UtilPopupService,
+    private readonly utilPopupService: UtilPopupService
   ) {
     super();
   }
@@ -69,6 +86,7 @@ export class OrdenesEntradaComponent
   @ViewChild(MatMenuTrigger)
   contextMenu?: MatMenuTrigger;
   contextMenuPosition = { x: '0px', y: '0px' };
+
   ngOnInit() {
     this.loadData();
     this.loadOrdenesEntrada();
@@ -80,10 +98,12 @@ export class OrdenesEntradaComponent
 
   loadOrdenesEntrada(): void {
     this.ordenesEntradaService.fetchData();
-    this.ordenesEntradaService.dataChange.subscribe((data: OrdenesEntradaModel[]) => {
-      this.ordenesEntrada = data;
-      this.cdr.detectChanges(); // Fuerza una nueva verificación de cambios
-    });
+    this.ordenesEntradaService.dataChange.subscribe(
+      (data: OrdenesEntradaModel[]) => {
+        this.ordenesEntrada = data;
+        this.cdr.detectChanges(); // Fuerza una nueva verificación de cambios
+      }
+    );
   }
 
   addNew() {
@@ -104,16 +124,23 @@ export class OrdenesEntradaComponent
     });
     this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
       if (result === 1) {
-        this.ordenesEntradaService.addOrden(this.ordenesEntradaService.getDialogData()).subscribe(() => {
-          this.loadData();
-          this.utilPopupService.mostrarMensaje(`La orden de entrada se guardó correctamente`, 'success', 'Orden de entrada guardada', false);
-          this.showNotification(
-            'snackbar-success',
-            'Add Record Successfully...!!!',
-            'bottom',
-            'center'
-          );
-        });
+        this.ordenesEntradaService
+          .addOrden(this.ordenesEntradaService.getDialogData())
+          .subscribe(() => {
+            this.loadData();
+            this.utilPopupService.mostrarMensaje(
+              `La orden de entrada se guardó correctamente`,
+              'success',
+              'Orden de entrada guardada',
+              false
+            );
+            this.showNotification(
+              'snackbar-success',
+              'Add Record Successfully...!!!',
+              'bottom',
+              'center'
+            );
+          });
       }
     });
   }
@@ -122,42 +149,48 @@ export class OrdenesEntradaComponent
     const ordenesEntrada = null;
     this.id = row.id;
 
-    firstValueFrom(this.ordenesEntradaService.getOrdenById(this.id))
-    .then((ordenesEntrada) => {
-      let tempDirection: Direction;
-      if (localStorage.getItem('isRtl') === 'true') {
-        tempDirection = 'rtl';
-      } else {
-        tempDirection = 'ltr';
-      }
-
-      const dialogRef = this.dialog.open(FormDialogComponent, {
-        data: {
-          ordenesEntradaModel: ordenesEntrada,
-          action: 'edit',
-        },
-        direction: tempDirection,
-        width: '80%',
-        height: '95%',
-      });
-
-      this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
-        if (result === 1) {
-          // When using an edit things are little different, firstly we find record inside DataService by id
-          this.ordenesEntradaService.updateOrden(this.ordenesEntradaService.getDialogData()).subscribe(() => {
-            this.loadData();
-            this.utilPopupService.mostrarMensaje(`La orden de entrada número ${this.id} se editó correctamente`, 'success', 'Orden de entrada modificada', false);
-          });
+    firstValueFrom(this.ordenesEntradaService.getOrdenById(this.id)).then(
+      (ordenesEntrada) => {
+        let tempDirection: Direction;
+        if (localStorage.getItem('isRtl') === 'true') {
+          tempDirection = 'rtl';
+        } else {
+          tempDirection = 'ltr';
         }
-      });
-    });
+
+        const dialogRef = this.dialog.open(FormDialogComponent, {
+          data: {
+            ordenesEntradaModel: ordenesEntrada,
+            action: 'edit',
+          },
+          direction: tempDirection,
+          width: '80%',
+          height: '95%',
+        });
+
+        this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
+          if (result === 1) {
+            // When using an edit things are little different, firstly we find record inside DataService by id
+            this.ordenesEntradaService
+              .updateOrden(this.ordenesEntradaService.getDialogData())
+              .subscribe(() => {
+                this.loadData();
+                this.utilPopupService.mostrarMensaje(
+                  `La orden de entrada número ${this.id} se editó correctamente`,
+                  'success',
+                  'Orden de entrada modificada',
+                  false
+                );
+              });
+          }
+        });
+      }
+    );
   }
 
   printOrder(row: OrdenesEntradaModel): void {
     this.ordenesEntradaService.printOrder(row.id).subscribe({
       next: (response: HttpResponse<Blob>) => {
-        console.log('response', response)
-
         if (response.body) {
           const blob = new Blob([response.body], { type: 'application/pdf' });
           const url = window.URL.createObjectURL(blob);
@@ -165,16 +198,25 @@ export class OrdenesEntradaComponent
           window.URL.revokeObjectURL(url);
         } else {
           console.error('La respuesta no contiene un cuerpo válido.');
-          this.utilPopupService.mostrarMensaje('Hubo un problema al imprimir la orden', 'error', 'Error de impresión', false);
+          this.utilPopupService.mostrarMensaje(
+            'Hubo un problema al imprimir la orden',
+            'error',
+            'Error de impresión',
+            false
+          );
         }
       },
       error: (error) => {
         console.error('Error al imprimir la orden:', error);
-        this.utilPopupService.mostrarMensaje('Hubo un problema al imprimir la orden', 'error', 'Error de impresión', false);
-      }
+        this.utilPopupService.mostrarMensaje(
+          'Hubo un problema al imprimir la orden',
+          'error',
+          'Error de impresión',
+          false
+        );
+      },
     });
   }
-
 
   deleteItem(row: OrdenesEntradaModel) {
     this.id = row.id;
@@ -190,13 +232,42 @@ export class OrdenesEntradaComponent
     });
     this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
       if (result === 1) {
-        this.ordenesEntradaService.deleteOrden(this.id!).subscribe(() => {
-          this.loadData();
-          this.utilPopupService.mostrarMensaje(`La orden de entrada se eliminó correctamente`, 'success', 'Orden de entrada eliminada', false);
-        });
+        this.ordenesEntradaService
+          .deleteOrden(this.id!)
+          .pipe(
+            catchError((error) => {
+              if (error === 'Conflict') {
+                this.utilPopupService.mostrarMensaje(
+                  `No se puede eliminar la orden de entrada porque los activos relacionados tienen ordenes de servicio generadas<br>Debe eliminar primero las órdenes de servicio de los activos de la orden de entrada`,
+                  'info',
+                  'No se puede eliminar la orden de entrada',
+                  false
+                );
+              } else {
+                this.utilPopupService.mostrarMensaje(
+                  'Error interno del servidor. Por favor, inténtelo de nuevo más tarde.',
+                  'error',
+                  'Error al eliminar la orden de entrada',
+                  false
+                );
+              }
+              return of(null);
+            })
+          ).subscribe((response) => {
+            if (response) {
+              this.loadData();
+              this.utilPopupService.mostrarMensaje(
+                `La orden de entrada se eliminó correctamente`,
+                'success',
+                'Orden de entrada eliminada',
+                false
+              );
+            }
+          });
       }
     });
   }
+
   private refreshTable() {
     this.paginator._changePageSize(this.paginator.pageSize);
   }
@@ -212,25 +283,56 @@ export class OrdenesEntradaComponent
     this.isAllSelected()
       ? this.selection.clear()
       : this.dataSource.renderedData.forEach((row) =>
-        this.selection.select(row)
-      );
+          this.selection.select(row)
+        );
   }
   removeSelectedRows() {
     const totalSelect = this.selection.selected.length;
-    this.selection.selected.forEach((item) => {
-      this.ordenesEntradaService.deleteOrden(item.id).subscribe(() => {
+    const deleteObservables = this.selection.selected.map((item) =>
+      this.ordenesEntradaService.deleteOrden(item.id).pipe(
+        catchError((error) => {
+          let errorMessage = '';
+          if (error === 'Conflict') {
+            errorMessage = `Algunas órdenes de entrada no se eliminaron porque tienen activos relacionados con órdenes de servicio generadas.`;
+          } else {
+            errorMessage = `Error interno del servidor al eliminar la orden de entrada con id: ${item.id}. Por favor, inténtelo de nuevo más tarde.`;
+          }
+          return of({ id: item.id, error: errorMessage }); // Retorna un objeto con el id y el mensaje de error
+        })
+      )
+    );
+  
+    // Ejecutar todas las solicitudes de eliminación en paralelo y esperar a que todas terminen
+    forkJoin(deleteObservables).subscribe((responses) => {
+      const successfulDeletes = responses.filter((response: any) => !response.error).length;
+      const failedDeletes = responses.filter((response: any) => response.error);
+  
+      if (successfulDeletes > 0) {
         this.loadData();
         this.selection = new SelectionModel<OrdenesEntradaModel>(true, []);
-      });
+        this.utilPopupService.mostrarMensaje(
+          `Se eliminaron ${successfulDeletes} de las ${totalSelect} órdenes seleccionadas`,
+          'success',
+          'Órdenes de entrada eliminadas',
+          false
+        );
+      }
+  
+      if (failedDeletes.length > 0) {
+        failedDeletes.forEach((response) => {
+          if (typeof response !== 'string') {
+            this.utilPopupService.mostrarMensaje(
+              response.error,
+              'error',
+              'Error al eliminar algunas órdenes de entrada',
+              false
+            );
+          }
+        });
+      }
     });
-    this.utilPopupService.mostrarMensaje(`Se eliminaron las ${totalSelect} órdenes selccionadas`, 'success', 'Órdenes de entrada eliminadas', false);
-    this.showNotification(
-      'snackbar-danger',
-      totalSelect + ' Record Delete Successfully...!!!',
-      'bottom',
-      'center'
-    );
   }
+
   public loadData() {
     this.exampleDatabase = this.ordenesEntradaService;
     this.dataSource = new ExampleDataSource(
@@ -248,6 +350,7 @@ export class OrdenesEntradaComponent
     );
     this.loadOrdenesEntrada();
   }
+
   showNotification(
     colorName: string,
     text: string,
@@ -267,13 +370,13 @@ export class OrdenesEntradaComponent
     // key name with space add in brackets
     const exportData: Partial<TableElement>[] =
       this.dataSource.filteredData.map((x) => ({
-        'Id': x.id,
-        'Fecha': x.fecha,
+        Id: x.id,
+        Fecha: x.fecha,
         'Cantidad de activos': x.cantidad_activos,
         'Placa vehiculo': x.placa_vehiculo,
-        'Observaciones': x.observaciones,
-        'Entrega': x.entrega,
-        'Recibe': x.recibe,
+        Observaciones: x.observaciones,
+        Entrega: x.entrega,
+        Recibe: x.recibe,
       }));
 
     TableExportUtil.exportToExcel(exportData, 'excel');

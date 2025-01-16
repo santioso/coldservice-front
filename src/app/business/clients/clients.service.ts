@@ -69,7 +69,6 @@ getDialogData() {
 
   addClientRow(client: ClientModel): void {
     this.dialogData = client;
-    console.log('client', client)
     this._httpClient.post(`${this.#apiUrl}clients`, client)
        .subscribe({
          next: () => {
@@ -83,8 +82,6 @@ getDialogData() {
 
   updateClientRow(client: ClientModel): void {
     const id = client.id;
-    console.log('Id a modificar', id);
-    console.log('cliente ', client);
     this._httpClient.patch(`${this.#apiUrl}clients/${id}`, client)
     .subscribe({
       next: () => {
@@ -103,7 +100,6 @@ getDialogData() {
           this.utilPopupService.mostrarMensaje(`Cliente ${id} eliminado exitosamente`, 'success', 'Éxito', false);
         },
         error: (error: string) => {
-          console.log('error', error)
           if (error.includes('sedes asociadas')) {
             this.utilPopupService.mostrarMensaje(
               'No se puede eliminar el cliente porque tiene registros asociados. <br>Elimine las sedes primero antes de continuar',

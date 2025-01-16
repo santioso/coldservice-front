@@ -65,7 +65,6 @@ export class FormDialogComponent implements OnInit {
   ]);
 
   ngOnInit(): void {
-    console.log('data', this.data);
     this.loadActivosEntrada();
     this.loadStatus();
     this.onActivoEntradaIdChange();
@@ -113,7 +112,6 @@ export class FormDialogComponent implements OnInit {
   }
 
   createForm(): UntypedFormGroup {
-    console.log('this.ordenesServicioModel', this.ordenesServicioModel)
     return this.fb.group({
         id: [this.ordenesServicioModel.id, Validators.required],
         dateStart: [this.ordenesServicioModel.dateStart || new Date(), Validators.required],
@@ -143,7 +141,6 @@ export class FormDialogComponent implements OnInit {
 
   public confirmAdd(): void {
     const datosFormulario = this.ordenesServicioTableForm.getRawValue();
-    console.log('datosFormulario  ', datosFormulario)
     let datosForm: CreateOrdenesServicioModel = {
       id: this.ordenesServicioModel.id,
       date_start: datosFormulario.dateStart,
@@ -166,10 +163,8 @@ export class FormDialogComponent implements OnInit {
       });
     }
     else {
-      console.log(datosForm)
       this.ordenesServiceService.updateOrden(datosForm).subscribe({
         next: (resp) => {
-          console.log('resp....', resp)
           this.utilPopupService.mostrarMensaje('La orden de servicio se editó correctamente', 'success', 'Orden de servicio editada', false);
           this.dialogRef.close();
         },

@@ -82,7 +82,6 @@ export class FormDialogComponent implements OnInit {
       activosEntrada: this.fb.array([]) // Asegúrate de que este control esté definido
     });
 
-    // Suponiendo que tienes un objeto `ordenesEntrada` con los datos
     this.ordenesEntradaModel.activosEntrada ? this.setActivos(this.ordenesEntradaModel.activosEntrada) : this.agregarRegistrosFaltantes(this.activosEntrada)
 
   }

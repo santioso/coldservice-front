@@ -51,7 +51,6 @@ export class AddDetailDialogComponent {
       .getTechnicals()
       .subscribe((technicals: TechnicalInterface[]) => {
         this.technicalOptions = technicals;
-        console.log('this.technicalOptions', this.technicalOptions);
       });
   }
 

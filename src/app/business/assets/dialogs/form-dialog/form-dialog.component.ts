@@ -48,7 +48,6 @@ export class FormDialogComponent {
       this.assetModel = new AssetModel(blankObject);
     }
     this.assetModelForm = this.createAssetForm();
-    console.log('data', data)
   }
   formControl = new UntypedFormControl('', [
     Validators.required,

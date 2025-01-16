@@ -88,6 +88,20 @@ export const ROUTES: RouteInfo[] = [
       badgeClass: "",
       submenu: [],
     },
+      /**
+   * Menú órdenes de entrada
+   */
+  {
+    path: "orden-salida",
+    title: "MENUITEMS.ENTRY-EXIT.TEXT",
+    iconType: "feather",
+    icon: "trello",
+    class: "",
+    groupTitle: false,
+    badge: "",
+    badgeClass: "",
+    submenu: [],
+  },
   // {
   //   path: "",
   //   title: "MENUITEMS.DASHBOARD.TEXT",

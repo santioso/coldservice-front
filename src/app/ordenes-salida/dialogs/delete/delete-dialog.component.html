@@ -1,0 +1,8 @@
+<h1 mat-dialog-title>Confirmar eliminación</h1>
+<div mat-dialog-content>
+  <p>¿Está seguro de que desea eliminar esta orden de salida?</p>
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onNoClick()">Cancelar</button>
+  <button mat-button color="warn" (click)="onConfirmClick()">Eliminar</button>
+</div>

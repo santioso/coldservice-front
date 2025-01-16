@@ -110,13 +110,11 @@ export class HeaderComponent
   ];
   ngOnInit() {
     this.config = this.configService.configData;
-    console.log('this.authService', this.authService);
     this.userFullName =
       this.authService.currentUserValue.firstname +
       ' ' +
       this.authService.currentUserValue.lastname;
     this.userImg = 'assets/images/user/' + this.authService.currentUserValue.img;
-console.log('this.userImg', this.userImg)
 
     this.homePage = 'dashboard/dashboard1';
 

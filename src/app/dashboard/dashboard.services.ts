@@ -41,6 +41,12 @@ export class DashboardService extends UnsubscribeOnDestroyAdapter {
     )
   }
 
+  getChartOutputs3Stats(): Observable<Chart3StatsModel> {
+    return this.httpClient.get<Chart3StatsModel>(
+      `${this.API_URL}/dashboard/statsOutputs-chart3`
+    )
+  }
+
   getChart3ActivesStats(): Observable<Chart3StatsModel> {
     return this.httpClient.get<Chart3StatsModel>(
       `${this.API_URL}/dashboard/stats-chart3-actives`

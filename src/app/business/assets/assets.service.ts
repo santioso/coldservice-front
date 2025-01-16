@@ -60,7 +60,6 @@ getDialogData() {
 
   addAssetRow(asset: AssetModel): void {
     this.dialogData = asset;
-    console.log('asset', asset)
     asset.assetsType = asset.id;
     this._httpClient.post(`${this.#apiUrl}asset`, asset)
        .subscribe({

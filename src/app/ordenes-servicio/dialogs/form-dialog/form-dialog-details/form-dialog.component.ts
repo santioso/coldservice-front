@@ -109,7 +109,6 @@ export class FormDialogDetailsComponent implements OnInit {
       this.soloLectura = false;
     }
     this.ordenesServicioTableForm = this.createForm();
-    console.log('data', data);
   }
 
   ngOnInit(): void {
@@ -118,7 +117,6 @@ export class FormDialogDetailsComponent implements OnInit {
 
     // Llenar el FormArray con los datos de details
     if (Array.isArray(this.ordenesServicioModel.details)) {
-      console.log('this.ordenesServicioModel.details', this.ordenesServicioModel.details)
       this.setDetails(this.ordenesServicioModel.details);
     } else {
       console.error(
@@ -157,7 +155,6 @@ export class FormDialogDetailsComponent implements OnInit {
   }
 
   setDetails(details: any[]): void {
-    console.log('details', details)
     if (Array.isArray(details)) {
       const detailsFormArray = this.details;
       details.forEach((detalle) => {
@@ -211,7 +208,6 @@ export class FormDialogDetailsComponent implements OnInit {
           .addServiceOrderDetail(result)
           .subscribe((response) => {
             // Manejar la respuesta del servicio
-            console.log('Detalle agregado:', response);
             this.addDetailToForm(response);
           });
       }
@@ -227,7 +223,6 @@ export class FormDialogDetailsComponent implements OnInit {
   }
 
   editDetail(row: any) {
-    console.log('index', row)
     const dialogRef = this.dialog.open(AddDetailDialogComponent, {
       width: '400px',
       data: { detail: row, serviceOrderId: this.ordenesServicioModel.id }
@@ -239,7 +234,6 @@ export class FormDialogDetailsComponent implements OnInit {
           .updateServiceOrderDetail(result.id, result)
           .subscribe((response) => {
             // Manejar la respuesta del servicio
-            console.log('Detalle actualizado:', response);
             this.updateDetailInForm(row, response);
           });
       }
@@ -270,7 +264,6 @@ export class FormDialogDetailsComponent implements OnInit {
         if(result) {
               this.deleteDetailFromForm(row);
         }
-        console.log(result)
       });
     }
 
