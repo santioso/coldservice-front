@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://coldservice.prointelsi.com',
+  apiUrl: 'https://coldservice.prointelsi.com',
 };
 
