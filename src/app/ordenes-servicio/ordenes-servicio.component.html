@@ -105,8 +105,8 @@
                   <mat-header-cell *matHeaderCellDef mat-sort-header>Estado</mat-header-cell>
                   <mat-cell *matCellDef="let row">
                     <div [ngClass]="{
-                      'estado-disponible': row.status === 'Disponible',
-                      'estado-no-disponible': row.status !== 'Disponible' && row.status !== 'Baja',
+                      'estado-disponible': row.status === 'Disponible' || row.status === 'Disponible nuevo', 
+                      'estado-no-disponible': row.status !== 'Disponible' && row.status !== 'Disponible nuevo' && row.status !== 'Baja',
                       'estado-baja': row.status === 'Baja'
                       }">
                         {{row.status}}
