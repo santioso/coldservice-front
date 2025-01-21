@@ -95,8 +95,8 @@ export class FormDialogComponent implements OnInit {
 
   private _filterActivos(value: string): any[] {
     const filterValue = typeof value === 'string' ? value.toLowerCase() : '';
-   
-    return this.activosEntrada.filter(activo => activo.value.toLowerCase().includes(filterValue));
+
+    return this.activosEntrada.filter(activo => activo.value && activo.value.toLowerCase().includes(filterValue));
   }
 
   displayActivo(activo: any): string {
