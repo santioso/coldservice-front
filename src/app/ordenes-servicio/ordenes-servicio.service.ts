@@ -42,6 +42,11 @@ export class OrdenesServicioService extends UnsubscribeOnDestroyAdapter {
     return this.httpClient.get<OrdenesServicioDetailsModel>(`${this.API_URL_BASICO}/service-order-details/${id}`);
   }
 
+  getServiceByIdActivoEntrada(idEntrada: number, idActivo: string): Observable<boolean> {
+    const url = `${this.API_URL}/has-service-order/${idEntrada}/${idActivo}`;
+    return this.httpClient.get<boolean>(url);
+  }
+
   addOrden(ordenesServicioModel: CreateOrdenesServicioModel): Observable<OrdenesServicioModel> {
     this.dialogDataCreate = ordenesServicioModel;
     return this.httpClient.post<OrdenesServicioModel>(this.API_URL, ordenesServicioModel)

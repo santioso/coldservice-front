@@ -4,6 +4,7 @@ import {
   AbstractControl,
   FormArray,
   FormBuilder,
+  FormControl,
   FormGroup,
   UntypedFormBuilder,
   UntypedFormControl,
@@ -21,7 +22,7 @@ import { OrdenesSalidaService } from 'app/ordenes-salida/ordenes-salida.service'
 import { UtilPopupService } from '@shared/services/util-popup.service';
 import { ActivosModel } from 'app/activos/activos.model';
 import { ActivoMaestroModel } from 'app/ordenes-entrada/activo-maestro.model';
-import { catchError, lastValueFrom, Observable, throwError } from 'rxjs';
+import { catchError, lastValueFrom, map, Observable, startWith, throwError } from 'rxjs';
 
 export interface DialogData {
   id: number;
@@ -53,7 +54,9 @@ export class FormDialogComponent implements OnInit {
   );
   soloLectura: boolean;
   activoValid: boolean = false;
-  activosEnOrdenEntrada?: ActivosEnOrdenEntradaInterface[];
+  activosEnOrdenEntrada: ActivosEnOrdenEntradaInterface[] = [];
+  activoControl = new FormControl();
+  filteredActivos?: Observable<ActivosEnOrdenEntradaInterface[]>;
   displayedColumns: string[] = [
     'id',
     'descripcion',
@@ -87,6 +90,10 @@ export class FormDialogComponent implements OnInit {
     this.getActivosEnOrdenEntrada();
     this.ordenesSalidaTableForm = this.creaSalidaTableForm();
     this.getInformationActivos();
+    this.filteredActivos = this.activoControl.valueChanges.pipe(
+      startWith(''),
+      map(value => this._filterActivos(value))
+    );
   }
 
   getInformationActivos(): void {
@@ -144,16 +151,29 @@ export class FormDialogComponent implements OnInit {
     });
   }
 
+
+
   get activosSalida(): FormArray {
     return this.ordenesSalidaTableForm.get('activosSalida') as FormArray;
   }
 
+  // setActivos(activos: any[]): void {
+  //   const activosFormArray = this.ordenesSalidaTableForm.get(
+  //     'activosSalida'
+  //   ) as FormArray;
+  //   activos.forEach((activo) => {
+  //     activosFormArray.push(this.createActivo(activo));
+  //   });
+  //   this.agregarRegistrosFaltantes(activosFormArray);
+  // }
+
   setActivos(activos: any[]): void {
-    const activosFormArray = this.ordenesSalidaTableForm.get(
-      'activosSalida'
-    ) as FormArray;
-    activos.forEach((activo) => {
-      activosFormArray.push(this.createActivo(activo));
+    const activosFormArray = this.ordenesSalidaTableForm.get('activosSalida') as FormArray;
+    activos.forEach((activo, index) => {
+      const activoFormGroup = this.createActivo(activo);
+      activosFormArray.push(activoFormGroup);
+      // Inicializar el FormControl con el idActivo para cada registro
+      activoFormGroup.get('idActivo')?.setValue(activo.idActivo || '');
     });
     this.agregarRegistrosFaltantes(activosFormArray);
   }
@@ -178,6 +198,17 @@ export class FormDialogComponent implements OnInit {
     } catch (error) {
       console.error('Error al obtener los activos en orden de entrada:', error);
     }
+  }
+
+  private _filterActivos(value: string): ActivosEnOrdenEntradaInterface[] {
+    const filterValue = typeof value === 'string' ? value.toLowerCase() : '';
+    return this.activosEnOrdenEntrada.filter(activo =>
+      activo.idActivo.toLowerCase().includes(filterValue)
+    );
+  }
+
+  displayActivo(activo: ActivosEnOrdenEntradaInterface): string {
+    return activo ? activo.idActivo : '';
   }
 
   getOrderWithActivosById(id: number): Observable<OrdenesSalidaModel> {
@@ -251,50 +282,53 @@ export class FormDialogComponent implements OnInit {
     }
   }
 
-  onIdBlur(index: number): void {
-    const idControl = this.activosSalida.at(index).get('idEntrada');
-    if (idControl && idControl.value !== '') {
-      let value = idControl.value;
-      if (this.verificarIdDuplicado(value, index)) {
-        this.mostrarMensajeError(value, idControl);
+  onActivoEntradaIdChange(event: any, index: number): void {
+    const idActivo = event.option.value.idActivo;
+    const activo = this.activosEnOrdenEntrada?.find(
+      (activo) => activo.idActivo === idActivo
+    );
+    if (idActivo) {
+      if (activo?.idEntrada !== undefined && this.verificarIdDuplicado(activo.idEntrada)) {
+        this.mostrarMensajeError(idActivo);
         return;
       }
-      this.obtenerDatosDelServicio(value, index);
+      this.obtenerDatosDelServicio(idActivo, index);
     }
   }
 
-  private verificarIdDuplicado(value: string, index: number): boolean {
+  private verificarIdDuplicado(idEntrada: number ): boolean {
     return this.activosSalida.value.some(
-      (activo: any, i: number) => activo.idEntrada === value && i !== index
+      (activo: any) => activo.idEntrada === idEntrada
     );
   }
 
-  private mostrarMensajeError(value: string, idControl: any): void {
+  private mostrarMensajeError(idActivo: string): void {
     this.utilPopupService.mostrarMensaje(
-      `La placa ${value} ya está en la orden de salida, no se puede ingresar más de una vez`,
+      `La placa ${idActivo} ya está en la orden de salida, no se puede ingresar más de una vez`,
       'error',
       'Placa duplicada',
       false
     );
-    idControl.setValue('');
   }
 
-  private obtenerDatosDelServicio(value: string, index: number): void {
+  private obtenerDatosDelServicio(idActivo: string, index: number): void {
     const activo = this.activosEnOrdenEntrada?.find(
-      (activo) => activo.idEntrada === Number(value)
+      (activo) => activo.idActivo === idActivo
     );
     if (activo) {
       const activoFormGroup = this.activosSalida.at(index) as FormGroup;
       activoFormGroup.patchValue({
-        id: activo.idEntrada,
-        descripcion: activo.descripcion,
-        fabricante: activo.fabricante,
-        capacidad: activo.capacidad,
-        observaciones: activo.observaciones,
-      });
+          id: activo.idEntrada,
+          descripcion: activo.descripcion,
+          fabricante: activo.fabricante,
+          capacidad: activo.capacidad,
+          observaciones: activo.observaciones,
+          idEntrada: activo.idEntrada,
+        });
       this.activoValid = this.activosSalida.length >= 1;
     }
   }
+
 
   private formatearFecha(fecha: string): string {
     const date = new Date(fecha);

@@ -43,25 +43,22 @@
 
       <div class="row">
         <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
+
+
           <mat-form-field class="example-full-width" appearance="outline">
             <mat-label>Placa del activo</mat-label>
-
-
             <input aria-label="Placa" type="text" matInput [formControl]="activoControl" [matAutocomplete]="auto">
             <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayActivo" (optionSelected)="onActivoEntradaIdChange($event)">
               <mat-option *ngFor="let activo of filteredActivos | async" [value]="activo">
                 {{ activo.value }}
               </mat-option>
             </mat-autocomplete>
-
-
             <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>pin</mat-icon>
-
-
             <mat-error *ngIf="ordenesServicioTableForm.get('activoEntradaId')?.hasError('required')">
               La placa del activo es requerida
             </mat-error>
           </mat-form-field>
+
         </div>
         <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">

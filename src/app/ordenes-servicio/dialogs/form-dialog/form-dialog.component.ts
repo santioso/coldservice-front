@@ -148,9 +148,7 @@ export class FormDialogComponent implements OnInit {
   }
 
   onActivoEntradaIdChange(event: any): void {
-    console.log({event})
     const activoId = event.option.value.id;
-    console.log({activoId})
     const activo = this.activosEntrada.find((x) => x.id === activoId);
     if (activo) {
       this.ordenesServicioTableForm.get('activoEntradaId')?.setValue(activoId);
@@ -161,7 +159,6 @@ export class FormDialogComponent implements OnInit {
 
   public confirmAdd(): void {
     const datosFormulario = this.ordenesServicioTableForm.getRawValue();
-    console.log({datosFormulario})
     let datosForm: CreateOrdenesServicioModel = {
       id: this.ordenesServicioModel.id,
       date_start: datosFormulario.dateStart,

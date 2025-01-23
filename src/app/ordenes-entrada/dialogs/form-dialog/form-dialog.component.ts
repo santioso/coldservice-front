@@ -96,10 +96,10 @@ export class FormDialogComponent implements OnInit {
       if (activo && (activo.id || activo.descripcion || activo.fabricante || activo.capacidad || activo.observaciones)) {
         const activoFormGroup = this.fb.group({
           id: [activo.id],
-          descripcion: [{ value: activo.descripcion }],
-          fabricante: [{ value: activo.fabricante }],
-          capacidad: [{ value: activo.capacidad }],
-          observaciones: [{ value: activo.observaciones }]
+          descripcion: [ activo.descripcion ],
+          fabricante: [ activo.fabricante ],
+          capacidad: [  activo.capacidad ],
+          observaciones: [  activo.observaciones ]
         });
         activosFormArray.push(activoFormGroup);
       }
