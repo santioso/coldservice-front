@@ -67,6 +67,7 @@ export class OrdenesServicioComponent
     'observaciones',
     'actions',
   ];
+
   exampleDatabase?: OrdenesServicioService;
   dataSource!: DatabaseSource;
   selection = new SelectionModel<OrdenesServicioModel>(true, []);
@@ -74,6 +75,7 @@ export class OrdenesServicioComponent
   ordenesServicioModel?: OrdenesServicioModel;
   ordenesServicio: OrdenesServicioModel[] = [];
   statusService: any[] = [];
+  filtrosEstado: { [key: string]: boolean } = {};
 
   constructor(
     public httpClient: HttpClient,
@@ -93,7 +95,7 @@ export class OrdenesServicioComponent
   contextMenuPosition = { x: '0px', y: '0px' };
 
   ngOnInit() {
-    this.loadStatus();
+  //  this.loadStatus();
     this.loadData();
     this.loadOrdenesServicio();
   }
@@ -112,21 +114,21 @@ export class OrdenesServicioComponent
     );
   }
 
-  loadStatus(): void {
-    this.ordenesServicioService.getStatus().subscribe({
-      next: (data) => {
-        const status = data;
-        this.statusService = this.createArrayStatus(status);
-      },
-    })
-  }
+  // filtrarPorEstado(): void {
+  //   this.dataSource.filterPredicate = (data: any, filter: string) => {
+  //     return this.filtrosEstado[data.status];
+  //   };
+  //   this.dataSource.filter = '' + Math.random(); // Forzar la actualización del filtro
+  // }
 
-  createArrayStatus(status: any): Array<any> {
-    this.statusService = status.map((x: any) => {
-      return { id: x, value: x };
-    });
-    return this.statusService;
-  }
+  // loadStatus(): void {
+  //   this.ordenesServicioService.getStatus().subscribe(status => {
+  //     this.statusService = status;
+  //     this.statusService.forEach(estado => {
+  //       this.filtrosEstado[estado] = true;
+  //     });
+  //   });
+  // }
 
   public loadData() {
     this.exampleDatabase = this.ordenesServicioService;
@@ -141,6 +143,7 @@ export class OrdenesServicioComponent
           return;
         }
         this.dataSource.filter = this.filter.nativeElement.value;
+//        this.filtrarPorEstado();
       }
     );
     this.loadOrdenesServicio();
@@ -331,6 +334,7 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
 
   filteredData: OrdenesServicioModel[] = [];
   renderedData: OrdenesServicioModel[] = [];
+  filterPredicate: (data: OrdenesServicioModel, filter: string) => boolean = () => true;
 
   constructor(
     public ordenesServicioService: OrdenesServicioService,
