@@ -31,6 +31,7 @@ export interface DialogData {
 }
 
 export interface activosSalida {
+  idActivo: string;
   idEntrada: string;
   descripcion: string;
   fabricante: string;
@@ -58,7 +59,7 @@ export class FormDialogComponent implements OnInit {
   activoControl = new FormControl();
   filteredActivos?: Observable<ActivosEnOrdenEntradaInterface[]>;
   displayedColumns: string[] = [
-    'id',
+    'idActivo',
     'descripcion',
     'fabricante',
     'capacidad',
@@ -100,6 +101,7 @@ export class FormDialogComponent implements OnInit {
     if (this.action === 'edit') {
       this.getOrderWithActivosById(this.data.ordenesSalidaModel.id).subscribe((orden) => {
         this.ordenesSalidaModel = orden;
+
         this.ordenesSalidaTableForm.patchValue({
           id: this.ordenesSalidaModel.id,
           fecha: this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha),
@@ -135,14 +137,8 @@ export class FormDialogComponent implements OnInit {
   creaSalidaTableForm() {
     return this.fb.group({
       id: [this.ordenesSalidaModel.id],
-      fecha: [
-        this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha),
-        Validators.required,
-      ],
-      placa_vehiculo: [
-        this.ordenesSalidaModel.placa_vehiculo,
-        Validators.required,
-      ],
+      fecha: [this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha), Validators.required, ],
+      placa_vehiculo: [ this.ordenesSalidaModel.placa_vehiculo, Validators.required, ],
       observaciones: [this.ordenesSalidaModel.observaciones],
       entrega: [this.ordenesSalidaModel.entrega, Validators.required],
       recibe: [this.ordenesSalidaModel.recibe, Validators.required],
@@ -157,22 +153,11 @@ export class FormDialogComponent implements OnInit {
     return this.ordenesSalidaTableForm.get('activosSalida') as FormArray;
   }
 
-  // setActivos(activos: any[]): void {
-  //   const activosFormArray = this.ordenesSalidaTableForm.get(
-  //     'activosSalida'
-  //   ) as FormArray;
-  //   activos.forEach((activo) => {
-  //     activosFormArray.push(this.createActivo(activo));
-  //   });
-  //   this.agregarRegistrosFaltantes(activosFormArray);
-  // }
-
   setActivos(activos: any[]): void {
     const activosFormArray = this.ordenesSalidaTableForm.get('activosSalida') as FormArray;
     activos.forEach((activo, index) => {
       const activoFormGroup = this.createActivo(activo);
       activosFormArray.push(activoFormGroup);
-      // Inicializar el FormControl con el idActivo para cada registro
       activoFormGroup.get('idActivo')?.setValue(activo.idActivo || '');
     });
     this.agregarRegistrosFaltantes(activosFormArray);
@@ -180,7 +165,7 @@ export class FormDialogComponent implements OnInit {
 
   createActivo(activo: any = {}): FormGroup {
     return this.fb.group({
-      id: [activo.id || ''],
+      idActivo: [activo.idActivo || ''],
       descripcion: [activo.descripcion || ''],
       fabricante: [activo.fabricante || ''],
       capacidad: [activo.capacidad || ''],
@@ -255,6 +240,8 @@ export class FormDialogComponent implements OnInit {
     delete datosForm.id;
     delete datosForm.idEntrada;
     datosForm.fecha = this.formatearFecha(datosForm.fecha);
+    
+    // Filtrar activos que tengan idEntrada y mapear correctamente
     datosForm.activosSalida = datosForm.activosSalida
       .filter((activo: any) => activo.idEntrada)
       .map((activo: any) => activo.idEntrada);
@@ -318,7 +305,7 @@ export class FormDialogComponent implements OnInit {
     if (activo) {
       const activoFormGroup = this.activosSalida.at(index) as FormGroup;
       activoFormGroup.patchValue({
-          id: activo.idEntrada,
+          idActivo: activo.idActivo,
           descripcion: activo.descripcion,
           fabricante: activo.fabricante,
           capacidad: activo.capacidad,

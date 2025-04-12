@@ -5,7 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { ActivosModel } from './activos.model';
-import { DataSource } from '@angular/cdk/collections';
+import { DataSource, SelectionModel } from '@angular/cdk/collections';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { BehaviorSubject, fromEvent, merge, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -13,11 +13,11 @@ import { FormDialogComponent } from './dialogs/form-dialog/form-dialog.component
 import { DeleteDialogComponent } from './dialogs/delete/delete.component';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { MatMenuTrigger } from '@angular/material/menu';
-import { SelectionModel } from '@angular/cdk/collections';
 import { UnsubscribeOnDestroyAdapter } from '../shared/UnsubscribeOnDestroyAdapter';
 import { Direction } from '@angular/cdk/bidi';
 import { TableExportUtil, TableElement } from '@shared';
 import { UtilPopupService } from '@shared/services/util-popup.service';
+import { OrdenesServicioService } from 'app/ordenes-servicio/ordenes-servicio.service';
 
 @Component({
   selector: 'app-activos',
@@ -25,7 +25,8 @@ import { UtilPopupService } from '@shared/services/util-popup.service';
   styleUrls: ['./activos.component.scss'],
   providers: [{
     provide: MAT_DATE_LOCALE,
-    useValue: 'es-CO' }],
+    useValue: 'es-CO'
+  }],
 })
 export class ActivosComponent
   extends UnsubscribeOnDestroyAdapter
@@ -36,11 +37,10 @@ export class ActivosComponent
     'descripcion',
     'fabricante',
     'capacidad',
-    'nombre_cliente',
-    'establecimiento_comercial',
+    'estado',
     'actions',
   ];
-  exampleDatabase?: ActivosService;
+  exampleDatabase: ActivosService;
   dataSource!: ExampleDataSource;
   selection = new SelectionModel<ActivosModel>(true, []);
   id?: string;
@@ -51,11 +51,13 @@ export class ActivosComponent
     public httpClient: HttpClient,
     public dialog: MatDialog,
     public activosService: ActivosService,
+    public ordenesServicioService: OrdenesServicioService,
     private readonly snackBar: MatSnackBar,
     private readonly cdr: ChangeDetectorRef,
-    private utilPopupService: UtilPopupService,
+    private readonly utilPopupService: UtilPopupService,
   ) {
     super();
+    this.exampleDatabase = this.activosService;
   }
   @ViewChild(MatPaginator, { static: true }) paginator!: MatPaginator;
   @ViewChild(MatSort, { static: true }) sort!: MatSort;
@@ -63,25 +65,68 @@ export class ActivosComponent
   @ViewChild(MatMenuTrigger)
   contextMenu?: MatMenuTrigger;
   contextMenuPosition = { x: '0px', y: '0px' };
+
   ngOnInit() {
     this.loadData();
-    this.loadActivos();
   }
 
   refresh() {
+    this.loadActivos();
+  }
+
+  ngAfterViewInit() {
     this.loadData();
   }
 
   loadActivos(): void {
-    // this.activosService.getAllActivos().subscribe((data: ActivosModel[]) => {
-    //   this.activos = data;
-    //   this.cdr.detectChanges(); // Fuerza una nueva verificación de cambios
-    // });
+    this.ordenesServicioService.getActivesEntry().subscribe({
+      next: (data: any[]) => {
+        this.activos = data.map(item => ({
+          id: item.id,
+          descripcion: item.descripcion,
+          fabricante: item.fabricante,
+          capacidad: item.capacidad,
+          estado: item.estado,
+        }));
 
-    this.activosService.fetchData();
-    this.activosService.dataChange.subscribe((data: ActivosModel[]) => {
-      this.activos = data;
-      this.cdr.detectChanges(); // Fuerza una nueva verificación de cambios
+        this.exampleDatabase.dataChange.next(this.activos);
+        this.exampleDatabase.isTblLoading = false;
+        
+        // Inicializar dataSource solo si no existe
+        if (!this.dataSource) {
+          this.initializeDataSource();
+        } else {
+          // Si ya existe dataSource, solo actualizamos los datos
+          this.dataSource.filteredData = [...this.activos];
+          this.dataSource.renderedData = [...this.activos];
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar activos:', error);
+      }
+    });
+  }
+
+  private initializeDataSource(): void {
+    this.dataSource = new ExampleDataSource(
+      this.exampleDatabase,
+      this.paginator,
+      this.sort
+    );
+    
+    this.dataSource.loadActivos();
+    
+    this.subs.sink = fromEvent(this.filter.nativeElement, 'keyup').subscribe(
+      () => {
+        if (!this.dataSource) {
+          return;
+        }
+        this.dataSource.loadActivos(this.filter.nativeElement.value.trim().toLowerCase());
+      }
+    );
+    
+    setTimeout(() => {
+      this.cdr.detectChanges();
     });
   }
 
@@ -101,8 +146,6 @@ export class ActivosComponent
     });
     this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
       if (result === 1) {
-        // After dialog is closed we're doing frontend updates
-        // For add we're just pushing a new row inside DataService
         this.activosService.addActivos(this.activosService.getDialogData()).subscribe(() => {
           this.loadData();
           this.utilPopupService.mostrarMensaje(`El registro se adicionó correctamente`, 'success', 'Registro adicionado', false);
@@ -128,7 +171,6 @@ export class ActivosComponent
     });
     this.subs.sink = dialogRef.afterClosed().subscribe((result) => {
       if (result === 1) {
-        // When using an edit things are little different, firstly we find record inside DataService by id
         this.activosService.updateActivos(this.activosService.getDialogData()).subscribe(() => {
           this.loadData();
           this.utilPopupService.mostrarMensaje(`El registro se editó correctamente`, 'success', 'Registro editado', false);
@@ -159,17 +201,17 @@ export class ActivosComponent
       }
     });
   }
+
   private refreshTable() {
     this.paginator._changePageSize(this.paginator.pageSize);
   }
-  /** Whether the number of selected elements matches the total number of rows. */
+
   isAllSelected() {
     const numSelected = this.selection.selected.length;
     const numRows = this.dataSource.renderedData.length;
     return numSelected === numRows;
   }
 
-  /** Selects all rows if they are not all selected; otherwise clear selection. */
   masterToggle() {
     this.isAllSelected()
       ? this.selection.clear()
@@ -177,6 +219,7 @@ export class ActivosComponent
         this.selection.select(row)
       );
   }
+
   removeSelectedRows() {
     const totalSelect = this.selection.selected.length;
     this.selection.selected.forEach((item) => {
@@ -187,47 +230,44 @@ export class ActivosComponent
     });
     this.utilPopupService.mostrarMensaje(`Los registros se eliminaron correctamente`, 'success', 'Registros eliminados', false);
   }
+
   public loadData() {
-    this.exampleDatabase = this.activosService;
-    this.dataSource = new ExampleDataSource(
-      this.exampleDatabase,
-      this.paginator,
-      this.sort
-    );
-    this.subs.sink = fromEvent(this.filter.nativeElement, 'keyup').subscribe(
-      () => {
-        if (!this.dataSource) {
-          return;
+    setTimeout(() => {
+      this.dataSource = new ExampleDataSource(
+        this.exampleDatabase,
+        this.paginator,
+        this.sort
+      );
+      this.subs.sink = fromEvent(this.filter.nativeElement, 'keyup').subscribe(
+        () => {
+          if (!this.dataSource) {
+            return;
+          }
+          this.dataSource.filter = this.filter.nativeElement.value;
         }
-        this.dataSource.filter = this.filter.nativeElement.value;
-      }
-    );
-    this.loadActivos();
+      );
+      this.loadActivos();
+    });
   }
 
-  // export table data in excel file
   exportExcel() {
-    // key name with space add in brackets
     const exportData: Partial<TableElement>[] =
       this.dataSource.filteredData.map((x) => ({
         'Placa': x.id,
         'Descripción': x.descripcion,
         'Fabricante': x.fabricante,
         'Capacidad': x.capacidad,
-        'Id cliente': x.cliente_id,
-        'Cliente': x.nombre_cliente,
-        'Establecimiento_comercial': x.establecimiento_comercial,
+        'Estado': x.estado
       }));
 
     TableExportUtil.exportToExcel(exportData, 'excel');
   }
 
-  // context menu
   onContextMenu(event: MouseEvent, item: ActivosModel) {
     event.preventDefault();
     this.contextMenuPosition.x = event.clientX + 'px';
     this.contextMenuPosition.y = event.clientY + 'px';
-    if (this.contextMenu !== undefined && this.contextMenu.menu !== null) {
+    if (this.contextMenu?.menu) {
       this.contextMenu.menuData = { item: item };
       this.contextMenu.menu.focusFirstItem('mouse');
       this.contextMenu.openMenu();
@@ -250,12 +290,15 @@ export class ExampleDataSource extends DataSource<ActivosModel> {
     public _sort: MatSort
   ) {
     super();
-    // Reset to the first page when the user changes the filter.
     this.filterChange.subscribe(() => (this.paginator.pageIndex = 0));
   }
-  /** Connect function called by the table to retrieve one stream containing the data to render. */
+
+  loadActivos(filter = ''): void {
+    this.filter = filter;
+    this.exampleDatabase.getAllActivos();
+  }
+
   connect(): Observable<ActivosModel[]> {
-    // Listen for any changes in the base data, sorting, filtering, or pagination
     const displayDataChanges = [
       this.exampleDatabase.dataChange,
       this._sort.sortChange,
@@ -274,16 +317,12 @@ export class ExampleDataSource extends DataSource<ActivosModel> {
               activosModel.descripcion +
               activosModel.fabricante +
               activosModel.capacidad +
-              activosModel.cliente_id +
-              activosModel.nombre_cliente +
-              activosModel.establecimiento_comercial
+              activosModel.estado
             ).toLowerCase();
 
             return searchStr.indexOf(this.filter.toLowerCase()) !== -1;
           });
-        // Sort filtered data
         const sortedData = this.sortData(this.filteredData.slice());
-        // Grab the page's slice of the filtered sorted data.
         const startIndex = this.paginator.pageIndex * this.paginator.pageSize;
         this.renderedData = sortedData.splice(
           startIndex,
@@ -293,10 +332,11 @@ export class ExampleDataSource extends DataSource<ActivosModel> {
       })
     );
   }
+
   disconnect() {
     //disconnect
   }
-  /** Returns a sorted copy of the database data. */
+
   sortData(data: ActivosModel[]): ActivosModel[] {
     if (!this._sort.active || this._sort.direction === '') {
       return data;
@@ -316,12 +356,6 @@ export class ExampleDataSource extends DataSource<ActivosModel> {
           break;
         case 'capacidad':
           [propertyA, propertyB] = [a.capacidad, b.capacidad];
-          break;
-        case 'nombre_cliente':
-          [propertyA, propertyB] = [a.nombre_cliente, b.nombre_cliente];
-          break;
-        case 'establecimiento_comercial':
-          [propertyA, propertyB] = [a.establecimiento_comercial, b.establecimiento_comercial];
           break;
       }
 

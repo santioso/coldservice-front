@@ -64,16 +64,8 @@
           </div>
         </div>
       </div>
-
-
-
-
-
-
-
       <div class="body overflow-auto">
         <div class="table-responsive">
-
           <table mat-table #table [dataSource]="dataSource" matSort class="table mat-cell">
             <!-- Checkbox Column -->
             <ng-container matColumnDef="select">
@@ -92,37 +84,37 @@
 
             <!-- Columnas de la tabla -->
             <ng-container matColumnDef="id">
-              <mat-header-cell *matHeaderCellDef> ID </mat-header-cell>
+              <mat-header-cell *matHeaderCellDef mat-sort-header> ID </mat-header-cell>
               <mat-cell *matCellDef="let element"> {{element.id}} </mat-cell>
             </ng-container>
 
             <ng-container matColumnDef="fecha">
-              <mat-header-cell *matHeaderCellDef> Fecha </mat-header-cell>
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Fecha </mat-header-cell>
               <mat-cell *matCellDef="let element"> {{element.fecha}} </mat-cell>
             </ng-container>
 
             <ng-container matColumnDef="placa_vehiculo">
-              <mat-header-cell *matHeaderCellDef> Placa Vehículo </mat-header-cell>
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Placa Vehículo </mat-header-cell>
               <mat-cell *matCellDef="let element"> {{element.placa_vehiculo}} </mat-cell>
             </ng-container>
 
             <ng-container matColumnDef="observaciones">
-              <mat-header-cell *matHeaderCellDef> Observaciones </mat-header-cell>
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Observaciones </mat-header-cell>
               <mat-cell *matCellDef="let element"> {{element.observaciones}} </mat-cell>
             </ng-container>
 
             <ng-container matColumnDef="entrega">
-              <mat-header-cell *matHeaderCellDef> Entrega </mat-header-cell>
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Entrega </mat-header-cell>
               <mat-cell *matCellDef="let element"> {{element.entrega}} </mat-cell>
             </ng-container>
 
             <ng-container matColumnDef="recibe">
-              <mat-header-cell *matHeaderCellDef> Recibe </mat-header-cell>
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Recibe </mat-header-cell>
               <mat-cell *matCellDef="let element"> {{element.recibe}} </mat-cell>
             </ng-container>
 
             <ng-container matColumnDef="cantidad_activos">
-              <mat-header-cell *matHeaderCellDef> Cantidad Activos </mat-header-cell>
+              <mat-header-cell *matHeaderCellDef mat-sort-header> Cantidad Activos </mat-header-cell>
               <mat-cell *matCellDef="let element"> {{element.cantidad_activos}} </mat-cell>
             </ng-container>
 

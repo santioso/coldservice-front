@@ -95,7 +95,7 @@ export class OrdenesServicioComponent
   contextMenuPosition = { x: '0px', y: '0px' };
 
   ngOnInit() {
-  //  this.loadStatus();
+    this.loadStatus();
     this.loadData();
     this.loadOrdenesServicio();
   }
@@ -114,21 +114,23 @@ export class OrdenesServicioComponent
     );
   }
 
-  // filtrarPorEstado(): void {
-  //   this.dataSource.filterPredicate = (data: any, filter: string) => {
-  //     return this.filtrosEstado[data.status];
-  //   };
-  //   this.dataSource.filter = '' + Math.random(); // Forzar la actualización del filtro
-  // }
+  filtrarPorEstado(): void {
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      // Si el estado del registro está en filtrosEstado y está marcado como true, mostrar el registro
+      return this.filtrosEstado[data.status] === true;
+    };
+    // Forzar la actualización del filtro
+    this.dataSource.filter = '' + Math.random();
+  }
 
-  // loadStatus(): void {
-  //   this.ordenesServicioService.getStatus().subscribe(status => {
-  //     this.statusService = status;
-  //     this.statusService.forEach(estado => {
-  //       this.filtrosEstado[estado] = true;
-  //     });
-  //   });
-  // }
+  loadStatus(): void {
+    this.ordenesServicioService.getStatus().subscribe(status => {
+      this.statusService = status;
+      this.statusService.forEach(estado => {
+        this.filtrosEstado[estado] = true;
+      });
+    });
+  }
 
   public loadData() {
     this.exampleDatabase = this.ordenesServicioService;
@@ -288,6 +290,7 @@ export class OrdenesServicioComponent
   private refreshTable() {
     this.paginator._changePageSize(this.paginator.pageSize);
   }
+
   /** Whether the number of selected elements matches the total number of rows. */
   isAllSelected() {
     const numSelected = this.selection.selected.length;
@@ -363,7 +366,13 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
           .filter((ordenesServicesModel: OrdenesServicioModel) => {
             const searchStr = (
               ordenesServicesModel.id +
+              ordenesServicesModel.dateStart +
+              ordenesServicesModel.activoId +
+              ordenesServicesModel.descripcion +
+              ordenesServicesModel.capacidad +
               ordenesServicesModel.diagnosis +
+              ordenesServicesModel.ordenEntradaId +
+              ordenesServicesModel.observaciones +
               ordenesServicesModel.status
             ).toLowerCase();
 
@@ -381,6 +390,7 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
       })
     );
   }
+
   disconnect() {
     // disconnect
   }

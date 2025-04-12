@@ -83,20 +83,29 @@ export class FormDialogComponent implements OnInit {
   }
 
   async loadActivosEntrada(): Promise<void> {
-    this.ordenesServiceService.getActivesEntry().subscribe({
+    this.ordenesServiceService.getActivesAvailables().subscribe({
       next: (data) => {
         const activos = data;
         this.activosEntrada = activos.map((x) => {
-          return { id: x.activo_entrada_id, descripcion: x.descripcion, value: x.activo_id, capacidad: x.capacidad };
-        });
+          return { 
+            id: x.activosEntrada && x.activosEntrada.length > 0 ? x.activosEntrada[0].id : null, 
+           descripcion: x.descripcion, 
+           value: x.id, 
+           capacidad: x.capacidad 
+          };
+        }).filter(activo => activo.id !== null);
       },
     })
   }
 
   private _filterActivos(value: string): any[] {
     const filterValue = typeof value === 'string' ? value.toLowerCase() : '';
-
-    return this.activosEntrada.filter(activo => activo.value && activo.value.toLowerCase().includes(filterValue));
+  
+    return this.activosEntrada.filter(activo => {
+      // Convertir activo.value a string antes de usar toLowerCase
+      const activoValue = activo.value ? String(activo.value).toLowerCase() : '';
+      return activoValue.includes(filterValue);
+    });
   }
 
   displayActivo(activo: any): string {

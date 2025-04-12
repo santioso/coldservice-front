@@ -22,11 +22,11 @@ export class AddDetailDialogComponent {
   constructor(
     public dialogRef: MatDialogRef<AddDetailDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
-    private fb: UntypedFormBuilder,
+    private readonly fb: UntypedFormBuilder,
     private ordenesServicioService: OrdenesServicioService
   ) {
     this.addDetailForm = this.fb.group({
-      id: [data.detail?.id || null],
+      detailId: [data.detail?.id || null],
       serviceOrderId: [
         data.serviceOrderId || data.detail?.serviceOrderId,
       ],

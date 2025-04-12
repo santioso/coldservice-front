@@ -91,7 +91,11 @@ export class OrdenesServicioService extends UnsubscribeOnDestroyAdapter {
   }
 
   getActivesEntry(): Observable<any[]> {
-    return this.httpClient.get<any[]>(`${this.API_URL}/actives-for-service-order`)
+    return this.httpClient.get<any[]>(`${this.API_URL_BASICO}/activos/`)
+  }
+
+  getActivesAvailables(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${this.API_URL_BASICO}/activos/availables`)
   }
 
   getTechnicals(): Observable<any[]> {

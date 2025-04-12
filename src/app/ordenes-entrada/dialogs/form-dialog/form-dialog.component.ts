@@ -159,7 +159,7 @@ export class FormDialogComponent implements OnInit {
   }
 
   public confirmAdd(): void {
-    let datosForm = this.ordenesEntradaTableForm.getRawValue();
+    const datosForm = this.ordenesEntradaTableForm.getRawValue();
     datosForm.fecha = this.formatearFecha(datosForm.fecha);
     datosForm.activosEntrada = datosForm.activosEntrada.filter((activo: any) => {
       return Object.values(activo).some(value => value !== null && value !== '');
@@ -175,7 +175,7 @@ export class FormDialogComponent implements OnInit {
   onIdBlur(index: number): void {
     const idControl = this.activosEntrada.at(index).get('id');
     if (idControl && idControl.value !== '') {
-      let value = idControl.value;
+      const value = idControl.value;
       if (this.verificarIdDuplicado(value, index)) {
         this.mostrarMensajeError(value, idControl);
         return;
@@ -203,7 +203,7 @@ export class FormDialogComponent implements OnInit {
           activoFound = true;
           return;
         }
-        const { id, descripcion, fabricante, capacidad, cliente_id, nombre_cliente, establecimiento_comercial } = response;
+        const { id, descripcion, fabricante, capacidad } = response;
         const activoFormGroup = this.activosEntrada.at(index) as FormGroup;
 
         if (activoFormGroup.get('id')) {
@@ -226,7 +226,7 @@ export class FormDialogComponent implements OnInit {
         if (!response || response.length === 0) {
           return;
         }
-        const { id, descripcion, fabricante, capacidad, cliente_id, cliente, establecimiento } = response[0];
+        const { id, descripcion, fabricante, capacidad } = response[0];
         const activoFormGroup = this.activosEntrada.at(index) as FormGroup;
 
         if (activoFormGroup.get('id')) {
