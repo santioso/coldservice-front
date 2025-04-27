@@ -106,11 +106,11 @@
               <ng-container matColumnDef="actions">
                 <mat-header-cell *matHeaderCellDef class="actions-column">Acciones</mat-header-cell>
                 <mat-cell *matCellDef="let detalle" class="actions-column">
-                  <button mat-icon-button color="primary" (click)="editDetail(detalle)">
+                  <!-- <button mat-icon-button color="primary" (click)="editDetail(detalle)">
                     <mat-icon>edit</mat-icon>
-                  </button>
+                  </button> -->
                   <button mat-icon-button color="warn" (click)="deleteDetail(detalle)">
-                    <mat-icon>delete</mat-icon>
+                    <app-feather-icons [icon]="'trash-2'" [class]="'tbl-fav-delete'"></app-feather-icons>
                   </button>
                 </mat-cell>
               </ng-container>

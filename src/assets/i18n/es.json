@@ -23,6 +23,9 @@
     "ENTRY-EXIT": {
       "TEXT": "Órden de salida"
     },
+    "MONITORING-TEMPERATURE": {
+      "TEXT": "Monitoreo de temperatura"
+    },
     "DASHBOARD": {
       "TEXT": "Casa",
       "LIST": {

@@ -1,0 +1,70 @@
+.full-width {
+  width: 100%;
+}
+
+.checklist-container {
+  border: 1px solid #ccc;
+  padding: 15px;
+  border-radius: 4px;
+  margin-top: 10px;
+}
+
+.chart-container {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+fieldset {
+  margin-bottom: 20px;
+}
+
+legend {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+mat-checkbox {
+  margin-bottom: 8px;
+  display: block;
+}
+
+.info-box-text {
+  font-weight: 500;
+  font-size: 17px; 
+}
+
+.data-info {
+  font-weight: 500;
+  font-size: 22px; 
+}
+
+.info-box {
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background-color: #f8f9fa;
+  width: 100%;
+  height: 50px;
+}
+
+.info-box-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.info-box-number {
+  font-weight: 500;
+  font-size: 22px; 
+}
+
+.time-info {
+  font-size: 22px;
+  font-weight: 500;
+  color: #6c757d;
+  text-align: right;
+}
+
+

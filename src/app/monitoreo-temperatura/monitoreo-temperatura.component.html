@@ -1,0 +1,172 @@
+<section class="content">
+  <div class="container-fluid">
+    <div class="block-header">
+      <div class="row">
+        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+          <ul class="breadcrumb breadcrumb-style">
+            <li class="breadcrumb-item">
+              <h4 class="page-title">Monitoreo de Temperatura</h4>
+            </li>
+            <li class="breadcrumb-item bcrumb-1">
+              <a routerLink="/dashboard/main">
+                <i class="fas fa-home"></i> Inicio</a>
+            </li>
+            <li class="breadcrumb-item active">Monitoreo de Temperatura</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="row clearfix">
+      <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12">
+        <div class="card">
+          <div class="header">
+            <h2>Visualización y Reporte</h2>
+          </div>
+          <div class="body">
+            <form [formGroup]="form">
+              <div class="row">
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Planta</mat-label>
+                    <mat-select formControlName="planta" (selectionChange)="onPlantaChange()">
+                      <mat-option *ngFor="let planta of plantas" [value]="planta">
+                        {{ planta }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Número de equipo</mat-label>
+                    <input matInput formControlName="equipo">
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Límite inferior de temperatura (°C)</mat-label>
+                    <input matInput type="number" step="0.1" formControlName="limite">
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Nombre del técnico</mat-label>
+                    <input matInput formControlName="tecnico">
+                  </mat-form-field>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Fecha</mat-label>
+                    <input matInput type="date" formControlName="fecha">
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Nombre del cliente</mat-label>
+                    <input matInput formControlName="cliente">
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Ubicación del cliente</mat-label>
+                    <input matInput formControlName="ubicacion">
+                  </mat-form-field>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-12">
+                  <fieldset class="checklist-container">
+                    <legend>Lista de chequeo</legend>
+                    <div class="row">
+                      <div class="col-md-3" *ngFor="let item of checklistItems">
+                        <mat-checkbox [checked]="isItemSelected(item)" (change)="toggleChecklistItem(item)">
+                          {{ item }}
+                        </mat-checkbox>
+                      </div>
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+            </form>
+
+            <div *ngIf="mostrarGrafica" class="mt-4" #reporteContent>
+              <!-- Panel de información de temperatura -->
+              <div class="row mb-4">
+                <div class="col-md-12">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col-md-3">
+                          <span class="info-box-text">Última temperatura</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-primary">{{ obtenerUltimaTemperatura().valor.toFixed(2) }} °C</span>
+                              <span class="time-info">{{ formatearHora(obtenerUltimaTemperatura().tiempo) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <span class="info-box-text">Temperatura mínima</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-info">{{ obtenerTemperaturaMinima().valor.toFixed(2) }} °C</span>
+                              <span class="time-info">{{ formatearHora(obtenerTemperaturaMinima().tiempo) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <span class="info-box-text">Temperatura máxima</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-danger">{{ obtenerTemperaturaMaxima().valor.toFixed(2) }} °C</span>
+                              <span class="time-info">{{ formatearHora(obtenerTemperaturaMaxima().tiempo) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <span class="info-box-text">Tiempo transcurrido</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-success">{{ obtenerTiempoTranscurrido() }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Gráfica - Activo {{ form.get('equipo')?.value || 'Sin número' }}</h3>
+                    <div>
+                      <button mat-raised-button color="secondary" (click)="deleteData()" class="me-2">
+                        <i class="material-icons">delete</i> Borrar datos
+                      </button>
+                      <button mat-raised-button color="primary" (click)="actualizarDatosManualmente()" class="me-2">
+                        <i class="material-icons">refresh</i> Actualizar datos
+                      </button>
+                      <button mat-raised-button color="accent" (click)="generarPDF()">
+                        <i class="material-icons">picture_as_pdf</i> Descargar informe PDF
+                      </button>
+                    </div>
+                  </div>
+                  <div class="alert alert-info">
+                    <i class="material-icons align-middle me-2">info</i>
+                    Los datos se actualizan automáticamente cada 30 segundos.
+                  </div>
+                </div>
+              </div>
+              <div class="chart-container" style="position: relative; height: 400px;">
+                <canvas #graficaCanvas></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

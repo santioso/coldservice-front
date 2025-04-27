@@ -99,8 +99,20 @@
                 <!-- Estado Column -->
                 <ng-container matColumnDef="estado">
                   <mat-header-cell *matHeaderCellDef mat-sort-header>Estado</mat-header-cell>
-                  <mat-cell *matCellDef="let row">{{row.estado}}</mat-cell>
+                  <mat-cell *matCellDef="let row">
+                    <div [ngClass]="{
+                      'estado-disponible': row.estado === 'Disponible' || row.estado === 'Disponible nuevo',
+                      'estado-no-disponible': row.estado !== 'Disponible' && row.estado !== 'Disponible nuevo' && row.estado !== 'Baja',
+                      'estado-baja': row.estado === 'Baja'
+                      }">
+                      {{row.estado}}
+                    </div>
+                  </mat-cell>
                 </ng-container>
+
+
+
+
                 <!-- Actions Column -->
                 <ng-container matColumnDef="actions">
                   <mat-header-cell class="pr-0" *matHeaderCellDef>Acciones</mat-header-cell>

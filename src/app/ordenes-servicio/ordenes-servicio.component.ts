@@ -98,6 +98,9 @@ export class OrdenesServicioComponent
     this.loadStatus();
     this.loadData();
     this.loadOrdenesServicio();
+    // Establecer ordenación descendente por ID como predeterminada
+    this.sort.active = 'id';
+    this.sort.direction = 'desc';
   }
 
   refresh() {
@@ -109,9 +112,9 @@ export class OrdenesServicioComponent
     this.ordenesServicioService.dataChange.subscribe(
       (data: OrdenesServicioModel[]) => {
         this.ordenesServicio = data;
-        this.cdr.detectChanges();
       }
     );
+    this.cdr.detectChanges();
   }
 
   filtrarPorEstado(): void {
@@ -397,7 +400,12 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
 
   sortData(data: OrdenesServicioModel[]): OrdenesServicioModel[] {
     if (!this._sort.active || this._sort.direction === '') {
-      return data;
+      // Si no hay ordenación activa, ordenar por ID descendente por defecto
+      return data.sort((a, b) => {
+        const valueA = isNaN(+a.id) ? a.id : +a.id;
+        const valueB = isNaN(+b.id) ? b.id : +b.id;
+        return valueB < valueA ? -1 : 1; // Orden descendente
+      });
     }
     return data.sort((a, b) => {
       let propertyA: number | string = '';
