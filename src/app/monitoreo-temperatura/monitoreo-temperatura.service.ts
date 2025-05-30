@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -33,6 +33,7 @@ export class MonitoreoTemperaturaService {
     "Planta 4": { id: "1759185", api_key: "I6X6TIDPG4K9IFKX" },
     "Planta 5": { id: "1768951", api_key: "HPUV8LT7LLY91ABJ" },
     "Planta 6": { id: "2186649", api_key: "MXE6Q0U8C6721Y8W" },
+    "Planta 7": { id: "2974269", api_key: "FBXVITEYF24M6TJC" },
   };
 
   private readonly CHECKLIST_ITEMS: string[] = [
@@ -65,7 +66,12 @@ export class MonitoreoTemperaturaService {
     }
 
     const url = `https://api.thingspeak.com/channels/${plantaData.id}/feeds.json?api_key=${plantaData.api_key}&results=1000`;
-    return this.http.get<ThingSpeakResponse>(url).pipe(
+    const headers = new HttpHeaders();
+    
+    return this.http.get<ThingSpeakResponse>(url, {
+      headers: headers,
+      withCredentials: false
+    }).pipe(
       map(data => {
         const tiempos: Date[] = [];
         const temperaturas: number[] = [];
@@ -87,8 +93,12 @@ export class MonitoreoTemperaturaService {
     if (!plantaData) {
       throw new Error(`No se encontró la planta: ${planta}`);
     }
-    // La API key debe ir como parámetro de consulta en la URL, no en el cuerpo
     const url = `https://api.thingspeak.com/channels/${plantaData.id}/feeds.json?api_key=${plantaData.api_key}`;
-    return this.http.delete(url);
+    const headers = new HttpHeaders();
+    
+    return this.http.delete(url, {
+      headers: headers,
+      withCredentials: false
+    });
   }
 }

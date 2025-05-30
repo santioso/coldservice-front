@@ -23,6 +23,8 @@ import { UtilPopupService } from '@shared/services/util-popup.service';
 import { ActivosModel } from 'app/activos/activos.model';
 import { ActivoMaestroModel } from 'app/ordenes-entrada/activo-maestro.model';
 import { catchError, lastValueFrom, map, Observable, startWith, throwError } from 'rxjs';
+import { TechnicalInterface } from 'app/ordenes-servicio/dialogs/form-dialog/form-dialog-details/add-detail-dialog/add-detail-dialog.model';
+import { OrdenesServicioService } from 'app/ordenes-servicio/ordenes-servicio.service';
 
 export interface DialogData {
   id: number;
@@ -56,28 +58,22 @@ export class FormDialogComponent implements OnInit {
   soloLectura: boolean;
   activoValid: boolean = false;
   activosEnOrdenEntrada: ActivosEnOrdenEntradaInterface[] = [];
-  activoControl = new FormControl();
-  filteredActivos?: Observable<ActivosEnOrdenEntradaInterface[]>;
-  displayedColumns: string[] = [
-    'idActivo',
-    'descripcion',
-    'fabricante',
-    'capacidad',
-    'observaciones',
-  ];
+  filteredActivos: ActivosEnOrdenEntradaInterface[] = [];
+  displayedColumns: string[] = ['idActivo', 'descripcion', 'observaciones'];
+  technicalOptions: TechnicalInterface[] = [];
 
   constructor(
     public dialogRef: MatDialogRef<FormDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: DialogData,
     public ordenesSalidaService: OrdenesSalidaService,
-    private activosService: ActivosService,
+    private ordenesServicioService: OrdenesServicioService,
     private readonly fb: UntypedFormBuilder,
     private utilPopupService: UtilPopupService
   ) {
     this.action = data.action;
     if (this.action === 'edit') {
       this.dialogTitle = 'Orden de salida de activos No. ' + data.ordenesSalidaModel.id;
-    //  this.getOrderWithActivosById(data.ordenesSalidaModel.id);
+      //  this.getOrderWithActivosById(data.ordenesSalidaModel.id);
       this.soloLectura = true;
     } else {
       this.dialogTitle = 'Nueva orden de salida';
@@ -88,12 +84,23 @@ export class FormDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.getActivosEnOrdenEntrada();
-    this.ordenesSalidaTableForm = this.creaSalidaTableForm();
-    this.getInformationActivos();
-    this.filteredActivos = this.activoControl.valueChanges.pipe(
-      startWith(''),
-      map(value => this._filterActivos(value))
+    this.ordenesServicioService
+      .getTechnicals()
+      .subscribe((technicals: TechnicalInterface[]) => {
+        this.technicalOptions = technicals;
+      });
+    
+    this.ordenesSalidaService.getAllActivosOrdenesEntrada().subscribe(
+      (activos) => {
+        this.activosEnOrdenEntrada = activos;
+        this.filteredActivos = [...activos]; // Inicializamos con todos los activos
+        
+        this.ordenesSalidaTableForm = this.creaSalidaTableForm();
+        this.getInformationActivos();
+      },
+      (error) => {
+        console.error('Error al obtener los activos en orden de entrada:', error);
+      }
     );
   }
 
@@ -107,7 +114,7 @@ export class FormDialogComponent implements OnInit {
           fecha: this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha),
           placa_vehiculo: this.ordenesSalidaModel.placa_vehiculo,
           observaciones: this.ordenesSalidaModel.observaciones,
-          entrega: this.ordenesSalidaModel.entrega,
+          entrega: parseInt(this.ordenesSalidaModel.entrega),
           recibe: this.ordenesSalidaModel.recibe,
         });
 
@@ -121,12 +128,10 @@ export class FormDialogComponent implements OnInit {
               observaciones: activo.observaciones,
               idActivo: activo.idActivo,
               descripcion: activo.descripcion,
-              fabricante: activo.fabricante,
-              capacidad: activo.capacidad,
             }))
           ];
         }
-        });
+      });
     } else {
       this.ordenesSalidaModel.activosSalida
         ? this.setActivos(this.ordenesSalidaModel.activosSalida)
@@ -137,8 +142,8 @@ export class FormDialogComponent implements OnInit {
   creaSalidaTableForm() {
     return this.fb.group({
       id: [this.ordenesSalidaModel.id],
-      fecha: [this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha), Validators.required, ],
-      placa_vehiculo: [ this.ordenesSalidaModel.placa_vehiculo, Validators.required, ],
+      fecha: [this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha), Validators.required,],
+      placa_vehiculo: [this.ordenesSalidaModel.placa_vehiculo, Validators.required,],
       observaciones: [this.ordenesSalidaModel.observaciones],
       entrega: [this.ordenesSalidaModel.entrega, Validators.required],
       recibe: [this.ordenesSalidaModel.recibe, Validators.required],
@@ -146,8 +151,6 @@ export class FormDialogComponent implements OnInit {
       activosSalida: this.fb.array([]),
     });
   }
-
-
 
   get activosSalida(): FormArray {
     return this.ordenesSalidaTableForm.get('activosSalida') as FormArray;
@@ -167,8 +170,6 @@ export class FormDialogComponent implements OnInit {
     return this.fb.group({
       idActivo: [activo.idActivo || ''],
       descripcion: [activo.descripcion || ''],
-      fabricante: [activo.fabricante || ''],
-      capacidad: [activo.capacidad || ''],
       observaciones: [activo.observaciones || ''],
       idEntrada: [activo.idEntrada || ''],
     });
@@ -192,8 +193,17 @@ export class FormDialogComponent implements OnInit {
     );
   }
 
-  displayActivo(activo: ActivosEnOrdenEntradaInterface): string {
-    return activo ? activo.idActivo : '';
+  displayActivo(activo: any): string {
+    if (!activo) return '';
+    
+    // Si es un string, lo devolvemos directamente
+    if (typeof activo === 'string') return activo;
+    
+    // Si es un objeto con idActivo, devolvemos ese valor
+    if (activo.idActivo) return activo.idActivo;
+    
+    // En cualquier otro caso, devolvemos cadena vacía
+    return '';
   }
 
   getOrderWithActivosById(id: number): Observable<OrdenesSalidaModel> {
@@ -240,7 +250,7 @@ export class FormDialogComponent implements OnInit {
     delete datosForm.id;
     delete datosForm.idEntrada;
     datosForm.fecha = this.formatearFecha(datosForm.fecha);
-    
+
     // Filtrar activos que tengan idEntrada y mapear correctamente
     datosForm.activosSalida = datosForm.activosSalida
       .filter((activo: any) => activo.idEntrada)
@@ -270,20 +280,32 @@ export class FormDialogComponent implements OnInit {
   }
 
   onActivoEntradaIdChange(event: any, index: number): void {
-    const idActivo = event.option.value.idActivo;
-    const activo = this.activosEnOrdenEntrada?.find(
-      (activo) => activo.idActivo === idActivo
-    );
-    if (idActivo) {
-      if (activo?.idEntrada !== undefined && this.verificarIdDuplicado(activo.idEntrada)) {
-        this.mostrarMensajeError(idActivo);
+    const activo = event.option.value;
+    if (activo && activo.idActivo) {
+      // Verificamos si el idEntrada ya está en la orden de salida
+      if (activo.idEntrada !== undefined && this.verificarIdDuplicado(activo.idEntrada)) {
+        // Mostramos el mensaje de error
+        this.mostrarMensajeError(activo.idActivo);
+        
+        // Limpiamos el campo de activo
+        const activoFormGroup = this.activosSalida.at(index) as FormGroup;
+        activoFormGroup.patchValue({
+          idActivo: '',
+          descripcion: '',
+          observaciones: '',
+          idEntrada: '',
+        });
+        
+        // Actualizamos la lista de activos filtrados
+        this.actualizarActivosFiltrados();
+        
         return;
       }
-      this.obtenerDatosDelServicio(idActivo, index);
+      this.obtenerDatosDelServicio(activo.idActivo, index);
     }
   }
 
-  private verificarIdDuplicado(idEntrada: number ): boolean {
+  private verificarIdDuplicado(idEntrada: number): boolean {
     return this.activosSalida.value.some(
       (activo: any) => activo.idEntrada === idEntrada
     );
@@ -305,17 +327,43 @@ export class FormDialogComponent implements OnInit {
     if (activo) {
       const activoFormGroup = this.activosSalida.at(index) as FormGroup;
       activoFormGroup.patchValue({
-          idActivo: activo.idActivo,
-          descripcion: activo.descripcion,
-          fabricante: activo.fabricante,
-          capacidad: activo.capacidad,
-          observaciones: activo.observaciones,
-          idEntrada: activo.idEntrada,
-        });
+        idActivo: activo.idActivo,
+        descripcion: activo.descripcion,
+        observaciones: activo.observaciones,
+        idEntrada: activo.idEntrada,
+      });
       this.activoValid = this.activosSalida.length >= 1;
+      
+      // Actualizamos la lista de activos filtrados para excluir el que acabamos de seleccionar
+      this.actualizarActivosFiltrados();
     }
   }
 
+  private actualizarActivosFiltrados(): void {
+    // Obtenemos los IDs de entrada que ya están seleccionados
+    const idsEntradaSeleccionados = this.activosSalida.value
+      .filter((activo: any) => activo.idEntrada)
+      .map((activo: any) => activo.idEntrada);
+    
+    // Filtramos para excluir los activos que ya están en la orden de salida
+    this.filteredActivos = this.activosEnOrdenEntrada.filter(activo => 
+      !idsEntradaSeleccionados.includes(activo.idEntrada)
+    );
+  }
+
+  filtrarActivos(event: any, index: number): void {
+    const filterValue = event.target.value.toLowerCase();
+    
+    // Primero actualizamos la lista completa de activos disponibles (excluyendo los ya seleccionados)
+    this.actualizarActivosFiltrados();
+    
+    // Luego filtramos por el texto ingresado
+    if (filterValue) {
+      this.filteredActivos = this.filteredActivos.filter(activo =>
+        activo.idActivo.toLowerCase().includes(filterValue)
+      );
+    }
+  }
 
   private formatearFecha(fecha: string): string {
     const date = new Date(fecha);

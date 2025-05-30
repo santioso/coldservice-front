@@ -81,6 +81,7 @@ export class OrdenesSalidaComponent
   ngOnInit(): void {
     this.loadData();
     this.loadOrdenesSalida();
+    this.sort.sort({ id: 'id', start: 'desc', disableClear: true });
   }
 
   refresh() {

@@ -90,6 +90,7 @@ export class OrdenesEntradaComponent
   ngOnInit() {
     this.loadData();
     this.loadOrdenesEntrada();
+    this.sort.sort({ id: 'id', start: 'desc', disableClear: true });
   }
 
   refresh() {

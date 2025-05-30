@@ -45,6 +45,4 @@ export interface ActivosEnOrdenEntradaInterface {
   observaciones: string,
   idActivo: string,
   descripcion: string,
-  fabricante: string,
-  capacidad: number,
 }

@@ -38,14 +38,20 @@
                 <div class="col-md-3">
                   <mat-form-field class="full-width" appearance="outline">
                     <mat-label>Número de equipo</mat-label>
-                    <input matInput formControlName="equipo">
+                    <input matInput formControlName="equipo" class="">
                   </mat-form-field>
                 </div>
                 <div class="col-md-3">
-                  <mat-form-field class="full-width" appearance="outline">
-                    <mat-label>Límite inferior de temperatura (°C)</mat-label>
-                    <input matInput type="number" step="0.1" formControlName="limite">
-                  </mat-form-field>
+                  <div>
+                    <div class="example-label-container">
+                      <label id="example-name-label" class="example-name-label">Límite inferior de temperatura <span class="font-weight-bold font-size-22 text-primary"> {{slider.value}}° C</span></label>
+                    </div>
+                    <mat-slider class="example-margin" [disabled]="disabled" [max]="max" [min]="min" [step]="step"
+                      [discrete]="thumbLabel" [showTickMarks]="showTicks">
+                      <input matSliderThumb [(ngModel)]="value" [ngModelOptions]="{standalone: true}"
+                        (ngModelChange)="onSliderChange($event)" #slider>
+                    </mat-slider>
+                  </div>
                 </div>
                 <div class="col-md-3">
                   <mat-form-field class="full-width" appearance="outline">
@@ -101,7 +107,8 @@
                           <span class="info-box-text">Última temperatura</span>
                           <div class="info-box">
                             <div class="info-box-content">
-                              <span class="info-box-number text-primary">{{ obtenerUltimaTemperatura().valor.toFixed(2) }} °C</span>
+                              <span class="info-box-number text-primary">{{ obtenerUltimaTemperatura().valor.toFixed(2)
+                                }} °C</span>
                               <span class="time-info">{{ formatearHora(obtenerUltimaTemperatura().tiempo) }}</span>
                             </div>
                           </div>
@@ -110,7 +117,8 @@
                           <span class="info-box-text">Temperatura mínima</span>
                           <div class="info-box">
                             <div class="info-box-content">
-                              <span class="info-box-number text-info">{{ obtenerTemperaturaMinima().valor.toFixed(2) }} °C</span>
+                              <span class="info-box-number text-info">{{ obtenerTemperaturaMinima().valor.toFixed(2) }}
+                                °C</span>
                               <span class="time-info">{{ formatearHora(obtenerTemperaturaMinima().tiempo) }}</span>
                             </div>
                           </div>
@@ -119,7 +127,8 @@
                           <span class="info-box-text">Temperatura máxima</span>
                           <div class="info-box">
                             <div class="info-box-content">
-                              <span class="info-box-number text-danger">{{ obtenerTemperaturaMaxima().valor.toFixed(2) }} °C</span>
+                              <span class="info-box-number text-danger">{{ obtenerTemperaturaMaxima().valor.toFixed(2)
+                                }} °C</span>
                               <span class="time-info">{{ formatearHora(obtenerTemperaturaMaxima().tiempo) }}</span>
                             </div>
                           </div>

@@ -14,6 +14,8 @@ interface DatoTemperatura {
   indice: number;
 }
 
+
+
 @Component({
   selector: 'app-monitoreo-temperatura',
   templateUrl: './monitoreo-temperatura.component.html',
@@ -30,6 +32,16 @@ export class MonitoreoTemperaturaComponent implements OnInit, AfterViewInit, OnD
   datosTemperatura: TemperatureData | null = null;
   mostrarGrafica = false;
   datosListos = false;
+
+  // Variables del slider
+  disabled = false;
+  max = 30;
+  min = -50;
+  showTicks = true;
+  step = 1;
+  thumbLabel = true;
+  value = 0;
+
   
   private actualizacionAutomatica: Subscription | null = null;
   private equipoSubscription: Subscription | null = null;
@@ -82,6 +94,11 @@ export class MonitoreoTemperaturaComponent implements OnInit, AfterViewInit, OnD
       this.equipoSubscription.unsubscribe();
       this.equipoSubscription = null;
     }
+  }
+
+  onSliderChange(value: number): void {
+    this.form.get('limite')?.setValue(value);
+    this.cdr.detectChanges();
   }
 
   private inicializarFormulario(): void {

@@ -15,6 +15,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { NgChartsModule } from 'ng2-charts';
+import { MatSliderModule } from '@angular/material/slider';
 
 const routes: Routes = [
   {
@@ -42,7 +43,8 @@ const routes: Routes = [
         MatFormFieldModule,
         MatInputModule,
         MatSelectModule,
-        NgChartsModule
+        NgChartsModule,
+        MatSliderModule
   ],
   providers: [
     MonitoreoTemperaturaService
