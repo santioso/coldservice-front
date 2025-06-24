@@ -6,6 +6,7 @@ export class OrdenesEntradaModel {
   observaciones: string;
   entrega: string;
   recibe: string;
+  recibeNombre?: string;
   activosEntrada?:[
     {
       id: string;
@@ -22,6 +23,7 @@ export class OrdenesEntradaModel {
       this.observaciones = ordenesEntradaModel.observaciones || '';
       this.entrega = ordenesEntradaModel.entrega || '';
       this.recibe = ordenesEntradaModel.recibe || '';
+      this.recibeNombre = ordenesEntradaModel.recibeNombre;
       this.activosEntrada = ordenesEntradaModel.activosEntrada;
   }
   public getRandomID(): number {

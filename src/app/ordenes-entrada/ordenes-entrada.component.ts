@@ -36,6 +36,8 @@ import { OrdenesEntradaService } from './ordenes-entrada.service';
 import { OrdenesEntradaModel } from './ordenes-entrada.model';
 import { UtilPopupService } from '@shared/services/util-popup.service';
 import { HttpResponse } from '@angular/common/http';
+import { TechnicalInterface } from 'app/ordenes-servicio/dialogs/form-dialog/form-dialog-details/add-detail-dialog/add-detail-dialog.model';
+import { OrdenesServicioService } from 'app/ordenes-servicio/ordenes-servicio.service';
 
 @Component({
   selector: 'app-ordenes-entrada',
@@ -69,11 +71,13 @@ export class OrdenesEntradaComponent
   id?: number;
   ordenesEntradaModel?: OrdenesEntradaModel;
   ordenesEntrada: OrdenesEntradaModel[] = [];
+  technicalOptions: TechnicalInterface[] = [];
 
   constructor(
     public httpClient: HttpClient,
     public dialog: MatDialog,
     public ordenesEntradaService: OrdenesEntradaService,
+    public ordenesServicioService: OrdenesServicioService,
     private readonly snackBar: MatSnackBar,
     private readonly cdr: ChangeDetectorRef,
     private readonly utilPopupService: UtilPopupService
@@ -88,6 +92,11 @@ export class OrdenesEntradaComponent
   contextMenuPosition = { x: '0px', y: '0px' };
 
   ngOnInit() {
+    this.ordenesServicioService
+      .getTechnicals()
+      .subscribe((technicals: TechnicalInterface[]) => {
+        this.technicalOptions = technicals;
+      });
     this.loadData();
     this.loadOrdenesEntrada();
     this.sort.sort({ id: 'id', start: 'desc', disableClear: true });
@@ -102,9 +111,23 @@ export class OrdenesEntradaComponent
     this.ordenesEntradaService.dataChange.subscribe(
       (data: OrdenesEntradaModel[]) => {
         this.ordenesEntrada = data;
+        this.processRecibeTechnicalNames();
         this.cdr.detectChanges(); // Fuerza una nueva verificación de cambios
       }
     );
+  }
+
+  processRecibeTechnicalNames(): void {
+    if (this.ordenesEntrada && this.technicalOptions.length > 0) {
+      this.ordenesEntrada.forEach(orden => {
+        const technical = this.technicalOptions.find(tech => tech.id.toString() === orden.recibe.toString());
+        if (technical) {
+          orden.recibeNombre = technical.name;
+        } else {
+          orden.recibeNombre = orden.recibe;
+        }
+      });
+    }
   }
 
   addNew() {

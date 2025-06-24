@@ -17,12 +17,9 @@ import {
   OrdenesSalidaModel,
 } from '../../ordenes-salida.model';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
-import { ActivosService } from 'app/activos/activos.service';
 import { OrdenesSalidaService } from 'app/ordenes-salida/ordenes-salida.service';
 import { UtilPopupService } from '@shared/services/util-popup.service';
-import { ActivosModel } from 'app/activos/activos.model';
-import { ActivoMaestroModel } from 'app/ordenes-entrada/activo-maestro.model';
-import { catchError, lastValueFrom, map, Observable, startWith, throwError } from 'rxjs';
+import { catchError, lastValueFrom, Observable, throwError } from 'rxjs';
 import { TechnicalInterface } from 'app/ordenes-servicio/dialogs/form-dialog/form-dialog-details/add-detail-dialog/add-detail-dialog.model';
 import { OrdenesServicioService } from 'app/ordenes-servicio/ordenes-servicio.service';
 
@@ -38,7 +35,7 @@ export interface activosSalida {
   descripcion: string;
   fabricante: string;
   capacidad: string;
-  observaciones: string;
+  observaciones_salida: string;
 }
 
 @Component({
@@ -97,6 +94,11 @@ export class FormDialogComponent implements OnInit {
         
         this.ordenesSalidaTableForm = this.creaSalidaTableForm();
         this.getInformationActivos();
+        
+        // Añadir listener para cambios en el formulario principal
+        this.ordenesSalidaTableForm.valueChanges.subscribe(() => {
+          this.verificarFormularioValido();
+        });
       },
       (error) => {
         console.error('Error al obtener los activos en orden de entrada:', error);
@@ -125,7 +127,7 @@ export class FormDialogComponent implements OnInit {
             ...this.ordenesSalidaModel.activosSalida.map((activo: any) => ({
               idEntrada: activo.idEntrada,
               service_order_id: this.data.ordenesSalidaModel.id,
-              observaciones: activo.observaciones,
+              observaciones_salida: activo.observaciones,
               idActivo: activo.idActivo,
               descripcion: activo.descripcion,
             }))
@@ -162,17 +164,27 @@ export class FormDialogComponent implements OnInit {
       const activoFormGroup = this.createActivo(activo);
       activosFormArray.push(activoFormGroup);
       activoFormGroup.get('idActivo')?.setValue(activo.idActivo || '');
+      activoFormGroup.get('descripcion')?.setValue(activo.descripcion || '');
+      activoFormGroup.get('observaciones_salida')?.setValue(activo.observaciones || '');
+      activoFormGroup.get('idEntrada')?.setValue(activo.idEntrada || '');
     });
     this.agregarRegistrosFaltantes(activosFormArray);
   }
 
   createActivo(activo: any = {}): FormGroup {
-    return this.fb.group({
+    const group = this.fb.group({
       idActivo: [activo.idActivo || ''],
       descripcion: [activo.descripcion || ''],
-      observaciones: [activo.observaciones || ''],
+      observaciones_salida: [activo.observaciones_salida || ''],
       idEntrada: [activo.idEntrada || ''],
     });
+    
+    // Agregar listener para cambios en observaciones_salida
+    group.get('observaciones_salida')?.valueChanges.subscribe(() => {
+      this.actualizarActivoValid();
+    });
+    
+    return group;
   }
 
   async getActivosEnOrdenEntrada(): Promise<void> {
@@ -242,19 +254,25 @@ export class FormDialogComponent implements OnInit {
       entrega: [this.ordenesSalidaModel.entrega, [Validators.required]],
       recibe: [this.ordenesSalidaModel.recibe, [Validators.required]],
       observaciones: [this.ordenesSalidaModel.observaciones],
+      activosSalida: this.fb.array([]),
     });
   }
 
   public confirmAdd(): void {
+
     let datosForm = this.ordenesSalidaTableForm.getRawValue();
+    console.log(datosForm);
     delete datosForm.id;
     delete datosForm.idEntrada;
     datosForm.fecha = this.formatearFecha(datosForm.fecha);
 
-    // Filtrar activos que tengan idEntrada y mapear correctamente
+    // Filtrar activos que tengan idEntrada y mapear correctamente con observaciones
     datosForm.activosSalida = datosForm.activosSalida
       .filter((activo: any) => activo.idEntrada)
-      .map((activo: any) => activo.idEntrada);
+      .map((activo: any) => ({
+        id: activo.idEntrada,
+        observacionesSalida: activo.observaciones_salida || ''
+      }));
 
     if (this.action === 'add') {
       this.ordenesSalidaService.addOrden(datosForm).subscribe(() => {
@@ -292,7 +310,7 @@ export class FormDialogComponent implements OnInit {
         activoFormGroup.patchValue({
           idActivo: '',
           descripcion: '',
-          observaciones: '',
+          observaciones_salida: '',
           idEntrada: '',
         });
         
@@ -329,7 +347,7 @@ export class FormDialogComponent implements OnInit {
       activoFormGroup.patchValue({
         idActivo: activo.idActivo,
         descripcion: activo.descripcion,
-        observaciones: activo.observaciones,
+        observaciones_salida: activo.observaciones_salida,
         idEntrada: activo.idEntrada,
       });
       this.activoValid = this.activosSalida.length >= 1;
@@ -376,5 +394,42 @@ export class FormDialogComponent implements OnInit {
   private convertirFechaAObjetoDate(fecha: string): Date {
     const [year, month, day] = fecha.split('-').map(Number);
     return new Date(year, month - 1, day);
+  }
+
+  // Método simple para actualizar activoValid cuando cambie observaciones_salida
+  private actualizarActivoValid(): void {
+    // Verificar si hay al menos un activo con observaciones_salida
+    if (this.activosSalida && this.activosSalida.length > 0) {
+      const hayObservaciones = this.activosSalida.controls.some((control: AbstractControl) => {
+        const observaciones = (control as FormGroup).get('observaciones_salida')?.value;
+        return observaciones && observaciones.trim() !== '';
+      });
+      
+      this.activoValid = hayObservaciones;
+    } else {
+      this.activoValid = false;
+    }
+  }
+
+  // Método para verificar si el formulario es válido y actualizar activoValid
+  private verificarFormularioValido(): void {
+    // Si estamos en modo de edición o si hay al menos un activo con idEntrada, activamos el botón
+    if (this.action === 'edit' || this.hayActivosSeleccionados()) {
+      this.activoValid = true;
+    } else {
+      this.actualizarActivoValid();
+    }
+  }
+
+  // Método para verificar si hay activos seleccionados
+  private hayActivosSeleccionados(): boolean {
+    if (!this.activosSalida || this.activosSalida.length === 0) {
+      return false;
+    }
+    
+    return this.activosSalida.controls.some((control: AbstractControl) => {
+      const idEntrada = (control as FormGroup).get('idEntrada')?.value;
+      return idEntrada && idEntrada !== '';
+    });
   }
 }

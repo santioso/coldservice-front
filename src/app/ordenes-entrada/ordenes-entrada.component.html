@@ -106,7 +106,7 @@
                 <!-- Recibe Column -->
                 <ng-container matColumnDef="recibe">
                   <mat-header-cell *matHeaderCellDef mat-sort-header>Recibe</mat-header-cell>
-                  <mat-cell *matCellDef="let row">{{row.recibe}}</mat-cell>
+                  <mat-cell *matCellDef="let row">{{row.recibeNombre || row.recib}}</mat-cell>
                 </ng-container>
                 <!-- Observaciones Column -->
                 <ng-container matColumnDef="observaciones">

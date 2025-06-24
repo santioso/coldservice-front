@@ -105,7 +105,7 @@
 
             <ng-container matColumnDef="entrega">
               <mat-header-cell *matHeaderCellDef mat-sort-header> Entrega </mat-header-cell>
-              <mat-cell *matCellDef="let element"> {{element.entrega}} </mat-cell>
+              <mat-cell *matCellDef="let element"> {{element.entregaNombre || element.entrega}} </mat-cell>
             </ng-container>
 
             <ng-container matColumnDef="recibe">

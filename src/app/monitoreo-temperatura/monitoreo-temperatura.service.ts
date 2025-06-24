@@ -66,10 +66,8 @@ export class MonitoreoTemperaturaService {
     }
 
     const url = `https://api.thingspeak.com/channels/${plantaData.id}/feeds.json?api_key=${plantaData.api_key}&results=1000`;
-    const headers = new HttpHeaders();
     
     return this.http.get<ThingSpeakResponse>(url, {
-      headers: headers,
       withCredentials: false
     }).pipe(
       map(data => {
@@ -94,10 +92,8 @@ export class MonitoreoTemperaturaService {
       throw new Error(`No se encontró la planta: ${planta}`);
     }
     const url = `https://api.thingspeak.com/channels/${plantaData.id}/feeds.json?api_key=${plantaData.api_key}`;
-    const headers = new HttpHeaders();
     
     return this.http.delete(url, {
-      headers: headers,
       withCredentials: false
     });
   }
