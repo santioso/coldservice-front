@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MonitoreoTemperaturaComponent } from './monitoreo-temperatura.component';
 import { MonitoreoTemperaturaRoutingModule } from './monitoreo-temperatura-routing.module';
 import { MonitoreoTemperaturaService } from './monitoreo-temperatura.service';
+import { CSVFileService } from './csv-file.service';
 import { ComponentsModule } from '@shared/components/components.module';
 import { SharedModule } from '@shared';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -20,34 +21,30 @@ import { MatSliderModule } from '@angular/material/slider';
 const routes: Routes = [
   {
     path: '',
-    component: MonitoreoTemperaturaComponent
-  }
+    component: MonitoreoTemperaturaComponent,
+  },
 ];
 
 @NgModule({
-  declarations: [
-    MonitoreoTemperaturaComponent
-  ],
+  declarations: [MonitoreoTemperaturaComponent],
   imports: [
     CommonModule,
     MonitoreoTemperaturaRoutingModule,
     ComponentsModule,
-        SharedModule,
-        FormsModule,
-        ReactiveFormsModule,
-        RouterModule.forChild(routes),
-        HttpClientModule,
-        MatButtonModule,
-        MatCheckboxModule,
-        MatDatepickerModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatSelectModule,
-        NgChartsModule,
-        MatSliderModule
+    SharedModule,
+    FormsModule,
+    ReactiveFormsModule,
+    RouterModule.forChild(routes),
+    HttpClientModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    NgChartsModule,
+    MatSliderModule,
   ],
-  providers: [
-    MonitoreoTemperaturaService
-  ]
+  providers: [MonitoreoTemperaturaService, CSVFileService],
 })
-export class MonitoreoTemperaturaModule { }
+export class MonitoreoTemperaturaModule {}
