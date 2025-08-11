@@ -21,9 +21,10 @@ jobs:
         with:
           header: Test & Lint Results
           message: |
-            ✅ Lint completado  
+            ✅ Lint completado --
             📊 Resultados de pruebas:  
             \`\`\`json
             $(cat test-results.json)
             \`\`\`
+
 
