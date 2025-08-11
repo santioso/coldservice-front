@@ -30,3 +30,33 @@ jobs:
 
       - name: Run Tests
         run: npm test
+
+
+name: PR Quality Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Upload results to PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: Test & Lint Results
+          message: |
+            ✅ Lint completado  
+            📊 Resultados de pruebas:  
+            \`\`\`json
+            $(cat test-results.json)
+            \`\`\`
