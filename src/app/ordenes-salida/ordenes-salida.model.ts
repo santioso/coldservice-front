@@ -6,6 +6,7 @@ export class OrdenesSalidaModel {
   observaciones: string;
   entrega: string;
   recibe: string;
+  entregaNombre?: string;
   idEntrada: string;
   activosSalida?:[
     {
@@ -13,7 +14,7 @@ export class OrdenesSalidaModel {
       descripcion: string;
       fabricante: string;
       capacidad: number;
-      observaciones: string;
+      observaciones_salida: string;
   }]
 
   constructor(ordenesSalidaModel: OrdenesSalidaModel) {
@@ -24,6 +25,7 @@ export class OrdenesSalidaModel {
       this.observaciones = ordenesSalidaModel.observaciones || '';
       this.entrega = ordenesSalidaModel.entrega || '';
       this.recibe = ordenesSalidaModel.recibe || '';
+      this.entregaNombre = ordenesSalidaModel.entregaNombre;
       this.idEntrada = ordenesSalidaModel.idEntrada || '';
       this.activosSalida = ordenesSalidaModel.activosSalida;
   }
@@ -42,9 +44,7 @@ export interface AddOrdenSalidaInterface {
 export interface ActivosEnOrdenEntradaInterface {
   idEntrada: number,
   service_order_id: number,
-  observaciones: string,
+  observaciones_salida: string,
   idActivo: string,
   descripcion: string,
-  fabricante: string,
-  capacidad: number,
 }

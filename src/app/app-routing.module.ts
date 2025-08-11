@@ -45,6 +45,20 @@ const routes: Routes = [
           ),
       },
       {
+        path: 'monitoreo-temperatura',
+        loadChildren: () =>
+          import('./monitoreo-temperatura/monitoreo-temperatura.module').then(
+            (m) => m.MonitoreoTemperaturaModule
+          ),
+      },
+      {
+        path: 'orden-salida',
+        loadChildren: () =>
+          import('./ordenes-salida/ordenes-salida.module').then(
+            (m) => m.OrdenesSalidaModule
+          ),
+      },
+      {
         path: 'advance-table',
         loadChildren: () =>
           import('./advance-table/advance-table.module').then(

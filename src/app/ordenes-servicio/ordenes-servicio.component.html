@@ -4,14 +4,7 @@
       <!-- breadcrumb -->
       <app-breadcrumb [title]="'Órdenes de servicio'" [items]="['Inicio']" [active_item]="'Órdenes de servicio'"></app-breadcrumb>
     </div>
-    <div class="alert alert-info">
-      Este componente administra las órdenes de servicio permite:<br><br>
-      <ul class="fa-ul">
-        <li class="font-15"><span class="fa-li"><i class="fas fa-angle-double-right"></i></span>Agregar, editar y eliminar las órdenes de servicios</li>
-        <li class="font-15"><span class="fa-li"><i class="fas fa-angle-double-right"></i></span>Exportar todos las órdenes de servicio a un archivo de excel</li>
-      </ul>
-    </div>
-    <div class="row">
+   <div class="row">
       <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
         <div class="card">
           <div class="materialTableHeader">
@@ -27,6 +20,14 @@
                 </li>
               </ul>
             </div>
+
+            <!-- Filtros de estado -->
+            <!-- <div class="filtros-estado">
+              <mat-checkbox *ngFor="let estado of statusService" [(ngModel)]="filtrosEstado[estado]" (change)="filtrarPorEstado()">
+                {{ estado }}
+              </mat-checkbox>
+            </div> -->
+
             <div class="right">
               <ul class="tbl-export-btn">
                 <li class="tbl-header-btn">
@@ -105,8 +106,8 @@
                   <mat-header-cell *matHeaderCellDef mat-sort-header>Estado</mat-header-cell>
                   <mat-cell *matCellDef="let row">
                     <div [ngClass]="{
-                      'estado-disponible': row.status === 'Disponible',
-                      'estado-no-disponible': row.status !== 'Disponible' && row.status !== 'Baja',
+                      'estado-disponible': row.status === 'Disponible' || row.status === 'Disponible nuevo',
+                      'estado-no-disponible': row.status !== 'Disponible' && row.status !== 'Disponible nuevo' && row.status !== 'Baja',
                       'estado-baja': row.status === 'Baja'
                       }">
                         {{row.status}}

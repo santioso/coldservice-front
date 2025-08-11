@@ -67,6 +67,7 @@ export class OrdenesServicioComponent
     'observaciones',
     'actions',
   ];
+
   exampleDatabase?: OrdenesServicioService;
   dataSource!: DatabaseSource;
   selection = new SelectionModel<OrdenesServicioModel>(true, []);
@@ -74,6 +75,7 @@ export class OrdenesServicioComponent
   ordenesServicioModel?: OrdenesServicioModel;
   ordenesServicio: OrdenesServicioModel[] = [];
   statusService: any[] = [];
+  filtrosEstado: { [key: string]: boolean } = {};
 
   constructor(
     public httpClient: HttpClient,
@@ -96,6 +98,9 @@ export class OrdenesServicioComponent
     this.loadStatus();
     this.loadData();
     this.loadOrdenesServicio();
+    // Establecer ordenación descendente por ID como predeterminada
+    this.sort.active = 'id';
+    this.sort.direction = 'desc';
   }
 
   refresh() {
@@ -107,25 +112,27 @@ export class OrdenesServicioComponent
     this.ordenesServicioService.dataChange.subscribe(
       (data: OrdenesServicioModel[]) => {
         this.ordenesServicio = data;
-        this.cdr.detectChanges();
       }
     );
+    this.cdr.detectChanges();
+  }
+
+  filtrarPorEstado(): void {
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      // Si el estado del registro está en filtrosEstado y está marcado como true, mostrar el registro
+      return this.filtrosEstado[data.status] === true;
+    };
+    // Forzar la actualización del filtro
+    this.dataSource.filter = '' + Math.random();
   }
 
   loadStatus(): void {
-    this.ordenesServicioService.getStatus().subscribe({
-      next: (data) => {
-        const status = data;
-        this.statusService = this.createArrayStatus(status);
-      },
-    })
-  }
-
-  createArrayStatus(status: any): Array<any> {
-    this.statusService = status.map((x: any) => {
-      return { id: x, value: x };
+    this.ordenesServicioService.getStatus().subscribe(status => {
+      this.statusService = status;
+      this.statusService.forEach(estado => {
+        this.filtrosEstado[estado] = true;
+      });
     });
-    return this.statusService;
   }
 
   public loadData() {
@@ -141,6 +148,7 @@ export class OrdenesServicioComponent
           return;
         }
         this.dataSource.filter = this.filter.nativeElement.value;
+//        this.filtrarPorEstado();
       }
     );
     this.loadOrdenesServicio();
@@ -285,6 +293,7 @@ export class OrdenesServicioComponent
   private refreshTable() {
     this.paginator._changePageSize(this.paginator.pageSize);
   }
+
   /** Whether the number of selected elements matches the total number of rows. */
   isAllSelected() {
     const numSelected = this.selection.selected.length;
@@ -331,6 +340,7 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
 
   filteredData: OrdenesServicioModel[] = [];
   renderedData: OrdenesServicioModel[] = [];
+  filterPredicate: (data: OrdenesServicioModel, filter: string) => boolean = () => true;
 
   constructor(
     public ordenesServicioService: OrdenesServicioService,
@@ -359,7 +369,13 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
           .filter((ordenesServicesModel: OrdenesServicioModel) => {
             const searchStr = (
               ordenesServicesModel.id +
+              ordenesServicesModel.dateStart +
+              ordenesServicesModel.activoId +
+              ordenesServicesModel.descripcion +
+              ordenesServicesModel.capacidad +
               ordenesServicesModel.diagnosis +
+              ordenesServicesModel.ordenEntradaId +
+              ordenesServicesModel.observaciones +
               ordenesServicesModel.status
             ).toLowerCase();
 
@@ -377,13 +393,19 @@ export class DatabaseSource extends DataSource<OrdenesServicioModel> {
       })
     );
   }
+
   disconnect() {
     // disconnect
   }
 
   sortData(data: OrdenesServicioModel[]): OrdenesServicioModel[] {
     if (!this._sort.active || this._sort.direction === '') {
-      return data;
+      // Si no hay ordenación activa, ordenar por ID descendente por defecto
+      return data.sort((a, b) => {
+        const valueA = isNaN(+a.id) ? a.id : +a.id;
+        const valueB = isNaN(+b.id) ? b.id : +b.id;
+        return valueB < valueA ? -1 : 1; // Orden descendente
+      });
     }
     return data.sort((a, b) => {
       let propertyA: number | string = '';

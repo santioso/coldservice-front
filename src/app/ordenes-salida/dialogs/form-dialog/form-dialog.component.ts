@@ -4,6 +4,7 @@ import {
   AbstractControl,
   FormArray,
   FormBuilder,
+  FormControl,
   FormGroup,
   UntypedFormBuilder,
   UntypedFormControl,
@@ -16,12 +17,11 @@ import {
   OrdenesSalidaModel,
 } from '../../ordenes-salida.model';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
-import { ActivosService } from 'app/activos/activos.service';
 import { OrdenesSalidaService } from 'app/ordenes-salida/ordenes-salida.service';
 import { UtilPopupService } from '@shared/services/util-popup.service';
-import { ActivosModel } from 'app/activos/activos.model';
-import { ActivoMaestroModel } from 'app/ordenes-entrada/activo-maestro.model';
 import { catchError, lastValueFrom, Observable, throwError } from 'rxjs';
+import { TechnicalInterface } from 'app/ordenes-servicio/dialogs/form-dialog/form-dialog-details/add-detail-dialog/add-detail-dialog.model';
+import { OrdenesServicioService } from 'app/ordenes-servicio/ordenes-servicio.service';
 
 export interface DialogData {
   id: number;
@@ -30,11 +30,12 @@ export interface DialogData {
 }
 
 export interface activosSalida {
+  idActivo: string;
   idEntrada: string;
   descripcion: string;
   fabricante: string;
   capacidad: string;
-  observaciones: string;
+  observaciones_salida: string;
 }
 
 @Component({
@@ -53,27 +54,23 @@ export class FormDialogComponent implements OnInit {
   );
   soloLectura: boolean;
   activoValid: boolean = false;
-  activosEnOrdenEntrada?: ActivosEnOrdenEntradaInterface[];
-  displayedColumns: string[] = [
-    'id',
-    'descripcion',
-    'fabricante',
-    'capacidad',
-    'observaciones',
-  ];
+  activosEnOrdenEntrada: ActivosEnOrdenEntradaInterface[] = [];
+  filteredActivos: ActivosEnOrdenEntradaInterface[] = [];
+  displayedColumns: string[] = ['idActivo', 'descripcion', 'observaciones'];
+  technicalOptions: TechnicalInterface[] = [];
 
   constructor(
     public dialogRef: MatDialogRef<FormDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: DialogData,
     public ordenesSalidaService: OrdenesSalidaService,
-    private activosService: ActivosService,
+    private ordenesServicioService: OrdenesServicioService,
     private readonly fb: UntypedFormBuilder,
     private utilPopupService: UtilPopupService
   ) {
     this.action = data.action;
     if (this.action === 'edit') {
       this.dialogTitle = 'Orden de salida de activos No. ' + data.ordenesSalidaModel.id;
-    //  this.getOrderWithActivosById(data.ordenesSalidaModel.id);
+      //  this.getOrderWithActivosById(data.ordenesSalidaModel.id);
       this.soloLectura = true;
     } else {
       this.dialogTitle = 'Nueva orden de salida';
@@ -84,21 +81,42 @@ export class FormDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.getActivosEnOrdenEntrada();
-    this.ordenesSalidaTableForm = this.creaSalidaTableForm();
-    this.getInformationActivos();
+    this.ordenesServicioService
+      .getTechnicals()
+      .subscribe((technicals: TechnicalInterface[]) => {
+        this.technicalOptions = technicals;
+      });
+    
+    this.ordenesSalidaService.getAllActivosOrdenesEntrada().subscribe(
+      (activos) => {
+        this.activosEnOrdenEntrada = activos;
+        this.filteredActivos = [...activos]; // Inicializamos con todos los activos
+        
+        this.ordenesSalidaTableForm = this.creaSalidaTableForm();
+        this.getInformationActivos();
+        
+        // Añadir listener para cambios en el formulario principal
+        this.ordenesSalidaTableForm.valueChanges.subscribe(() => {
+          this.verificarFormularioValido();
+        });
+      },
+      (error) => {
+        console.error('Error al obtener los activos en orden de entrada:', error);
+      }
+    );
   }
 
   getInformationActivos(): void {
     if (this.action === 'edit') {
       this.getOrderWithActivosById(this.data.ordenesSalidaModel.id).subscribe((orden) => {
         this.ordenesSalidaModel = orden;
+
         this.ordenesSalidaTableForm.patchValue({
           id: this.ordenesSalidaModel.id,
           fecha: this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha),
           placa_vehiculo: this.ordenesSalidaModel.placa_vehiculo,
           observaciones: this.ordenesSalidaModel.observaciones,
-          entrega: this.ordenesSalidaModel.entrega,
+          entrega: parseInt(this.ordenesSalidaModel.entrega),
           recibe: this.ordenesSalidaModel.recibe,
         });
 
@@ -109,15 +127,13 @@ export class FormDialogComponent implements OnInit {
             ...this.ordenesSalidaModel.activosSalida.map((activo: any) => ({
               idEntrada: activo.idEntrada,
               service_order_id: this.data.ordenesSalidaModel.id,
-              observaciones: activo.observaciones,
+              observaciones_salida: activo.observaciones,
               idActivo: activo.idActivo,
               descripcion: activo.descripcion,
-              fabricante: activo.fabricante,
-              capacidad: activo.capacidad,
             }))
           ];
         }
-        });
+      });
     } else {
       this.ordenesSalidaModel.activosSalida
         ? this.setActivos(this.ordenesSalidaModel.activosSalida)
@@ -128,14 +144,8 @@ export class FormDialogComponent implements OnInit {
   creaSalidaTableForm() {
     return this.fb.group({
       id: [this.ordenesSalidaModel.id],
-      fecha: [
-        this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha),
-        Validators.required,
-      ],
-      placa_vehiculo: [
-        this.ordenesSalidaModel.placa_vehiculo,
-        Validators.required,
-      ],
+      fecha: [this.convertirFechaAObjetoDate(this.ordenesSalidaModel.fecha), Validators.required,],
+      placa_vehiculo: [this.ordenesSalidaModel.placa_vehiculo, Validators.required,],
       observaciones: [this.ordenesSalidaModel.observaciones],
       entrega: [this.ordenesSalidaModel.entrega, Validators.required],
       recibe: [this.ordenesSalidaModel.recibe, Validators.required],
@@ -149,24 +159,32 @@ export class FormDialogComponent implements OnInit {
   }
 
   setActivos(activos: any[]): void {
-    const activosFormArray = this.ordenesSalidaTableForm.get(
-      'activosSalida'
-    ) as FormArray;
-    activos.forEach((activo) => {
-      activosFormArray.push(this.createActivo(activo));
+    const activosFormArray = this.ordenesSalidaTableForm.get('activosSalida') as FormArray;
+    activos.forEach((activo, index) => {
+      const activoFormGroup = this.createActivo(activo);
+      activosFormArray.push(activoFormGroup);
+      activoFormGroup.get('idActivo')?.setValue(activo.idActivo || '');
+      activoFormGroup.get('descripcion')?.setValue(activo.descripcion || '');
+      activoFormGroup.get('observaciones_salida')?.setValue(activo.observaciones || '');
+      activoFormGroup.get('idEntrada')?.setValue(activo.idEntrada || '');
     });
     this.agregarRegistrosFaltantes(activosFormArray);
   }
 
   createActivo(activo: any = {}): FormGroup {
-    return this.fb.group({
-      id: [activo.id || ''],
+    const group = this.fb.group({
+      idActivo: [activo.idActivo || ''],
       descripcion: [activo.descripcion || ''],
-      fabricante: [activo.fabricante || ''],
-      capacidad: [activo.capacidad || ''],
-      observaciones: [activo.observaciones || ''],
+      observaciones_salida: [activo.observaciones_salida || ''],
       idEntrada: [activo.idEntrada || ''],
     });
+    
+    // Agregar listener para cambios en observaciones_salida
+    group.get('observaciones_salida')?.valueChanges.subscribe(() => {
+      this.actualizarActivoValid();
+    });
+    
+    return group;
   }
 
   async getActivosEnOrdenEntrada(): Promise<void> {
@@ -178,6 +196,26 @@ export class FormDialogComponent implements OnInit {
     } catch (error) {
       console.error('Error al obtener los activos en orden de entrada:', error);
     }
+  }
+
+  private _filterActivos(value: string): ActivosEnOrdenEntradaInterface[] {
+    const filterValue = typeof value === 'string' ? value.toLowerCase() : '';
+    return this.activosEnOrdenEntrada.filter(activo =>
+      activo.idActivo.toLowerCase().includes(filterValue)
+    );
+  }
+
+  displayActivo(activo: any): string {
+    if (!activo) return '';
+    
+    // Si es un string, lo devolvemos directamente
+    if (typeof activo === 'string') return activo;
+    
+    // Si es un objeto con idActivo, devolvemos ese valor
+    if (activo.idActivo) return activo.idActivo;
+    
+    // En cualquier otro caso, devolvemos cadena vacía
+    return '';
   }
 
   getOrderWithActivosById(id: number): Observable<OrdenesSalidaModel> {
@@ -216,17 +254,25 @@ export class FormDialogComponent implements OnInit {
       entrega: [this.ordenesSalidaModel.entrega, [Validators.required]],
       recibe: [this.ordenesSalidaModel.recibe, [Validators.required]],
       observaciones: [this.ordenesSalidaModel.observaciones],
+      activosSalida: this.fb.array([]),
     });
   }
 
   public confirmAdd(): void {
+
     let datosForm = this.ordenesSalidaTableForm.getRawValue();
+    console.log(datosForm);
     delete datosForm.id;
     delete datosForm.idEntrada;
     datosForm.fecha = this.formatearFecha(datosForm.fecha);
+
+    // Filtrar activos que tengan idEntrada y mapear correctamente con observaciones
     datosForm.activosSalida = datosForm.activosSalida
       .filter((activo: any) => activo.idEntrada)
-      .map((activo: any) => activo.idEntrada);
+      .map((activo: any) => ({
+        id: activo.idEntrada,
+        observacionesSalida: activo.observaciones_salida || ''
+      }));
 
     if (this.action === 'add') {
       this.ordenesSalidaService.addOrden(datosForm).subscribe(() => {
@@ -251,48 +297,89 @@ export class FormDialogComponent implements OnInit {
     }
   }
 
-  onIdBlur(index: number): void {
-    const idControl = this.activosSalida.at(index).get('idEntrada');
-    if (idControl && idControl.value !== '') {
-      let value = idControl.value;
-      if (this.verificarIdDuplicado(value, index)) {
-        this.mostrarMensajeError(value, idControl);
+  onActivoEntradaIdChange(event: any, index: number): void {
+    const activo = event.option.value;
+    if (activo && activo.idActivo) {
+      // Verificamos si el idEntrada ya está en la orden de salida
+      if (activo.idEntrada !== undefined && this.verificarIdDuplicado(activo.idEntrada)) {
+        // Mostramos el mensaje de error
+        this.mostrarMensajeError(activo.idActivo);
+        
+        // Limpiamos el campo de activo
+        const activoFormGroup = this.activosSalida.at(index) as FormGroup;
+        activoFormGroup.patchValue({
+          idActivo: '',
+          descripcion: '',
+          observaciones_salida: '',
+          idEntrada: '',
+        });
+        
+        // Actualizamos la lista de activos filtrados
+        this.actualizarActivosFiltrados();
+        
         return;
       }
-      this.obtenerDatosDelServicio(value, index);
+      this.obtenerDatosDelServicio(activo.idActivo, index);
     }
   }
 
-  private verificarIdDuplicado(value: string, index: number): boolean {
+  private verificarIdDuplicado(idEntrada: number): boolean {
     return this.activosSalida.value.some(
-      (activo: any, i: number) => activo.idEntrada === value && i !== index
+      (activo: any) => activo.idEntrada === idEntrada
     );
   }
 
-  private mostrarMensajeError(value: string, idControl: any): void {
+  private mostrarMensajeError(idActivo: string): void {
     this.utilPopupService.mostrarMensaje(
-      `La placa ${value} ya está en la orden de salida, no se puede ingresar más de una vez`,
+      `La placa ${idActivo} ya está en la orden de salida, no se puede ingresar más de una vez`,
       'error',
       'Placa duplicada',
       false
     );
-    idControl.setValue('');
   }
 
-  private obtenerDatosDelServicio(value: string, index: number): void {
+  private obtenerDatosDelServicio(idActivo: string, index: number): void {
     const activo = this.activosEnOrdenEntrada?.find(
-      (activo) => activo.idEntrada === Number(value)
+      (activo) => activo.idActivo === idActivo
     );
     if (activo) {
       const activoFormGroup = this.activosSalida.at(index) as FormGroup;
       activoFormGroup.patchValue({
-        id: activo.idEntrada,
+        idActivo: activo.idActivo,
         descripcion: activo.descripcion,
-        fabricante: activo.fabricante,
-        capacidad: activo.capacidad,
-        observaciones: activo.observaciones,
+        observaciones_salida: activo.observaciones_salida,
+        idEntrada: activo.idEntrada,
       });
       this.activoValid = this.activosSalida.length >= 1;
+      
+      // Actualizamos la lista de activos filtrados para excluir el que acabamos de seleccionar
+      this.actualizarActivosFiltrados();
+    }
+  }
+
+  private actualizarActivosFiltrados(): void {
+    // Obtenemos los IDs de entrada que ya están seleccionados
+    const idsEntradaSeleccionados = this.activosSalida.value
+      .filter((activo: any) => activo.idEntrada)
+      .map((activo: any) => activo.idEntrada);
+    
+    // Filtramos para excluir los activos que ya están en la orden de salida
+    this.filteredActivos = this.activosEnOrdenEntrada.filter(activo => 
+      !idsEntradaSeleccionados.includes(activo.idEntrada)
+    );
+  }
+
+  filtrarActivos(event: any, index: number): void {
+    const filterValue = event.target.value.toLowerCase();
+    
+    // Primero actualizamos la lista completa de activos disponibles (excluyendo los ya seleccionados)
+    this.actualizarActivosFiltrados();
+    
+    // Luego filtramos por el texto ingresado
+    if (filterValue) {
+      this.filteredActivos = this.filteredActivos.filter(activo =>
+        activo.idActivo.toLowerCase().includes(filterValue)
+      );
     }
   }
 
@@ -307,5 +394,42 @@ export class FormDialogComponent implements OnInit {
   private convertirFechaAObjetoDate(fecha: string): Date {
     const [year, month, day] = fecha.split('-').map(Number);
     return new Date(year, month - 1, day);
+  }
+
+  // Método simple para actualizar activoValid cuando cambie observaciones_salida
+  private actualizarActivoValid(): void {
+    // Verificar si hay al menos un activo con observaciones_salida
+    if (this.activosSalida && this.activosSalida.length > 0) {
+      const hayObservaciones = this.activosSalida.controls.some((control: AbstractControl) => {
+        const observaciones = (control as FormGroup).get('observaciones_salida')?.value;
+        return observaciones && observaciones.trim() !== '';
+      });
+      
+      this.activoValid = hayObservaciones;
+    } else {
+      this.activoValid = false;
+    }
+  }
+
+  // Método para verificar si el formulario es válido y actualizar activoValid
+  private verificarFormularioValido(): void {
+    // Si estamos en modo de edición o si hay al menos un activo con idEntrada, activamos el botón
+    if (this.action === 'edit' || this.hayActivosSeleccionados()) {
+      this.activoValid = true;
+    } else {
+      this.actualizarActivoValid();
+    }
+  }
+
+  // Método para verificar si hay activos seleccionados
+  private hayActivosSeleccionados(): boolean {
+    if (!this.activosSalida || this.activosSalida.length === 0) {
+      return false;
+    }
+    
+    return this.activosSalida.controls.some((control: AbstractControl) => {
+      const idEntrada = (control as FormGroup).get('idEntrada')?.value;
+      return idEntrada && idEntrada !== '';
+    });
   }
 }
