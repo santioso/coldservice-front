@@ -207,7 +207,6 @@ export class ClientsComponent
   getLastId() {
     this.dataSource.data.sort((a, b) => b.id - a.id);
     this.lastId = this.dataSource.data[0].id;
-    console.log('this.lastId', this.lastId)
   }
 
   private refreshTable() {

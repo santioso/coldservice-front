@@ -89,11 +89,25 @@ export const ROUTES: RouteInfo[] = [
       submenu: [],
     },
       /**
-   * Menú órdenes de entrada
+   * Menú órdenes de salida
    */
   {
     path: "orden-salida",
     title: "MENUITEMS.ENTRY-EXIT.TEXT",
+    iconType: "feather",
+    icon: "trello",
+    class: "",
+    groupTitle: false,
+    badge: "",
+    badgeClass: "",
+    submenu: [],
+  },
+      /**
+   * Menú monitoreo de temperaturas
+   */
+  {
+    path: "monitoreo-temperatura",
+    title: "MENUITEMS.MONITORING-TEMPERATURE.TEXT",
     iconType: "feather",
     icon: "trello",
     class: "",

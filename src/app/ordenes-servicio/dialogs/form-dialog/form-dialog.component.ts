@@ -7,6 +7,7 @@ import {
   UntypedFormBuilder,
   FormArray,
   FormGroup,
+  FormControl,
 } from '@angular/forms';
 import { MAT_DATE_LOCALE } from '@angular/material/core';
 import { UtilPopupService } from '@shared/services/util-popup.service';
@@ -14,6 +15,7 @@ import { ActivosService } from 'app/activos/activos.service';
 import { ActivosModel } from 'app/activos/activos.model';
 import { ActivesEntryModel, CreateOrdenesServicioModel, OrdenesServicioModel } from 'app/ordenes-servicio/ordenes-servicio.model';
 import { OrdenesServicioService } from 'app/ordenes-servicio/ordenes-servicio.service';
+import { map, Observable, startWith } from 'rxjs';
 
 export interface DialogData {
   id: number;
@@ -27,6 +29,7 @@ export interface DialogData {
   styleUrls: ['./form-dialog.component.scss'],
   providers: [{ provide: MAT_DATE_LOCALE, useValue: 'es-CO' }],
 })
+
 export class FormDialogComponent implements OnInit {
   action: string;
   dialogTitle: string;
@@ -36,6 +39,8 @@ export class FormDialogComponent implements OnInit {
   displayedColumns: string[] = ['dateStart', 'activoId', 'descripcion', 'capacidad', 'diagnosis', 'status', 'observaciones', 'actions'];
   statusService: { id: string, value: string }[] = [];
   activosEntrada: { id: number, descripcion: string, value: string, capacidad: string }[] = [];
+  activoControl = new FormControl();
+  filteredActivos?: Observable<any[]>;
 
   constructor(
     public dialogRef: MatDialogRef<FormDialogComponent>,
@@ -67,22 +72,44 @@ export class FormDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadActivosEntrada();
     this.loadStatus();
-    this.onActivoEntradaIdChange();
+    this.filteredActivos = this.activoControl.valueChanges.pipe(
+      startWith(''),
+      map(value => this._filterActivos(value))
+    );
     this.ordenesServicioTableForm.get('status')?.disable();
     this.ordenesServicioTableForm.get('descripcion')?.disable();
     this.ordenesServicioTableForm.get('capacidad')?.disable();
     this.ordenesServicioTableForm.get('observaciones')?.disable();
   }
 
-  loadActivosEntrada(): void {
-    this.ordenesServiceService.getActivesEntry().subscribe({
+  async loadActivosEntrada(): Promise<void> {
+    this.ordenesServiceService.getActivesAvailables().subscribe({
       next: (data) => {
         const activos = data;
         this.activosEntrada = activos.map((x) => {
-          return { id: x.activo_entrada_id, descripcion: x.descripcion, value: x.activo_id, capacidad: x.capacidad };
-        });
+          return { 
+            id: x.activosEntrada && x.activosEntrada.length > 0 ? x.activosEntrada[0].id : null, 
+           descripcion: x.descripcion, 
+           value: x.id, 
+           capacidad: x.capacidad 
+          };
+        }).filter(activo => activo.id !== null);
       },
     })
+  }
+
+  private _filterActivos(value: string): any[] {
+    const filterValue = typeof value === 'string' ? value.toLowerCase() : '';
+  
+    return this.activosEntrada.filter(activo => {
+      // Convertir activo.value a string antes de usar toLowerCase
+      const activoValue = activo.value ? String(activo.value).toLowerCase() : '';
+      return activoValue.includes(filterValue);
+    });
+  }
+
+  displayActivo(activo: any): string {
+    return activo?.value || '';
   }
 
   loadStatus(): void {
@@ -129,14 +156,14 @@ export class FormDialogComponent implements OnInit {
     this.dialogRef.close();
   }
 
-  onActivoEntradaIdChange(): void {
-    this.ordenesServicioTableForm.get('activoEntradaId')?.valueChanges.subscribe((value) => {
-      const activo = this.activosEntrada.find((x) => x.id === value);
-      if (activo) {
-        this.ordenesServicioTableForm.get('descripcion')?.setValue(activo.descripcion);
-        this.ordenesServicioTableForm.get('capacidad')?.setValue(activo.capacidad);
-      }
-    });
+  onActivoEntradaIdChange(event: any): void {
+    const activoId = event.option.value.id;
+    const activo = this.activosEntrada.find((x) => x.id === activoId);
+    if (activo) {
+      this.ordenesServicioTableForm.get('activoEntradaId')?.setValue(activoId);
+      this.ordenesServicioTableForm.get('descripcion')?.setValue(activo.descripcion);
+      this.ordenesServicioTableForm.get('capacidad')?.setValue(activo.capacidad);
+    };
   }
 
   public confirmAdd(): void {

@@ -16,6 +16,12 @@ export class JwtInterceptor implements HttpInterceptor {
     request: HttpRequest<any>,
     next: HttpHandler
   ): Observable<HttpEvent<any>> {
+
+    // No añadir encabezado de autorización para solicitudes a ThingSpeak
+    if (request.url.includes('api.thingspeak.com')) {
+      return next.handle(request);
+    }
+
     // add authorization header with jwt token if available
     const currentUser = this.authenticationService.currentUserValue;
     if (currentUser && currentUser.access_token) {
