@@ -18,6 +18,7 @@ import {
 import { Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { LogoConst } from '../../assets/images/base64/logo.const';
+import Swal from 'sweetalert2';
 
 interface DatoTemperatura {
   valor: number;
@@ -44,6 +45,8 @@ export class MonitoreoTemperaturaComponent
   datosTemperatura: TemperatureData | null = null;
   mostrarGrafica = false;
   datosListos = false;
+  tituloArchivo: string = 'Cargar Archivo CSV';
+  botonColor: string = 'primary';
 
   // Variables del slider
   disabled = false;
@@ -91,7 +94,7 @@ export class MonitoreoTemperaturaComponent
         }) ?? null;
 
     // Cargar automáticamente el archivo CSV al inicializar el componente
-    this.cargarArchivoCSVAutomaticamente();
+    // this.cargarArchivoCSVAutomaticamente();
   }
 
   ngAfterViewInit(): void {
@@ -475,22 +478,107 @@ export class MonitoreoTemperaturaComponent
 
   // Método para cargar archivo CSV manualmente
   cargarArchivoCSV(): void {
+    // Usar el servicio existente para cargar el CSV
     this.monitoreoService.csvFileService.selectCSVFile().subscribe({
       next: (data) => {
-        console.log(
-          'Archivo CSV cargado exitosamente:',
-          data.length,
-          'registros'
-        );
+        console.log('Archivo CSV cargado exitosamente:', data.length, 'registros');
+        
+        // Validar la estructura del archivo CSV
+        if (!this.validarEstructuraCSV(data)) {
+          console.error('Estructura de archivo CSV inválida');
+          Swal.fire({
+            title: 'Formato incorrecto',
+            text: 'El archivo CSV no tiene el formato esperado (Fecha, Hora, Planta, Gabinete, ...). Por favor, seleccione un archivo válido.',
+            icon: 'error',
+            confirmButtonText: 'Cerrar'
+          }).then((result) => {
+            if (result.isConfirmed) {
+              // Volver a abrir el cuadro de diálogo para seleccionar otro archivo
+              this.cargarArchivoCSV();
+            }
+          });
+          this.tituloArchivo = 'Cargar Archivo CSV';
+          this.botonColor = 'primary';
+          return;
+        }
+        
+        // Cargar las plantas y actualizar el título con el número de plantas
         this.cargarPlantasDesdeCSV();
+        
+        // Obtener el número de plantas directamente del servicio
+        this.monitoreoService.getPlantasFormateadas().subscribe(
+          (plantas) => {
+            console.log('Plantas encontradas:', plantas.length);
+            this.tituloArchivo = 'CSV Cargado (' + plantas.length + ' plantas)';
+            // Cambiar el color del botón a verde para indicar éxito
+            this.botonColor = 'accent';
+          }
+        );
       },
       error: (error) => {
         console.error('Error al cargar archivo CSV:', error);
-        alert('Error al cargar el archivo CSV: ' + error.message);
-      },
+        Swal.fire({
+          title: 'Error',
+          text: 'Error al cargar el archivo CSV: ' + error.message,
+          icon: 'error',
+          confirmButtonText: 'Aceptar'
+        });
+        this.tituloArchivo = 'Cargar Archivo CSV';
+        this.botonColor = 'primary';
+      }
     });
   }
 
+  /**
+   * Valida que el archivo CSV tenga la estructura correcta
+   * @param data Datos del CSV
+   * @returns true si la estructura es válida, false en caso contrario
+   */
+  private validarEstructuraCSV(data: any[]): boolean {
+    // Verificar que haya datos
+    if (!data || data.length === 0) {
+      return false;
+    }
+    
+    // Obtener las claves del primer objeto (encabezados del CSV)
+    const headers = Object.keys(data[0]);
+    
+    // Verificar que existan los encabezados requeridos (Fecha, Hora, Planta, Gabinete)
+    // Nota: Comprobamos diferentes variantes de capitalización
+    const requiredHeaders = ['Fecha', 'Hora', 'Planta', 'Gabinete'];
+    
+    for (const required of requiredHeaders) {
+      // Buscar si existe alguna variante del encabezado (mayúsculas, minúsculas, etc.)
+      const exists = headers.some(header => 
+        header.toLowerCase() === required.toLowerCase() ||
+        header.toLowerCase().includes(required.toLowerCase())
+      );
+      
+      if (!exists) {
+        console.error(`Falta el encabezado requerido: ${required}`);
+        console.log('Encabezados encontrados:', headers);
+        return false;
+      }
+    }
+    
+    // Verificar que al menos el primer registro tenga datos válidos
+    const firstRow = data[0];
+    for (const required of requiredHeaders) {
+      // Buscar la clave que corresponde al encabezado requerido
+      const key = headers.find(header => 
+        header.toLowerCase() === required.toLowerCase() ||
+        header.toLowerCase().includes(required.toLowerCase())
+      );
+      
+      if (key && (!firstRow[key] || firstRow[key].trim() === '')) {
+        console.error(`El primer registro no tiene un valor válido para: ${required}`);
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
   // Método para cargar automáticamente el archivo CSV
   private cargarArchivoCSVAutomaticamente(): void {
     // Intentar cargar el archivo CSV automáticamente
@@ -501,6 +589,8 @@ export class MonitoreoTemperaturaComponent
           data.length,
           'registros'
         );
+
+        this.tituloArchivo = 'Cargar Archivo CSV';
         this.cargarPlantasDesdeCSV();
       },
       error: (error: any) => {
@@ -508,8 +598,6 @@ export class MonitoreoTemperaturaComponent
           'No se pudo cargar automáticamente el archivo CSV:',
           error.message
         );
-        // Si no se puede cargar automáticamente, mostrar el botón para cargar manualmente
-        // No mostrar error al usuario, solo log
       },
     });
   }
@@ -688,7 +776,6 @@ export class MonitoreoTemperaturaComponent
           );
         }
 
-        // Agregar pie de página
         // Agregar pie de página
         pdf.setFontSize(8);
         pdf.setTextColor(100, 100, 100); // Color gris

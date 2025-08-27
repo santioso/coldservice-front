@@ -19,9 +19,14 @@
     <div class="row clearfix">
       <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12">
         <div class="card">
-          <div class="header">
+          
+          <div class="header d-flex justify-content-between align-items-center">
             <h2>Visualización y Reporte</h2>
+            <button mat-raised-button [color]="botonColor" (click)="cargarArchivoCSV()" class="mt-2">
+              <i class="material-icons">upload_file</i> {{tituloArchivo}}
+            </button>
           </div>
+
           <div class="body">
             <form [formGroup]="form">
               <div class="row">
@@ -97,43 +102,26 @@
               </div>
             </form>
 
-            <!-- Información de carga automática -->
-            <div class="row mt-3" *ngIf="plantas.length === 0">
-              <div class="col-md-12">
-                <div class="alert alert-info">
-                  <strong>Cargando datos automáticamente...</strong>
-                  <br>
-                  <small>Buscando archivo CSV en: C:\Users\SantiagoO\Downloads\datos_lora.csv</small>
-                  <br>
-                  <small>Si no se cargan automáticamente, use el botón de abajo</small>
-                  <br>
-                  <button mat-raised-button color="primary" (click)="cargarArchivoCSV()" class="mt-2">
-                    <i class="material-icons">upload_file</i> Cargar Archivo CSV Manualmente
-                  </button>
-                </div>
-              </div>
-            </div>
-
             <!-- Información del archivo CSV -->
-            <div class="row mt-3" *ngIf="datosTemperatura">
+            <div class="row mt-2" *ngIf="datosTemperatura">
               <div class="col-md-12">
                 <div class="alert alert-info">
-                  <strong>Series de datos disponibles:</strong>
+                  <span class="bold-text">Series de datos disponibles:</span>
                   <span *ngFor="let serie of datosTemperatura.series; let last = last">
                     {{ serie.nombre }} ({{ serie.unidad }}){{ !last ? ', ' : '' }}
                   </span>
                   <br>
-                  <strong>Plantas:</strong>
+                  <span class="bold-text">Plantas:</span>
                   <span *ngFor="let planta of datosTemperatura.plantas; let last = last">
                     {{ planta }}{{ !last ? ', ' : '' }}
                   </span>
                   <br>
-                  <strong>Total de registros:</strong> {{ datosTemperatura.tiempos.length }}
+                  <span class="bold-text">Total de registros:</span> {{ datosTemperatura.tiempos.length }}
                 </div>
               </div>
             </div>
 
-            <div *ngIf="mostrarGrafica" class="mt-4" #reporteContent>
+            <div *ngIf="mostrarGrafica" class="mt-2" #reporteContent>
               <!-- Panel de información de temperatura -->
               <div class="row mb-4">
                 <div class="col-md-12">
@@ -189,17 +177,18 @@
                   <div class="d-flex justify-content-between align-items-center mb-3">
                     <h3>Gráfica de Monitoreo - Activo {{ form.get('equipo')?.value || 'Sin número' }}</h3>
                     <div>
-                      <button mat-raised-button color="primary" (click)="actualizarDatosManualmente()" class="me-2">
-                        <i class="material-icons">refresh</i> Recargar datos CSV
-                      </button>
                       <button mat-raised-button color="accent" (click)="generarPDF()">
                         <i class="material-icons">picture_as_pdf</i> Descargar informe PDF
                       </button>
                     </div>
                   </div>
-                  <div class="alert alert-info">
-                    <i class="material-icons align-middle me-2">info</i>
+                  <div class="alert alert-info d-flex justify-content-between align-items-center">
+                    <div><i class="material-icons align-middle me-2">info</i>
                     Los datos se leen desde el archivo CSV local. Use "Recargar datos CSV" para actualizar.
+                    </div>
+                    <button mat-raised-button color="primary" (click)="actualizarDatosManualmente()" class="me-2">
+                        <i class="material-icons">refresh</i> Recargar datos CSV
+                      </button>
                   </div>
                 </div>
               </div>
