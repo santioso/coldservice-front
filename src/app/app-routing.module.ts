@@ -52,6 +52,13 @@ const routes: Routes = [
           ),
       },
       {
+        path: 'monitoreo-temperatura-history',
+        loadChildren: () =>
+          import('./monitoreo-temperatura-history/monitoreo-temperatura-history.module').then(
+            (m) => m.MonitoreoTemperaturaHistoryModule
+          ),
+      },
+      {
         path: 'orden-salida',
         loadChildren: () =>
           import('./ordenes-salida/ordenes-salida.module').then(

@@ -5,13 +5,13 @@
         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
           <ul class="breadcrumb breadcrumb-style">
             <li class="breadcrumb-item">
-              <h4 class="page-title">Monitoreo de Temperatura</h4>
+              <h4 class="page-title">Historial de Monitoreo de Temperatura</h4>
             </li>
             <li class="breadcrumb-item bcrumb-1">
               <a routerLink="/dashboard/main">
                 <i class="fas fa-home"></i> Inicio</a>
             </li>
-            <li class="breadcrumb-item active">Monitoreo de Temperatura</li>
+            <li class="breadcrumb-item active">Historial de Monitoreo de Temperatura</li>
           </ul>
         </div>
       </div>
@@ -21,9 +21,9 @@
         <div class="card">
           
           <div class="header d-flex justify-content-between align-items-center">
-            <h2>Visualización y Reporte</h2>
+            <h2>Visualización de Historial</h2>
             <button mat-raised-button [color]="botonColor" (click)="cargarArchivoCSV()" class="mt-2">
-              <i class="material-icons">upload_file</i> {{tituloArchivo}}
+              <i class="material-icons">history</i> {{tituloArchivo}}
             </button>
           </div>
 
@@ -50,7 +50,7 @@
                   <div>
                     <div class="example-label-container">
                       <label id="example-name-label" class="example-name-label">Límite inferior de temperatura <span
-                          class="font-weight-bold font-size-22 text-primary"> {{slider.value}}° C</span></label>
+                          class="bold-text text-primary"> {{slider.value}}° C</span></label>
                     </div>
                     <mat-slider class="example-margin" [disabled]="disabled" [max]="max" [min]="min" [step]="step"
                       [discrete]="thumbLabel" [showTickMarks]="showTicks">
@@ -106,7 +106,7 @@
             <div class="row mt-2" *ngIf="datosTemperatura">
               <div class="col-md-12">
                 <div class="alert alert-info">
-                  <span class="bold-text">Series de datos disponibles:</span>
+                  <span class="bold-text">Series de datos históricos:</span>
                   <span *ngFor="let serie of datosTemperatura.series; let last = last">
                     {{ serie.nombre }} ({{ serie.unidad }}){{ !last ? ', ' : '' }}
                   </span>
@@ -116,7 +116,7 @@
                     {{ planta }}{{ !last ? ', ' : '' }}
                   </span>
                   <br>
-                  <span class="bold-text">Total de registros:</span> {{ datosTemperatura.tiempos.length }}
+                  <span class="bold-text">Total de registros históricos:</span> {{ datosTemperatura.tiempos.length }}
                 </div>
               </div>
             </div>
@@ -159,7 +159,7 @@
                           </div>
                         </div>
                         <div class="col-md-3">
-                          <span class="info-box-text">Tiempo transcurrido</span>
+                          <span class="info-box-text">Período histórico</span>
                           <div class="info-box">
                             <div class="info-box-content">
                               <span class="info-box-number text-success">{{ obtenerTiempoTranscurrido() }}</span>
@@ -175,19 +175,19 @@
               <div class="row">
                 <div class="col-md-12">
                   <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>Gráfica de Monitoreo - Activo {{ form.get('equipo')?.value || 'Sin número' }}</h3>
+                    <h3>Historial de Monitoreo - Activo {{ form.get('equipo')?.value || 'Sin número' }}</h3>
                     <div>
                       <button mat-raised-button color="accent" [disabled]="!form.valid" (click)="generarPDF()">
-                        <i class="material-icons">picture_as_pdf</i> Descargar informe PDF
+                        <i class="material-icons">picture_as_pdf</i> Descargar informe histórico PDF
                       </button>
                     </div>
                   </div>
                   <div class="alert alert-info d-flex justify-content-between align-items-center">
                     <div><i class="material-icons align-middle me-2">info</i>
-                    Los datos se leen desde el archivo CSV local. Use "Recargar datos CSV" para actualizar.
+                    Visualizando datos históricos de temperatura. Seleccione una planta para ver detalles.
                     </div>
                     <button mat-raised-button color="primary" (click)="actualizarDatosManualmente()" class="me-2">
-                        <i class="material-icons">refresh</i> Recargar datos CSV
+                        <i class="material-icons">refresh</i> Actualizar datos históricos
                       </button>
                   </div>
                 </div>

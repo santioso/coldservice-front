@@ -12,9 +12,10 @@ import { Chart, ChartConfiguration } from 'chart.js';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import {
-  MonitoreoTemperaturaService,
+  InformeItem,
+  MonitoreoTemperaturaHistoryService,
   TemperatureData,
-} from './monitoreo-temperatura.service';
+} from './monitoreo-temperatura-history.service';
 import { Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { LogoConst } from '../../assets/images/base64/logo.const';
@@ -27,11 +28,11 @@ interface DatoTemperatura {
 }
 
 @Component({
-  selector: 'app-monitoreo-temperatura',
-  templateUrl: './monitoreo-temperatura.component.html',
-  styleUrls: ['./monitoreo-temperatura.component.scss'],
+  selector: 'app-monitoreo-temperatura-history',
+  templateUrl: './monitoreo-temperatura-history.component.html',
+  styleUrls: ['./monitoreo-temperatura-history.component.scss'],
 })
-export class MonitoreoTemperaturaComponent
+export class MonitoreoTemperaturaHistoryComponent
   implements OnInit, AfterViewInit, OnDestroy
 {
   @ViewChild('graficaCanvas') graficaCanvas!: ElementRef<HTMLCanvasElement>;
@@ -57,8 +58,16 @@ export class MonitoreoTemperaturaComponent
   thumbLabel = true;
   value = 0;
 
-  private actualizacionAutomatica: Subscription | null = null;
+  // Datos de informes
+  informes: InformeItem[] = [];
+  cargandoInformes = false;
+  errorInformes = false;
+
+  // Suscripciones
+  private formSubscription: Subscription | null = null;
+  private informesSubscription: Subscription | null = null;
   private equipoSubscription: Subscription | null = null;
+  private actualizacionAutomatica: Subscription | null = null;
   private readonly INTERVALO_ACTUALIZACION = 30000; // 30 segundos en milisegundos
 
   // Logo en formato base64 para el PDF
@@ -66,36 +75,40 @@ export class MonitoreoTemperaturaComponent
 
   constructor(
     private fb: FormBuilder,
-    private monitoreoService: MonitoreoTemperaturaService,
+    private monitoreoService: MonitoreoTemperaturaHistoryService,
     private cdr: ChangeDetectorRef
   ) {
     this.inicializarFormulario();
   }
 
   ngOnInit(): void {
-    // Inicialmente no hay plantas hasta que se cargue el archivo CSV
-    this.plantas = [];
-    this.plantasFormateadas = [];
+    this.inicializarFormulario();
+    this.configurarSuscripciones();
+    this.cargarChecklistItems();
 
-    this.checklistItems = this.monitoreoService.getChecklistItems();
+    // Obtener el límite de temperatura del localStorage si existe
+    this.form
+      .get('limite')
+      ?.setValue(
+        localStorage.getItem('limiteTemperatura')
+          ? Number(localStorage.getItem('limiteTemperatura'))
+          : null
+      );
 
-    // Suscribirse a los cambios en el campo de equipo
-    this.equipoSubscription =
-      this.form
-        .get('equipo')
-        ?.valueChanges.pipe(
-          debounceTime(500), // Esperar 500ms después de la última tecla
-          distinctUntilChanged() // Solo emitir cuando el valor cambie
-        )
-        .subscribe(() => {
-          if (this.datosListos && this.mostrarGrafica) {
-            this.actualizarGrafica();
-          }
-        }) ?? null;
+    // Obtener el valor del slider del localStorage si existe
+    this.value =
+      Number(localStorage.getItem('valorSlider')) ||
+      (this.form.get('limite')?.value as number) ||
+      0;
 
-    // Cargar automáticamente el archivo CSV al inicializar el componente
-    // this.cargarArchivoCSVAutomaticamente();
+    // Cargar datos históricos automáticamente
+    this.cargarDatosHistoricos();
+    
+    // Cargar informes desde la API
+    this.cargarInformes();
   }
+
+  // El método configurarSuscripciones() se ha movido más abajo en el archivo
 
   ngAfterViewInit(): void {
     // Si ya tenemos datos cuando la vista se inicializa, actualizamos la gráfica
@@ -106,19 +119,26 @@ export class MonitoreoTemperaturaComponent
   }
 
   ngOnDestroy(): void {
-    // Cancelar todas las suscripciones al destruir el componente
-    if (this.actualizacionAutomatica) {
-      this.actualizacionAutomatica.unsubscribe();
-      this.actualizacionAutomatica = null;
+    // Limpiar suscripciones
+    if (this.formSubscription) {
+      this.formSubscription.unsubscribe();
     }
-
+    
+    if (this.informesSubscription) {
+      this.informesSubscription.unsubscribe();
+    }
+    
     if (this.equipoSubscription) {
       this.equipoSubscription.unsubscribe();
-      this.equipoSubscription = null;
+    }
+    
+    // Cancelar actualización automática si existe
+    if (this.actualizacionAutomatica) {
+      this.actualizacionAutomatica.unsubscribe();
     }
   }
 
-  onSliderChange(value: number): void {
+  onSliderChange(value: any): void {
     this.form.get('limite')?.setValue(value);
     this.cdr.detectChanges();
   }
@@ -617,6 +637,19 @@ export class MonitoreoTemperaturaComponent
     );
   }
 
+  // Método para cargar datos históricos de temperatura
+  cargarDatosHistoricos(): void {
+    console.log('Cargando datos históricos de temperatura...');
+    
+    // Intentar cargar el archivo CSV automáticamente primero
+    this.cargarArchivoCSVAutomaticamente();
+    
+    // Cargar informes desde la API
+    this.cargarInformes();
+    
+    console.log('Carga de datos históricos completada');
+  }
+
   // Método para actualizar manualmente los datos
   actualizarDatosManualmente(): void {
     const planta = this.form.get('planta')?.value;
@@ -816,16 +849,125 @@ export class MonitoreoTemperaturaComponent
 
   private calcularDuracion(inicio: Date, fin: Date): string {
     const diff = fin.getTime() - inicio.getTime();
-    const horas = Math.floor(diff / (1000 * 60 * 60));
-    const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    return `${horas}h ${minutos}m`;
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    return `${minutes}m ${seconds}s`;
+  }
+  
+  /**
+   * Carga los informes desde la API
+   * @param planta Código de planta opcional para filtrar
+   * @param fecha Fecha opcional para filtrar
+   */
+  cargarInformes(planta?: string, fecha?: string): void {
+    this.cargandoInformes = true;
+    this.errorInformes = false;
+    
+    this.informesSubscription = this.monitoreoService.getInformesPorPlantaFecha(planta, fecha)
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            this.informes = response.data;
+            console.log('📊 Informes cargados:', this.informes.length);
+          } else {
+            this.informes = [];
+            console.error('❌ Error al cargar informes: Respuesta no exitosa');
+            this.errorInformes = true;
+          }
+          this.cargandoInformes = false;
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('❌ Error al cargar informes:', error);
+          this.informes = [];
+          this.cargandoInformes = false;
+          this.errorInformes = true;
+          this.cdr.detectChanges();
+          
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudieron cargar los informes. Por favor, intente nuevamente.',
+            icon: 'error',
+            confirmButtonText: 'Aceptar'
+          });
+        }
+      });
+  }
+  
+  /**
+   * Filtra los informes según los criterios del formulario
+   */
+  filtrarInformes(): void {
+    const planta = this.form.get('planta')?.value;
+    const fecha = this.form.get('fecha')?.value;
+    
+    this.cargarInformes(planta, fecha);
+  }
+  
+  /**
+   * Guarda el informe actual en la base de datos
+   */
+  guardarInforme(): void {
+    if (!this.form.valid) {
+      Swal.fire({
+        title: 'Formulario incompleto',
+        text: 'Por favor complete todos los campos requeridos.',
+        icon: 'warning',
+        confirmButtonText: 'Aceptar'
+      });
+      return;
+    }
+    
+    const formValues = this.form.value;
+    const checklistSeleccionados = formValues.chequeo || [];
+    
+    const nuevoInforme: Partial<InformeItem> = {
+      fecha: formValues.fecha,
+      planta: formValues.planta,
+      hora: new Date().toTimeString().split(' ')[0],
+      equipo: formValues.equipo,
+      tecnico: formValues.tecnico,
+      cliente: formValues.cliente,
+      ubicacion: formValues.ubicacion,
+      temperatura_limite: formValues.limite,
+      // Estos valores deberían venir de los datos de temperatura actuales
+      gabinete: '0.00',  // Reemplazar con datos reales
+      ambiente: '0.00',  // Reemplazar con datos reales
+      corriente: '0.00',  // Reemplazar con datos reales
+      checklist: checklistSeleccionados.length > 0 ? JSON.stringify(checklistSeleccionados) : null
+    };
+    
+    this.monitoreoService.crearInforme(nuevoInforme)
+      .subscribe({
+        next: (response) => {
+          console.log('✅ Informe guardado correctamente:', response);
+          
+          Swal.fire({
+            title: 'Éxito',
+            text: 'El informe se ha guardado correctamente.',
+            icon: 'success',
+            confirmButtonText: 'Aceptar'
+          });
+          
+          // Recargar la lista de informes
+          this.cargarInformes();
+        },
+        error: (error) => {
+          console.error('❌ Error al guardar informe:', error);
+          
+          Swal.fire({
+            title: 'Error',
+            text: 'No se pudo guardar el informe. Por favor, intente nuevamente.',
+            icon: 'error',
+            confirmButtonText: 'Aceptar'
+          });
+        }
+      });
   }
 
   toggleChecklistItem(item: string): void {
     const chequeoControl = this.form.get('chequeo');
     const seleccionados = (chequeoControl?.value || []) as string[];
-
     if (seleccionados.includes(item)) {
       // Quitar el item
       const index = seleccionados.indexOf(item);
@@ -852,6 +994,14 @@ export class MonitoreoTemperaturaComponent
     } else {
       return 'y-temperature'; // Por defecto
     }
+  }
+
+  /**
+   * Carga los elementos de la lista de verificación desde el servicio
+   */
+  private cargarChecklistItems(): void {
+    this.checklistItems = this.monitoreoService.getChecklistItems();
+    console.log('✅ Lista de verificación cargada:', this.checklistItems.length, 'elementos');
   }
 
   // Método para borrar datos después de generar el PDF
@@ -890,5 +1040,46 @@ export class MonitoreoTemperaturaComponent
         alert('Error al borrar los datos de la planta del archivo CSV');
       },
     });
+  }
+
+  /**
+   * Configura las suscripciones del componente para reaccionar a cambios
+   * en el formulario y actualizar datos automáticamente
+   */
+  private configurarSuscripciones(): void {
+    // Suscripción a cambios en el campo 'limite' del formulario
+    const limiteControl = this.form.get('limite');
+    if (limiteControl) {
+      this.formSubscription = limiteControl.valueChanges
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged()
+        )
+        .subscribe(valor => {
+          if (valor !== null && valor !== undefined) {
+            // Guardar el valor en localStorage
+            localStorage.setItem('limiteTemperatura', valor.toString());
+            localStorage.setItem('valorSlider', valor.toString());
+            this.value = valor;
+            
+            // Actualizar gráfica si hay datos
+            if (this.datosListos) {
+              this.actualizarGrafica();
+            }
+          }
+        });
+    }
+    
+    // Suscripción a cambios en el campo 'equipo' del formulario
+    const equipoControl = this.form.get('equipo');
+    if (equipoControl) {
+      this.equipoSubscription = equipoControl.valueChanges
+        .subscribe(() => {
+          // Actualizar gráfica si hay datos
+          if (this.datosListos) {
+            this.actualizarGrafica();
+          }
+        });
+    }
   }
 }
