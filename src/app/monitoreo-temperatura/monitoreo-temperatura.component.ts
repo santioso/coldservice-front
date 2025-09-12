@@ -799,25 +799,21 @@ export class MonitoreoTemperaturaComponent
         pdf.setTextColor(0, 0, 0); // Restaurar color negro
 
         // Guardar el PDF
-        const nombrePlanta = this.monitoreoService.formatearNombrePlanta(
-          formValues.planta
-        );
-        const nombreArchivo = `reporte_${nombrePlanta.replace(
-          ' ',
-          '_'
-        )}_${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.pdf`;
+        const equipo = (formValues.equipo || 'sin_equipo').toString().trim().replace(/\s+/g, '_');
+        const ahora = new Date();
+        const fechaStr = `${ahora.getFullYear()}-${(ahora.getMonth()+1).toString().padStart(2,'0')}-${ahora.getDate().toString().padStart(2,'0')}`;
+        const horaStr = this.formatearHora(ahora).replace(/:/g, '-');
+        const nombreArchivo = `reporte_${equipo}_${fechaStr}-${horaStr}.pdf`;
         pdf.save(nombreArchivo);
       })
       .catch((error) => {
         console.error('Error al capturar la gráfica:', error);
         // Guardar el PDF incluso si hay un error con la gráfica
-        const nombrePlanta = this.monitoreoService.formatearNombrePlanta(
-          formValues.planta
-        );
-        const nombreArchivo = `reporte_${nombrePlanta.replace(
-          ' ',
-          '_'
-        )}_${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.pdf`;
+        const equipo = (formValues.equipo || 'sin_equipo').toString().trim().replace(/\s+/g, '_');
+        const ahora = new Date();
+        const fechaStr = `${ahora.getFullYear()}-${(ahora.getMonth()+1).toString().padStart(2,'0')}-${ahora.getDate().toString().padStart(2,'0')}`;
+        const horaStr = this.formatearHora(ahora).replace(/:/g, '-');
+        const nombreArchivo = `reporte_${equipo}_${fechaStr}-${horaStr}.pdf`;
         pdf.save(nombreArchivo);
 
       })

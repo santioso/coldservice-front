@@ -305,6 +305,22 @@ export class MonitoreoTemperaturaService {
 
   // Método para recargar datos (útil para actualizaciones)
   recargarDatos(): Observable<void> {
+    // Si tenemos un handle escribible (File System Access API), recargar desde el archivo real
+    if (this.csvFileService.hasWritableHandle && this.csvFileService.hasWritableHandle()) {
+      return this.csvFileService.reloadFromHandle().pipe(
+        map((data) => {
+          this.csvData = data;
+          return void 0;
+        }),
+        catchError((_) => {
+          // Fallback: limpiar cache y recargar desde flujo estándar (memoria/localStorage)
+          this.csvData = [];
+          return this.loadCSVData().pipe(map(() => void 0));
+        })
+      );
+    }
+
+    // Fallback por defecto: limpiar cache y recargar desde flujo estándar (memoria/localStorage)
     this.csvData = [];
     return this.loadCSVData().pipe(map(() => void 0));
   }
