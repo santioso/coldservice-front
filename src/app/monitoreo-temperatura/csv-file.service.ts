@@ -33,6 +33,8 @@ declare global {
 export class CSVFileService {
   private csvDataSubject = new BehaviorSubject<CSVDataRow[]>([]);
   public csvData$ = this.csvDataSubject.asObservable();
+  // Manejador del archivo seleccionado mediante File System Access API
+  private fileHandle: any | null = null;
 
   constructor() {
     // Constructor vacío - no se puede eliminar debido a la inyección de dependencias
@@ -43,6 +45,13 @@ export class CSVFileService {
    */
   private isElectron(): boolean {
     return !!(window.electronAPI && window.electronAPI.isElectron());
+  }
+
+  /**
+   * Verifica soporte del File System Access API (Chromium-based browsers)
+   */
+  private isFileSystemAPISupported(): boolean {
+    return typeof (window as any).showOpenFilePicker === 'function';
   }
 
   /**
@@ -57,11 +66,67 @@ export class CSVFileService {
         return;
       }
 
-      observer.error(
-        new Error(
-          'No hay datos CSV cargados. Use selectCSVFile() para cargar un archivo.'
-        )
-      );
+      // Fallback: intentar cargar desde localStorage (navegador)
+      try {
+        const raw = localStorage.getItem('csvData');
+        if (raw) {
+          const parsed = JSON.parse(raw) as CSVDataRow[];
+          this.csvDataSubject.next(parsed);
+          observer.next(parsed);
+          observer.complete();
+          return;
+        }
+      } catch (_) {
+        // ignorar errores de parseo
+      }
+
+      observer.error(new Error('No hay datos CSV cargados. Use selectCSVFile() para cargar un archivo.'));
+    });
+  }
+
+  /**
+   * Selecciona un archivo usando File System Access API y conserva el handle para escritura posterior
+   */
+  selectCSVFileWithPicker(): Observable<CSVDataRow[]> {
+    return new Observable((observer) => {
+      if (!this.isFileSystemAPISupported()) {
+        observer.error(new Error('El navegador no soporta el File System Access API.'));
+        return;
+      }
+      (async () => {
+        try {
+          const [handle] = await (window as any).showOpenFilePicker({
+            multiple: false,
+            types: [
+              {
+                description: 'Archivos CSV',
+                accept: { 'text/csv': ['.csv'] },
+              },
+            ],
+          });
+          this.fileHandle = handle;
+          const file = await handle.getFile();
+          const text = await file.text();
+          Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              if (results.errors.length > 0) {
+                observer.error(new Error('Error parsing CSV: ' + results.errors[0].message));
+              } else {
+                const data = results.data as CSVDataRow[];
+                this.csvDataSubject.next(data);
+                try { localStorage.setItem('csvData', JSON.stringify(data)); } catch {}
+                observer.next(data);
+                observer.complete();
+              }
+            },
+            error: (error: any) => observer.error(error),
+          });
+        } catch (err: any) {
+          observer.error(err);
+        }
+      })();
     });
   }
 
@@ -278,6 +343,114 @@ export class CSVFileService {
    */
   clearData(): void {
     this.csvDataSubject.next([]);
+  }
+
+  /**
+   * Establece los datos CSV en memoria y los persiste en localStorage (sin Electron)
+   */
+  setData(data: CSVDataRow[]): void {
+    this.csvDataSubject.next(data);
+    try {
+      localStorage.setItem('csvData', JSON.stringify(data));
+    } catch (_) {
+      // ignorar errores de almacenamiento
+    }
+  }
+
+  /**
+   * Indica si tenemos un handle de archivo disponible para escribir
+   */
+  hasWritableHandle(): boolean {
+    return !!this.fileHandle;
+  }
+
+  /**
+   * Intenta escribir los datos actuales al archivo seleccionado (File System Access API)
+   */
+  async writeBackToSelectedFile(data: CSVDataRow[]): Promise<void> {
+    if (!this.fileHandle) throw new Error('No hay un archivo seleccionado para escritura.');
+    // Solicitar permiso de escritura si es necesario
+    if (this.fileHandle.requestPermission) {
+      const perm = await this.fileHandle.requestPermission({ mode: 'readwrite' });
+      if (perm !== 'granted') throw new Error('Permiso de escritura no concedido.');
+    }
+    const writable = await this.fileHandle.createWritable();
+    try {
+      const csv = this.toCSV(data);
+      await writable.write(csv);
+    } finally {
+      await writable.close();
+    }
+  }
+
+  /**
+   * Recarga datos desde el handle actual (si existe) y actualiza memoria/localStorage
+   */
+  reloadFromHandle(): Observable<CSVDataRow[]> {
+    return new Observable((observer) => {
+      (async () => {
+        try {
+          if (!this.fileHandle) throw new Error('No hay archivo para recargar.');
+          const file = await this.fileHandle.getFile();
+          const text = await file.text();
+          Papa.parse(text, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              if (results.errors.length > 0) {
+                observer.error(new Error('Error parsing CSV: ' + results.errors[0].message));
+              } else {
+                const data = results.data as CSVDataRow[];
+                this.setData(data);
+                observer.next(data);
+                observer.complete();
+              }
+            },
+            error: (error: any) => observer.error(error),
+          });
+        } catch (err: any) {
+          observer.error(err);
+        }
+      })();
+    });
+  }
+
+  /**
+   * Convierte datos a CSV (encabezados deducidos de la primera fila)
+   */
+  toCSV(data: CSVDataRow[]): string {
+    const rows = data || [];
+    if (rows.length === 0) return '';
+    const headers = Object.keys(rows[0]);
+    const escape = (val: any) => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      // Envolver en comillas si contiene coma, comillas o salto de línea
+      if (/[",\n]/.test(str)) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+    const lines = [headers.join(',')].concat(
+      rows.map(row => headers.map(h => escape((row as any)[h])).join(','))
+    );
+    return lines.join('\n');
+  }
+
+  /**
+   * Dispara descarga del CSV actualizado en navegador
+   */
+  downloadCSV(filename: string, data: CSVDataRow[]): void {
+    const csv = this.toCSV(data);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   /**

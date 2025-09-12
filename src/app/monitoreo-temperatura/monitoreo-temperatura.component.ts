@@ -14,6 +14,7 @@ import html2canvas from 'html2canvas';
 import {
   MonitoreoTemperaturaService,
   TemperatureData,
+  InformeItem,
 } from './monitoreo-temperatura.service';
 import { Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -331,6 +332,14 @@ export class MonitoreoTemperaturaComponent
     return `${horas}:${minutos}:${segundos}`;
   }
 
+  private formatearFecha(fecha: Date): string {
+    if (!fecha) return '';
+    const year = fecha.getFullYear();
+    const month = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    const day = fecha.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   actualizarGrafica(): void {
     if (!this.datosTemperatura || !this.graficaCanvas) return;
 
@@ -479,7 +488,9 @@ export class MonitoreoTemperaturaComponent
   // Método para cargar archivo CSV manualmente
   cargarArchivoCSV(): void {
     // Usar el servicio existente para cargar el CSV
-    this.monitoreoService.csvFileService.selectCSVFile().subscribe({
+    // Preferir File System Access API para conservar un handle escribible
+    const seleccionar$ = this.monitoreoService.csvFileService.selectCSVFileWithPicker();
+    seleccionar$.subscribe({
       next: (data) => {
         console.log('Archivo CSV cargado exitosamente:', data.length, 'registros');
         
@@ -809,9 +820,14 @@ export class MonitoreoTemperaturaComponent
         )}_${new Date().toISOString().slice(0, 19).replace(/:/g, '')}.pdf`;
         pdf.save(nombreArchivo);
 
+      })
+      .finally(() => {
+        // Guardar el informe en la base de datos
+        this.guardarInformeEnBaseDeDatos(formValues);
+        
+        // Borrar datos de la planta después de generar el PDF
+        this.borrarDatosDespuesPDF(formValues.planta);
       });
-      // Borrar datos de la planta después de generar el PDF
-      this.borrarDatosDespuesPDF(formValues.planta);
   }
 
   private calcularDuracion(inicio: Date, fin: Date): string {
@@ -855,40 +871,165 @@ export class MonitoreoTemperaturaComponent
   }
 
   // Método para borrar datos después de generar el PDF
-  private borrarDatosDespuesPDF(planta: string): void {
-    this.monitoreoService.borrarDatosPlanta(planta).subscribe({
-      next: () => {
-        console.log(`Datos de la planta ${planta} borrados exitosamente`);
+  /**
+   * Guarda la información del informe en la base de datos
+   * @param formValues Valores del formulario con la información del informe
+   */
+  private guardarInformeEnBaseDeDatos(formValues: any): void {
+    console.log('💾 Guardando informe en la base de datos');
 
-        // Actualizar la lista de plantas disponibles
-        this.monitoreoService.getPlantasFormateadas().subscribe(
-          (plantasFormateadas) => {
-            this.plantasFormateadas = plantasFormateadas;
-            this.plantas = plantasFormateadas.map((p) => p.codigo);
+    if (!this.datosTemperatura || !this.datosTemperatura.series?.length) {
+      console.error('No hay datos de temperatura disponibles para guardar');
+      return;
+    }
 
-            // Si la planta actual ya no existe, limpiar el formulario
-            if (!this.plantas.includes(planta)) {
-              this.form.get('planta')?.setValue('');
-              this.datosTemperatura = null;
-              this.mostrarGrafica = false;
-              this.datosListos = false;
+    // Identificar series por nombre (Gabinete, Ambiente, Corriente)
+    const series = this.datosTemperatura.series;
+    const serieGabinete = series.find(s => s.nombre.toLowerCase().includes('gabinete'));
+    const serieAmbiente = series.find(s => s.nombre.toLowerCase().includes('ambiente'));
+    const serieCorriente = series.find(s => s.nombre.toLowerCase().includes('corriente'));
 
-              // Destruir el gráfico si existe
-              if (this.temperaturaChart) {
-                this.temperaturaChart.destroy();
-                this.temperaturaChart = null;
-              }
-            }
-          },
-          (error) => {
-            console.error('Error al actualizar lista de plantas:', error);
-          }
-        );
+    const n = Math.min(
+      serieGabinete?.valores.length || 0,
+      serieAmbiente?.valores.length || 0,
+      serieCorriente?.valores.length || 0,
+    );
+
+    if (n === 0) {
+      console.error('No se encontraron series válidas (Gabinete/Ambiente/Corriente) para guardar');
+      return;
+    }
+
+    const tiempos = this.datosTemperatura.tiempos;
+    const valores = Array.from({ length: n }).map((_, i) => ({
+      fecha: this.formatearFecha(tiempos[i]),
+      hora: this.formatearHora(tiempos[i]),
+      gabinete: Number(serieGabinete?.valores[i] ?? 0),
+      ambiente: Number(serieAmbiente?.valores[i] ?? 0),
+      corriente: Number(serieCorriente?.valores[i] ?? 0),
+    }));
+
+    // Formatear el checklist
+    const checklistSeleccionados = formValues.chequeo || [];
+    const checklistStr = checklistSeleccionados.length > 0
+      ? JSON.stringify(checklistSeleccionados)
+      : null;
+
+    // Payload con cabecera + valores[] para guardado en cascada
+    const toNullIfEmpty = (v: any) => (v === '' || v === undefined ? null : v);
+    // Parseo seguro del límite evitando usar isNaN sobre un tipo null | number
+    const parsed = Number(formValues.limite);
+    const temperaturaLimite: number | null =
+      formValues.limite === '' || formValues.limite === null || formValues.limite === undefined || Number.isNaN(parsed)
+        ? null
+        : parsed;
+
+    const payload: any = {
+      planta: formValues.planta,
+      equipo: toNullIfEmpty(formValues.equipo),
+      tecnico: toNullIfEmpty(formValues.tecnico),
+      cliente: toNullIfEmpty(formValues.cliente),
+      ubicacion: toNullIfEmpty(formValues.ubicacion),
+      temperatura_limite: temperaturaLimite,
+      checklist: checklistStr,
+      valores,
+    };
+
+    // Llamar al servicio para guardar el informe con valores
+    this.monitoreoService.crearInforme(payload).subscribe({
+      next: (response) => {
+        console.log('✅ Informe y valores guardados exitosamente:', response);
+        // Mostrar mensaje de éxito
+        Swal.fire({
+          title: 'Éxito',
+          text: 'El informe y sus valores han sido guardados en la base de datos',
+          icon: 'success',
+          confirmButtonText: 'Aceptar'
+        });
       },
       error: (error) => {
-        console.error('Error al borrar datos de la planta:', error);
-        alert('Error al borrar los datos de la planta del archivo CSV');
+        console.error('❌ Error al guardar el informe y valores:', error);
+        // Mostrar mensaje de error
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo guardar el informe y sus valores en la base de datos',
+          icon: 'error',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+    });
+  }
+  
+  private borrarDatosDespuesPDF(planta: string): void {
+    // Flujo: intentar escribir al archivo seleccionado (File System Access API). Si no hay handle, pedirlo.
+    const applyAndRefresh = (datosFiltrados: any[]) => {
+      // Guardar en memoria/localStorage
+      this.monitoreoService.csvFileService.setData(datosFiltrados);
+
+      // Recargar el caché interno del servicio
+      this.monitoreoService.recargarDatos().subscribe({
+        next: () => {
+          console.log(`Datos de la planta ${planta} borrados exitosamente`);
+          // Actualizar la lista de plantas disponibles
+          this.monitoreoService.getPlantasFormateadas().subscribe(
+            (plantasFormateadas) => {
+              this.plantasFormateadas = plantasFormateadas;
+              this.plantas = plantasFormateadas.map((p) => p.codigo);
+
+              // Si la planta actual ya no existe, limpiar el formulario
+              if (!this.plantas.includes(planta)) {
+                this.form.get('planta')?.setValue('');
+                this.datosTemperatura = null;
+                this.mostrarGrafica = false;
+                this.datosListos = false;
+
+                // Destruir el gráfico si existe
+                if (this.temperaturaChart) {
+                  this.temperaturaChart.destroy();
+                  this.temperaturaChart = null;
+                }
+              }
+            },
+            (error) => {
+              console.error('Error al actualizar lista de plantas:', error);
+            }
+          );
+        },
+        error: (error) => {
+          console.error('Error al recargar datos después de borrar:', error);
+        }
+      });
+    };
+
+    this.monitoreoService.csvFileService.readCSVFile().subscribe({
+      next: async (data) => {
+        const datosFiltrados = (data || []).filter((row: any) => row.Planta !== planta);
+
+        try {
+          if (this.monitoreoService.csvFileService.hasWritableHandle()) {
+            await this.monitoreoService.csvFileService.writeBackToSelectedFile(datosFiltrados as any);
+            // Recargar desde el archivo para mantener sincronía
+            this.monitoreoService.csvFileService.reloadFromHandle().subscribe({
+              next: () => applyAndRefresh(datosFiltrados),
+              error: (err) => {
+                console.warn('No se pudo recargar desde archivo, aplicando solo en memoria:', err);
+                applyAndRefresh(datosFiltrados);
+              }
+            });
+          } else {
+            // Sin handle: no pedir selección ni confirmaciones; aplicar en memoria/localStorage
+            applyAndRefresh(datosFiltrados);
+          }
+        } catch (e) {
+          console.error('Error general al escribir CSV:', e);
+          // Fallback: mantener sólo memoria/localStorage
+          applyAndRefresh(datosFiltrados);
+        }
       },
+      error: (error) => {
+        console.error('Error al leer datos CSV en memoria:', error);
+        alert('Error al borrar los datos de la planta del archivo CSV');
+      }
     });
   }
 }

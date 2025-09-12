@@ -113,8 +113,6 @@ export class MonitoreoTemperaturaHistoryService {
     );
   }
 
-
-  
   // Obtener plantas disponibles
   getPlantas(): Observable<string[]> {
     return this.getCSVFileInfo().pipe(map((info) => info.plantas));

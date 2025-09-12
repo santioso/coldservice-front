@@ -3,6 +3,8 @@ import { Observable, of, throwError } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import * as Papa from 'papaparse';
 import { CSVFileService } from './csv-file.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 
 export interface CSVDataRow {
   Fecha: string;
@@ -38,11 +40,35 @@ export interface CSVFileInfo {
   totalRegistros: number;
 }
 
+export interface InformeValorItem {
+  id?: number;
+  fecha: string; // YYYY-MM-DD
+  hora?: string; // HH:mm:ss
+  gabinete: number;
+  ambiente: number;
+  corriente: number;
+}
+
+export interface InformeItem {
+  id: number;
+  planta: string;
+  equipo: string | null;
+  tecnico: string | null;
+  cliente: string | null;
+  ubicacion: string | null;
+  temperatura_limite: number | null;
+  checklist: string | null;
+  created_at: string;
+  updated_at: string;
+  valores: InformeValorItem[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class MonitoreoTemperaturaService {
   private csvData: CSVDataRow[] = [];
+  private apiUrl = `${environment.apiUrl}/informes`;
 
   private readonly CHECKLIST_ITEMS: string[] = [
     'Estado de rodachinas',
@@ -57,7 +83,10 @@ export class MonitoreoTemperaturaService {
     'Partes metálicas sin óxido',
   ];
 
-  constructor(public csvFileService: CSVFileService) {}
+  constructor(
+    public csvFileService: CSVFileService,
+    private http: HttpClient
+  ) {}
 
   getChecklistItems(): string[] {
     return this.CHECKLIST_ITEMS;
@@ -110,6 +139,15 @@ export class MonitoreoTemperaturaService {
       })
     );
   }
+
+    /**
+     * Crea un nuevo informe
+     * @param informe Datos del informe a crear
+     * @returns Observable con la respuesta del servidor
+     */
+    crearInforme(informe: Partial<InformeItem>): Observable<InformeItem> {
+      return this.http.post<InformeItem>(`${this.apiUrl}`, informe);
+    }
 
   // Obtener datos para una planta específica
   obtenerDatos(planta: string): Observable<TemperatureData> {

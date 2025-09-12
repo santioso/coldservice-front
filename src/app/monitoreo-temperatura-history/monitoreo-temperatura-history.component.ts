@@ -931,9 +931,9 @@ export class MonitoreoTemperaturaHistoryComponent
       ubicacion: formValues.ubicacion,
       temperatura_limite: formValues.limite,
       // Estos valores deberían venir de los datos de temperatura actuales
-      gabinete: '0.00',  // Reemplazar con datos reales
-      ambiente: '0.00',  // Reemplazar con datos reales
-      corriente: '0.00',  // Reemplazar con datos reales
+      gabinete: 0.0 as any,
+      ambiente: 0.0 as any,
+      corriente: 0.0 as any,
       checklist: checklistSeleccionados.length > 0 ? JSON.stringify(checklistSeleccionados) : null
     };
     
