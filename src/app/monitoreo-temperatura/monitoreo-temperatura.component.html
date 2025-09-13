@@ -85,6 +85,16 @@
                     <input matInput formControlName="ubicacion">
                   </mat-form-field>
                 </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Tipo de gas</mat-label>
+                    <mat-select formControlName="tipo_gas">
+                      <mat-option *ngFor="let gas of tipoGas" [value]="gas">
+                        {{ gas }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
               </div>
               <div class="row">
                 <div class="col-md-12">

@@ -48,6 +48,7 @@ export class MonitoreoTemperaturaComponent
   datosListos = false;
   tituloArchivo: string = 'Cargar Archivo CSV';
   botonColor: string = 'primary';
+  tipoGas: string[] = ["R290", "R134A", "R404", "R507", "R600"];
 
   // Variables del slider
   disabled = false;
@@ -122,6 +123,7 @@ export class MonitoreoTemperaturaComponent
   onSliderChange(value: number): void {
     this.form.get('limite')?.setValue(value);
     this.cdr.detectChanges();
+    this.actualizarDatosManualmente();
   }
 
   private inicializarFormulario(): void {
@@ -133,8 +135,10 @@ export class MonitoreoTemperaturaComponent
       fecha: [new Date().toISOString().split('T')[0]],
       cliente: ['', Validators.required],
       ubicacion: [''],
+      tipo_gas: [''],
       chequeo: this.fb.array([]),
     });
+    this.form.get('limite')?.setValue(this.value);
   }
 
   private reiniciarFormulario(mantenerPlanta = false): void {
@@ -155,6 +159,8 @@ export class MonitoreoTemperaturaComponent
 
     // Reiniciar el formulario manteniendo solo la planta seleccionada
     this.reiniciarFormulario(true);
+    // Asegurar que el límite en el formulario refleje el valor actual del slider
+    this.form.get('limite')?.setValue(this.value);
 
     // Cancelar cualquier actualización automática previa
     if (this.actualizacionAutomatica) {
@@ -360,9 +366,13 @@ export class MonitoreoTemperaturaComponent
         .padStart(2, '0')}`;
     });
 
-    const limite = this.form.get('limite')?.value
-      ? parseFloat(this.form.get('limite')?.value)
-      : null;
+    // Parseo robusto del límite: permitir 0 como valor válido
+    const rawLimite = this.form.get('limite')?.value;
+    const parsedLimite = Number(rawLimite);
+    const limite =
+      rawLimite === '' || rawLimite === null || rawLimite === undefined || Number.isNaN(parsedLimite)
+        ? null
+        : parsedLimite;
     const activo = this.form.get('equipo')?.value;
 
     // Configuración del gráfico con múltiples series
@@ -372,6 +382,7 @@ export class MonitoreoTemperaturaComponent
     const colors = [
       { border: 'rgb(75, 192, 192)', background: 'rgba(75, 192, 192, 0.1)' }, // Gabinete
       { border: 'rgb(255, 99, 132)', background: 'rgba(255, 99, 132, 0.1)' }, // Ambiente
+      { border: 'rgba(4, 82, 17, 0.49)', background: 'rgba(255, 99, 132, 0.1)' }, // Diferencia
       { border: 'rgb(54, 162, 235)', background: 'rgba(54, 162, 235, 0.1)' }, // Corriente
       { border: 'rgb(255, 205, 86)', background: 'rgba(255, 205, 86, 0.1)' }, // Extra
       { border: 'rgb(153, 102, 255)', background: 'rgba(153, 102, 255, 0.1)' }, // Extra
@@ -700,6 +711,7 @@ export class MonitoreoTemperaturaComponent
     pdf.text(`Equipo: ${formValues.equipo || ''}`, 20, 70);
     pdf.text(`Cliente: ${formValues.cliente || ''}`, 120, 70);
     pdf.text(`Ubicación: ${formValues.ubicacion || ''}`, 20, 80);
+    pdf.text(`Tipo de gas: ${formValues.tipo_gas || ''}`, 120, 80);
 
     // Línea divisoria entre ubicación y datos de temperatura
     pdf.setDrawColor(200, 200, 200);
@@ -883,11 +895,13 @@ export class MonitoreoTemperaturaComponent
     const series = this.datosTemperatura.series;
     const serieGabinete = series.find(s => s.nombre.toLowerCase().includes('gabinete'));
     const serieAmbiente = series.find(s => s.nombre.toLowerCase().includes('ambiente'));
+    const serieDiferencia = series.find(s => s.nombre.toLowerCase().includes('diferencia'));
     const serieCorriente = series.find(s => s.nombre.toLowerCase().includes('corriente'));
 
     const n = Math.min(
       serieGabinete?.valores.length || 0,
       serieAmbiente?.valores.length || 0,
+      serieDiferencia?.valores.length || 0,
       serieCorriente?.valores.length || 0,
     );
 
@@ -902,6 +916,7 @@ export class MonitoreoTemperaturaComponent
       hora: this.formatearHora(tiempos[i]),
       gabinete: Number(serieGabinete?.valores[i] ?? 0),
       ambiente: Number(serieAmbiente?.valores[i] ?? 0),
+      diferencia_temperatura: Number(serieDiferencia?.valores[i] ?? 0),
       corriente: Number(serieCorriente?.valores[i] ?? 0),
     }));
 
@@ -926,6 +941,7 @@ export class MonitoreoTemperaturaComponent
       tecnico: toNullIfEmpty(formValues.tecnico),
       cliente: toNullIfEmpty(formValues.cliente),
       ubicacion: toNullIfEmpty(formValues.ubicacion),
+      tipo_gas: toNullIfEmpty(formValues.tipo_gas),
       temperatura_limite: temperaturaLimite,
       checklist: checklistStr,
       valores,

@@ -46,6 +46,7 @@ export interface InformeValorItem {
   hora?: string; // HH:mm:ss
   gabinete: number;
   ambiente: number;
+  diferencia_temperatura: number;
   corriente: number;
 }
 
@@ -56,6 +57,7 @@ export interface InformeItem {
   tecnico: string | null;
   cliente: string | null;
   ubicacion: string | null;
+  tipo_gas: string | null;
   temperatura_limite: number | null;
   checklist: string | null;
   created_at: string;
@@ -221,6 +223,34 @@ export class MonitoreoTemperaturaService {
           };
         });
 
+        // Asegurar serie derivada: Diferencia = Ambiente - Gabinete
+        const nombreAmbiente = 'Ambiente';
+        const nombreGabinete = 'Gabinete';
+        const serieAmbiente = series.find(s => s.nombre.toLowerCase().includes('ambiente'));
+        const serieGabinete = series.find(s => s.nombre.toLowerCase().includes('gabinete'));
+        if (serieAmbiente && serieGabinete) {
+          const n = Math.min(serieAmbiente.valores.length, serieGabinete.valores.length);
+          const valoresDif: number[] = [];
+          const tiemposDif: Date[] = [];
+          for (let i = 0; i < n; i++) {
+            const a = Number(serieAmbiente.valores[i] ?? 0);
+            const g = Number(serieGabinete.valores[i] ?? 0);
+            const d = Number((a - g).toFixed(2));
+            valoresDif.push(d);
+            tiemposDif.push(serieAmbiente.tiempos[i]);
+          }
+          // Evitar duplicar si ya existe una serie llamada Diferencia
+          const yaExiste = series.some(s => s.nombre.toLowerCase().includes('diferencia'));
+          if (!yaExiste) {
+            series.push({
+              nombre: 'Diferencia',
+              unidad: '°C',
+              valores: valoresDif,
+              tiempos: tiemposDif,
+            });
+          }
+        }
+
         // Para compatibilidad con el código existente, usar la primera serie como "temperaturas"
         const primeraSerie = series[0];
         const tiempos = primeraSerie?.tiempos || [];
@@ -238,7 +268,13 @@ export class MonitoreoTemperaturaService {
           temperaturas,
           series,
           plantas: [planta],
-          tiposDatos,
+          tiposDatos: (() => {
+            const list = [...tiposDatos];
+            if (!list.some(t => t.toLowerCase().includes('diferencia'))) {
+              list.push('Diferencia (°C)');
+            }
+            return list;
+          })(),
         };
       }),
       catchError((error) => {
@@ -297,7 +333,11 @@ export class MonitoreoTemperaturaService {
           temperaturas,
           series,
           plantas,
-          tiposDatos,
+          tiposDatos: (() => {
+            const list = [...tiposDatos];
+            if (!list.some(t => t.toLowerCase().includes('diferencia'))) list.push('Diferencia (°C)');
+            return list;
+          })(),
         };
       })
     );
