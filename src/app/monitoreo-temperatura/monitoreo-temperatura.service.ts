@@ -223,7 +223,7 @@ export class MonitoreoTemperaturaService {
           };
         });
 
-        // Asegurar serie derivada: Diferencia = Ambiente - Gabinete
+        // Asegurar serie derivada: Delta de T = Ambiente - Gabinete
         const nombreAmbiente = 'Ambiente';
         const nombreGabinete = 'Gabinete';
         const serieAmbiente = series.find(s => s.nombre.toLowerCase().includes('ambiente'));
@@ -239,12 +239,15 @@ export class MonitoreoTemperaturaService {
             valoresDif.push(d);
             tiemposDif.push(serieAmbiente.tiempos[i]);
           }
-          // Evitar duplicar si ya existe una serie llamada Diferencia
-          const yaExiste = series.some(s => s.nombre.toLowerCase().includes('diferencia'));
+          // Evitar duplicar si ya existe una serie llamada Delta de T o Diferencia
+          const yaExiste = series.some(s => 
+            s.nombre.toLowerCase().includes('diferencia') || 
+            s.nombre.toLowerCase().includes('delta de t')
+          );
           if (!yaExiste) {
             series.push({
-              nombre: 'Diferencia',
-              unidad: '°C',
+              nombre: 'Delta de T',
+              unidad: '',
               valores: valoresDif,
               tiempos: tiemposDif,
             });
@@ -271,7 +274,7 @@ export class MonitoreoTemperaturaService {
           tiposDatos: (() => {
             const list = [...tiposDatos];
             if (!list.some(t => t.toLowerCase().includes('diferencia'))) {
-              list.push('Diferencia (°C)');
+              list.push('Delta de T');
             }
             return list;
           })(),
@@ -335,7 +338,7 @@ export class MonitoreoTemperaturaService {
           plantas,
           tiposDatos: (() => {
             const list = [...tiposDatos];
-            if (!list.some(t => t.toLowerCase().includes('diferencia'))) list.push('Diferencia (°C)');
+            if (!list.some(t => t.toLowerCase().includes('diferencia'))) list.push('Delta de T');
             return list;
           })(),
         };

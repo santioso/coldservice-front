@@ -224,14 +224,11 @@ export class MonitoreoTemperaturaComponent
       );
     });
 
-    // Obtener la primera serie de temperatura disponible
+    // Obtener específicamente la serie del Gabinete
     const temperaturaSeries = this.datosTemperatura.series.find(
-      (s) =>
-        s.unidad.includes('°C') ||
-        s.unidad.includes('°') ||
-        s.unidad.includes('')
+      (s) => s.nombre.toLowerCase().includes('gabinete')
     );
-    console.log('🌡️ Serie de temperatura encontrada:', temperaturaSeries);
+    console.log('🌡️ Serie del Gabinete encontrada:', temperaturaSeries);
 
     if (!temperaturaSeries || temperaturaSeries.valores.length === 0) {
       console.log('❌ No hay valores de temperatura en la serie');
@@ -262,9 +259,9 @@ export class MonitoreoTemperaturaComponent
       return { valor: 0, tiempo: new Date(), indice: -1 };
     }
 
-    // Obtener la primera serie de temperatura disponible
+    // Obtener específicamente la serie del Gabinete
     const temperaturaSeries = this.datosTemperatura.series.find((s) =>
-      s.unidad.includes('°C')
+      s.nombre.toLowerCase().includes('gabinete')
     );
     if (!temperaturaSeries || temperaturaSeries.valores.length === 0) {
       return { valor: 0, tiempo: new Date(), indice: -1 };
@@ -293,9 +290,9 @@ export class MonitoreoTemperaturaComponent
       return { valor: 0, tiempo: new Date(), indice: -1 };
     }
 
-    // Obtener la primera serie de temperatura disponible
+    // Obtener específicamente la serie del Gabinete
     const temperaturaSeries = this.datosTemperatura.series.find((s) =>
-      s.unidad.includes('°C')
+      s.nombre.toLowerCase().includes('gabinete')
     );
     if (!temperaturaSeries || temperaturaSeries.valores.length === 0) {
       return { valor: 0, tiempo: new Date(), indice: -1 };
@@ -391,7 +388,7 @@ export class MonitoreoTemperaturaComponent
     // Agregar cada serie de datos
     series.forEach((serie, index) => {
       datasets.push({
-        label: `${serie.nombre} (${serie.unidad})`,
+        label: serie.unidad ? `${serie.nombre} (${serie.unidad})` : serie.nombre,
         data: serie.valores,
         borderColor: colors[index % colors.length].border,
         backgroundColor: colors[index % colors.length].background,
@@ -400,13 +397,17 @@ export class MonitoreoTemperaturaComponent
         pointBackgroundColor: colors[index % colors.length].border,
         fill: false,
         tension: 0.1,
-        yAxisID: this.getYAxisId(serie.unidad),
+        yAxisID: this.getYAxisId(serie.unidad, serie.nombre),
       });
     });
 
     // Agregar línea de límite si se especificó (solo para temperaturas)
     if (limite !== null) {
-      const temperaturaSeries = series.find((s) => s.unidad.includes('°C'));
+      const temperaturaSeries = series.find((s) => 
+        s.unidad.includes('°C') || 
+        s.nombre.toLowerCase().includes('gabinete') || 
+        s.nombre.toLowerCase().includes('ambiente')
+      );
       if (temperaturaSeries) {
         datasets.push({
           label: `Límite inferior: ${limite}°C`,
@@ -868,8 +869,8 @@ export class MonitoreoTemperaturaComponent
   }
 
   // Método para determinar el eje Y apropiado según la unidad
-  private getYAxisId(unidad: string): string {
-    if (unidad.includes('°C')) {
+  private getYAxisId(unidad: string, nombre?: string): string {
+    if (unidad.includes('°C') || (nombre && (nombre.toLowerCase().includes('delta de t') || nombre.toLowerCase().includes('diferencia')))) {
       return 'y-temperature';
     } else if (unidad.includes('A')) {
       return 'y-current';
@@ -895,7 +896,10 @@ export class MonitoreoTemperaturaComponent
     const series = this.datosTemperatura.series;
     const serieGabinete = series.find(s => s.nombre.toLowerCase().includes('gabinete'));
     const serieAmbiente = series.find(s => s.nombre.toLowerCase().includes('ambiente'));
-    const serieDiferencia = series.find(s => s.nombre.toLowerCase().includes('diferencia'));
+    const serieDiferencia = series.find(s => 
+      s.nombre.toLowerCase().includes('diferencia') || 
+      s.nombre.toLowerCase().includes('delta de t')
+    );
     const serieCorriente = series.find(s => s.nombre.toLowerCase().includes('corriente'));
 
     const n = Math.min(
