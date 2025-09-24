@@ -500,6 +500,13 @@ export class MonitoreoTemperaturaComponent
             // Configuración de ticks para mostrar cada 2 grados
             ticks: {
               stepSize: 2,
+              // Función para asegurar que solo se muestren etiquetas para valores pares
+              callback: function(value: number | string) {
+                // Convertir a número y verificar si es par
+                const numValue = Number(value);
+                return !isNaN(numValue) && numValue % 2 === 0 ? value : '';
+              },
+              precision: 0
             },
             // Configuración de la cuadrícula
             grid: {
@@ -694,8 +701,15 @@ export class MonitoreoTemperaturaComponent
     const planta = this.form.get('planta')?.value;
     if (planta) {
       // Recargar datos desde el archivo CSV
-      this.monitoreoService.recargarDatos().subscribe(() => {
-        this.obtenerDatosPlanta(planta);
+      this.monitoreoService.recargarDatos().subscribe({
+        next: () => {
+          // Actualizar los datos de la planta y forzar la actualización de la vista
+          this.obtenerDatosPlanta(planta);
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error al actualizar los datos:', error);
+        }
       });
     }
   }
