@@ -317,12 +317,29 @@ export class MonitoreoTemperaturaComponent
   }
 
   obtenerTiempoTranscurrido(): string {
-    if (!this.datosTemperatura || this.datosTemperatura.tiempos.length < 2) {
-      return '0h 0m';
+    if (!this.datosTemperatura || this.datosTemperatura.tiempos.length === 0) {
+      return 'No hay datos disponibles';
     }
 
-    const { tiempos } = this.datosTemperatura;
-    return this.calcularDuracion(tiempos[0], tiempos[tiempos.length - 1]);
+    const tiempos = this.datosTemperatura.tiempos;
+    const inicio = new Date(tiempos[0]);
+    const fin = new Date(tiempos[tiempos.length - 1]);
+
+    return this.calcularDuracion(inicio, fin);
+  }
+
+  // Filtra las series que no queremos mostrar
+  filtrarSeries(series: any[]): any[] {
+    if (!series) return [];
+    
+    return series.filter(serie => {
+      const nombreSerie = serie.nombre.toLowerCase();
+      return !(
+        nombreSerie.includes('temperatura ambiente') || 
+        nombreSerie.includes('delta t') || 
+        nombreSerie.includes('diferencia')
+      );
+    });
   }
 
   formatearHora(fecha: Date): string {
@@ -353,6 +370,22 @@ export class MonitoreoTemperaturaComponent
     }
 
     const { tiempos, series } = this.datosTemperatura;
+
+    // Filtrar las series que no queremos mostrar
+    const seriesFiltradas = series.filter(serie => {
+      const nombreSerie = serie.nombre.toLowerCase();
+      // Verificar si el nombre de la serie contiene alguna de las palabras clave a excluir
+      const esSerieAOcultar = 
+        nombreSerie.includes('ambiente') || 
+        nombreSerie.includes('delta') || 
+        nombreSerie.includes('diferencia');
+      
+      console.log(`Serie: ${serie.nombre}, Ocultar: ${esSerieAOcultar}`);
+      
+      return !esSerieAOcultar;
+    });
+    
+    console.log('Series después de filtrar:', seriesFiltradas.map(s => s.nombre));
 
     // Formatear los tiempos para mostrar solo la hora
     const formatoHora = tiempos.map((tiempo) => {
@@ -385,8 +418,8 @@ export class MonitoreoTemperaturaComponent
       { border: 'rgb(153, 102, 255)', background: 'rgba(153, 102, 255, 0.1)' }, // Extra
     ];
 
-    // Agregar cada serie de datos
-    series.forEach((serie, index) => {
+    // Agregar cada serie de datos (ya filtradas)
+    seriesFiltradas.forEach((serie, index) => {
       datasets.push({
         label: serie.unidad ? `${serie.nombre} (${serie.unidad})` : serie.nombre,
         data: serie.valores,
@@ -397,7 +430,7 @@ export class MonitoreoTemperaturaComponent
         pointBackgroundColor: colors[index % colors.length].border,
         fill: false,
         tension: 0.1,
-        yAxisID: this.getYAxisId(serie.unidad, serie.nombre),
+        yAxisID: this.getYAxisId(serie.unidad, serie.nombre)
       });
     });
 
@@ -464,8 +497,24 @@ export class MonitoreoTemperaturaComponent
               display: true,
               text: 'Temperatura (°C)',
             },
+            // Configuración de ticks para mostrar cada 2 grados
+            ticks: {
+              stepSize: 2,
+            },
+            // Configuración de la cuadrícula
             grid: {
+              // Dibujar líneas de cuadrícula para todos los ticks
+              color: function(context) {
+                // Solo dibujar líneas para valores pares
+                if (context.tick && Number.isInteger(context.tick.value) && context.tick.value % 2 === 0) {
+                  return 'rgba(200, 200, 200, 0.5)';
+                }
+                return 'transparent';
+              },
+              lineWidth: 1,
               drawOnChartArea: true,
+              drawTicks: true,
+              tickColor: 'rgba(200, 200, 200, 0.5)'
             },
           },
           'y-current': {
