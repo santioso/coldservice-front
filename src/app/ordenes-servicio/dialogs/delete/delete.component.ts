@@ -25,7 +25,6 @@ export class DeleteDialogComponent {
     private utilPopupService: UtilPopupService,
   ) {
 
-    console.log('data', data)
    }
   onNoClick(): void {
     this.dialogRef.close();

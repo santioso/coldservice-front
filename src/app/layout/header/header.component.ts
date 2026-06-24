@@ -30,7 +30,7 @@ export class HeaderComponent
 {
   public config!: InConfiguration;
   userImg?: string;
-  userFullName: string = '';
+  userFullName = '';
   homePage?: string;
   isNavbarCollapsed = true;
   flagvalue: string | string[] | undefined;

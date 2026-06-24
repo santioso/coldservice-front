@@ -19,50 +19,69 @@ const routes: Routes = [
       {
         path: 'activos',
         loadChildren: () =>
-          import('./activos/activos.module').then(
-            (m) => m.ActivosModule
-          ),
+          import('./activos/activos.module').then((m) => m.ActivosModule),
       },
       {
         path: 'orden-entrada',
         loadChildren: () =>
           import('./ordenes-entrada/ordenes-entrada.module').then(
-            (m) => m.OrdenesEntradaModule
+            (m) => m.OrdenesEntradaModule,
           ),
       },
       {
         path: 'orden-servicio',
         loadChildren: () =>
           import('./ordenes-servicio/ordenes-servicio.module').then(
-            (m) => m.OrdenesServicioModule
+            (m) => m.OrdenesServicioModule,
           ),
       },
       {
         path: 'orden-salida',
         loadChildren: () =>
           import('./ordenes-salida/ordenes-salida.module').then(
-            (m) => m.OrdenesSalidaModule
+            (m) => m.OrdenesSalidaModule,
+          ),
+      },
+      {
+        path: 'monitoreo-temperatura',
+        loadChildren: () =>
+          import('./monitoreo-temperatura/monitoreo-temperatura.module').then(
+            (m) => m.MonitoreoTemperaturaModule,
+          ),
+      },
+      {
+        path: 'monitoreo-temperatura-history',
+        loadChildren: () =>
+          import('./monitoreo-temperatura-history/monitoreo-temperatura-history.module').then(
+            (m) => m.MonitoreoTemperaturaHistoryModule,
+          ),
+      },
+      {
+        path: 'orden-salida',
+        loadChildren: () =>
+          import('./ordenes-salida/ordenes-salida.module').then(
+            (m) => m.OrdenesSalidaModule,
           ),
       },
       {
         path: 'advance-table',
         loadChildren: () =>
           import('./advance-table/advance-table.module').then(
-            (m) => m.AdvanceTableModule
+            (m) => m.AdvanceTableModule,
           ),
       },
       {
         path: 'extra-pages',
         loadChildren: () =>
           import('./extra-pages/extra-pages.module').then(
-            (m) => m.ExtraPagesModule
+            (m) => m.ExtraPagesModule,
           ),
       },
       {
         path: 'multilevel',
         loadChildren: () =>
           import('./multilevel/multilevel.module').then(
-            (m) => m.MultilevelModule
+            (m) => m.MultilevelModule,
           ),
       },
       // {
@@ -79,8 +98,13 @@ const routes: Routes = [
     component: AuthLayoutComponent,
     loadChildren: () =>
       import('./authentication/authentication.module').then(
-        (m) => m.AuthenticationModule
+        (m) => m.AuthenticationModule,
       ),
+  },
+  {
+    path: 'monitoring',
+    loadChildren: () =>
+      import('./monitoring/monitoring.module').then((m) => m.MonitoringModule),
   },
   { path: '**', component: Page404Component },
 ];

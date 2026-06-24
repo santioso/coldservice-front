@@ -1,0 +1,165 @@
+.detail-page {
+  background: #f4f7fb;
+  min-height: 100vh;
+  padding: 16px;
+}
+
+.detail-header,
+.panel,
+.info-card,
+.chart-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 14px 35px rgba(15, 41, 77, 0.08);
+}
+
+.detail-header {
+  align-items: center;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto auto;
+  height: 80px;
+  justify-content: space-between;
+  line-height: normal;
+  margin-bottom: 14px;
+  overflow: hidden;
+  padding: 10px 18px;
+  text-align: left;
+}
+
+.header-left {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+}
+
+.client-logo {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  height: 48px;
+  object-fit: contain;
+  padding: 6px;
+  width: 48px;
+}
+
+.header-titles {
+  display: grid;
+  gap: 2px;
+}
+
+.header-device,
+.header-model {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+}
+
+.header-device strong {
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.header-model span {
+  color: #334155;
+  font-size: 13px;
+}
+
+.label {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.panel,
+.info-card,
+.chart-card {
+  margin-bottom: 24px;
+  padding: 20px;
+}
+
+.session-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.info-grid,
+.chart-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.info-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.charts-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+}
+
+.charts-toolbar h2 {
+  color: #17375e;
+  flex: 1 1 100%;
+  margin: 0;
+}
+
+.toolbar-label {
+  color: #4b5f78;
+  font-size: 0.95rem;
+}
+
+.chart-grid {
+  grid-template-columns: repeat(var(--charts-per-row, 2), minmax(0, 1fr));
+}
+
+.chart-card {
+  cursor: zoom-in;
+}
+
+.chart-wrapper {
+  height: 420px;
+}
+
+@media (max-width: 960px) {
+  .detail-page {
+    padding: 16px;
+  }
+
+  .detail-header {
+    height: auto;
+    min-height: 80px;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-grid {
+    grid-template-columns: repeat(min(var(--charts-per-row, 2), 2), minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-header {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+  }
+
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+}

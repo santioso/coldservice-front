@@ -1,0 +1,137 @@
+<section class="monitoring-page">
+  <header class="page-header">
+    <div class="header-left">
+      <img
+        class="client-logo"
+        *ngIf="authService.currentSession?.client?.logo_url"
+        [src]="authService.currentSession?.client?.logo_url"
+        [alt]="authService.currentSession?.client?.name || 'Cliente'"
+        title="Logo del cliente"
+      />
+      <div class="header-titles">
+        <div class="header-client">
+          <span class="label">Cliente</span>
+          <strong>{{ authService.currentSession?.client?.name || "Sin nombre" }}</strong>
+        </div>
+        <div class="header-user">
+          <span class="label">Usuario</span>
+          <span>{{ authService.currentSession?.user?.email }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" type="button" (click)="logout()">
+        Cerrar sesión
+      </button>
+    </div>
+  </header>
+
+  <section class="panel controls-panel">
+    <mat-form-field appearance="outline" class="device-search">
+      <mat-label>Buscar dispositivo</mat-label>
+      <input
+        matInput
+        type="search"
+        [formControl]="deviceSearch"
+        [matAutocomplete]="deviceAutocomplete"
+        placeholder="Serial o modelo"
+      />
+      <mat-autocomplete
+        #deviceAutocomplete="matAutocomplete"
+        [displayWith]="displayDevice"
+        (optionSelected)="onDeviceSelected($event)"
+      >
+        <mat-option
+          *ngFor="let device of filteredDevices"
+          [value]="device"
+        >
+          {{ displayDevice(device) }}
+        </mat-option>
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <div class="controls-filters">
+      <mat-form-field appearance="outline">
+        <mat-label>Orden</mat-label>
+        <mat-select [value]="sort" (selectionChange)="onSortChange($any($event).value)">
+          <mat-option *ngFor="let option of sortOptions" [value]="option.value">
+            {{ option.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Dispositivos por página</mat-label>
+        <mat-select
+          [value]="pageSize"
+          (selectionChange)="onPageSizeChange($any($event).value)"
+        >
+          <mat-option *ngFor="let size of pageSizeOptions" [value]="size">
+            {{ size }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </section>
+
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <section class="device-grid" *ngIf="items.length > 0">
+    <article
+      class="device-card"
+      *ngFor="let item of items"
+      (click)="openDevice(item.device_id)"
+    >
+      <div class="device-card-header">
+        <div>
+          <h2>{{ item.device_id }}</h2>
+          <p>{{ item.modelo || "Sin modelo" }}</p>
+        </div>
+        <span class="live-badge" [class.live]="item.is_live">
+          {{ item.is_live ? "En vivo" : "Sin actividad reciente" }}
+        </span>
+      </div>
+      <p class="last-reading">Última lectura: {{ formatTime(item.last_reading_at) }}</p>
+      <div class="mini-chart" *ngIf="chartByDevice[item.device_id] as chart">
+        <canvas
+          baseChart
+          [data]="chart.data"
+          [options]="chart.options"
+          [type]="chart.type || 'line'"
+        ></canvas>
+      </div>
+      <div class="custom-order-actions" *ngIf="sort === 'custom'" (click)="$event.stopPropagation()">
+        <button mat-button type="button" (click)="moveDevice(item.device_id, -1)">
+          Subir
+        </button>
+        <button mat-button type="button" (click)="moveDevice(item.device_id, 1)">
+          Bajar
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <p class="empty-state" *ngIf="!loading && items.length === 0">
+    No hay dispositivos asociados a este cliente.
+  </p>
+
+  <section class="pagination" *ngIf="totalPages > 1">
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="page <= 1"
+      (click)="onPageChange(page - 1)"
+    >
+      Anterior
+    </button>
+    <span>Página {{ page }} de {{ totalPages }}</span>
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="page >= totalPages"
+      (click)="onPageChange(page + 1)"
+    >
+      Siguiente
+    </button>
+  </section>
+</section>

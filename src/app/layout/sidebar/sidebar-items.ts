@@ -74,23 +74,23 @@ export const ROUTES: RouteInfo[] = [
     badgeClass: "",
     submenu: [],
   },
-    /**
-   * Menú órdenes de entrada
-   */
-    {
-      path: "orden-servicio",
-      title: "MENUITEMS.SERVICE-ORDER.TEXT",
-      iconType: "feather",
-      icon: "trello",
-      class: "",
-      groupTitle: false,
-      badge: "",
-      badgeClass: "",
-      submenu: [],
-    },
-      /**
-   * Menú órdenes de entrada
-   */
+  /**
+ * Menú órdenes de entrada
+ */
+  {
+    path: "orden-servicio",
+    title: "MENUITEMS.SERVICE-ORDER.TEXT",
+    iconType: "feather",
+    icon: "trello",
+    class: "",
+    groupTitle: false,
+    badge: "",
+    badgeClass: "",
+    submenu: [],
+  },
+  /**
+* Menú órdenes de salida
+*/
   {
     path: "orden-salida",
     title: "MENUITEMS.ENTRY-EXIT.TEXT",
@@ -101,6 +101,43 @@ export const ROUTES: RouteInfo[] = [
     badge: "",
     badgeClass: "",
     submenu: [],
+  },
+  /**
+* Menú monitoreo de temperaturas
+*/
+  {
+    path: "monitoreo-temperatura",
+    title: "MENUITEMS.MONITORING-TEMPERATURE.TEXT",
+    iconType: "feather",
+    icon: "trello",
+    class: "",
+    groupTitle: false,
+    badge: "",
+    badgeClass: "",
+    submenu: [
+      {
+        path: "monitoreo-temperatura",
+        title: "MENUITEMS.MONITORING-TEMPERATURE-ONLINE.TEXT",
+        iconType: "",
+        icon: "",
+        class: "ml-menu",
+        groupTitle: false,
+        badge: "",
+        badgeClass: "",
+        submenu: [],
+      },
+      {
+        path: "monitoreo-temperatura-history",
+        title: "MENUITEMS.MONITORING-TEMPERATURE-GUARDADO.TEXT",
+        iconType: "",
+        icon: "",
+        class: "ml-menu",
+        groupTitle: false,
+        badge: "",
+        badgeClass: "",
+        submenu: [],
+      },
+    ],
   },
   // {
   //   path: "",

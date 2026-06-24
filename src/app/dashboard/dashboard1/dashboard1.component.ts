@@ -53,6 +53,7 @@ export class Dashboard1Component implements OnInit {
   totalEntries = 0;
   totalOutputs = 0;
   totalActives = 0;
+  totalPiso = 0;
   chart3Data!: ActivesByYearAndMonthModel;
   chart3Stats!: Chart3StatsModel;
   chart3OutputsStats!: Chart3StatsModel;
@@ -84,6 +85,7 @@ export class Dashboard1Component implements OnInit {
         this.totalEntries = this.dataDashboard.totalEntries;
         this.totalOutputs = this.dataDashboard.totalOutputs;
         this.totalActives = this.dataDashboard.totalActives;
+        this.totalPiso = this.dataDashboard.totalActivosPiso;
       },
       error: (error) => {
         console.error('Error al obtener los datos del dashboard', error);
@@ -97,7 +99,6 @@ export class Dashboard1Component implements OnInit {
     this.dashboardService.getOrdersByYearAndMonth().subscribe({
       next: (data: ActivesByYearAndMonthModel) => {
         this.chart3Data = data;
-        console.log('this.chart3Data', this.chart3Data)
         this.seriesOrders = this.buildSeriesData(this.chart3Data);
         this.getChart3stats();
         this.getChartOutputs3stats();
@@ -137,7 +138,6 @@ export class Dashboard1Component implements OnInit {
     this.dashboardService.getChart3Stats().subscribe({
       next: (data) => {
         this.chart3Stats = data;
-        console.log('this.chart3Stats', this.chart3Stats)
       },
       error: (error) => {
         console.error('Error al obtener los datos del dashboard', error);
@@ -149,7 +149,6 @@ export class Dashboard1Component implements OnInit {
     this.dashboardService.getChartOutputs3Stats().subscribe({
       next: (data) => {
         this.chart3OutputsStats = data;
-        console.log('this.chart3Stats', this.chart3OutputsStats)
       },
       error: (error) => {
         console.error('Error al obtener los datos del dashboard', error);

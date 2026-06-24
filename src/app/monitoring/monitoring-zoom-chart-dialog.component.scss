@@ -1,0 +1,17 @@
+.range-controls {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.zoom-chart {
+  height: 60vh;
+  min-height: 420px;
+}
+
+@media (max-width: 900px) {
+  .range-controls {
+    grid-template-columns: 1fr;
+  }
+}
