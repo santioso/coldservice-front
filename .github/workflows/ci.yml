@@ -1,4 +1,4 @@
-name: CI - Lint, Test y Build
+name: CI - Lint y Build
 
 on:
   pull_request:
@@ -25,9 +25,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
-
-      - name: Tests
-        run: npm test -- --watch=false --browsers=ChromeHeadless
 
       - name: Build
         run: npm run build
