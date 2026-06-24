@@ -1,0 +1,204 @@
+<section class="content">
+  <div class="container-fluid">
+    <div class="block-header">
+      <div class="row">
+        <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+          <ul class="breadcrumb breadcrumb-style">
+            <li class="breadcrumb-item">
+              <h4 class="page-title">Historial de Monitoreo de Temperatura</h4>
+            </li>
+            <li class="breadcrumb-item bcrumb-1">
+              <a routerLink="/dashboard/main">
+                <i class="fas fa-home"></i> Inicio</a>
+            </li>
+            <li class="breadcrumb-item active">Historial de Monitoreo de Temperatura</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="row clearfix">
+      <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12">
+        <div class="card">
+          
+          <div class="header d-flex justify-content-between align-items-center">
+            <h2>Visualización de Historial</h2>
+            <button mat-raised-button [color]="botonColor" (click)="cargarArchivoCSV()" class="mt-2">
+              <i class="material-icons">history</i> {{tituloArchivo}}
+            </button>
+          </div>
+
+          <div class="body">
+            <form [formGroup]="form">
+              <div class="row">
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Planta</mat-label>
+                    <mat-select formControlName="planta" (selectionChange)="onPlantaChange()">
+                      <mat-option *ngFor="let planta of plantasFormateadas" [value]="planta.codigo">
+                        {{ planta.nombre }}
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Número de equipo</mat-label>
+                    <input matInput formControlName="equipo" class="">
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <div>
+                    <div class="example-label-container">
+                      <label id="example-name-label" class="example-name-label">Límite inferior de temperatura <span
+                          class="bold-text text-primary"> {{slider.value}}° C</span></label>
+                    </div>
+                    <mat-slider class="example-margin" [disabled]="disabled" [max]="max" [min]="min" [step]="step"
+                      [discrete]="thumbLabel" [showTickMarks]="showTicks">
+                      <input matSliderThumb [(ngModel)]="value" [ngModelOptions]="{standalone: true}"
+                        (ngModelChange)="onSliderChange($event)" #slider>
+                    </mat-slider>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Nombre del técnico</mat-label>
+                    <input matInput formControlName="tecnico">
+                  </mat-form-field>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Fecha</mat-label>
+                    <input matInput type="date" formControlName="fecha">
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Nombre del cliente</mat-label>
+                    <input matInput formControlName="cliente">
+                  </mat-form-field>
+                </div>
+                <div class="col-md-3">
+                  <mat-form-field class="full-width" appearance="outline">
+                    <mat-label>Ubicación del cliente</mat-label>
+                    <input matInput formControlName="ubicacion">
+                  </mat-form-field>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-12">
+                  <fieldset class="checklist-container">
+                    <legend>Lista de chequeo</legend>
+                    <div class="row">
+                      <div class="col-md-3" *ngFor="let item of checklistItems">
+                        <mat-checkbox [checked]="isItemSelected(item)" (change)="toggleChecklistItem(item)">
+                          {{ item }}
+                        </mat-checkbox>
+                      </div>
+                    </div>
+                  </fieldset>
+                </div>
+              </div>
+            </form>
+
+            <!-- Información del archivo CSV -->
+            <div class="row mt-2" *ngIf="datosTemperatura">
+              <div class="col-md-12">
+                <div class="alert alert-info">
+                  <span class="bold-text">Series de datos históricos:</span>
+                  <span *ngFor="let serie of datosTemperatura.series; let last = last">
+                    {{ serie.nombre }} ({{ serie.unidad }}){{ !last ? ', ' : '' }}
+                  </span>
+                  <br>
+                  <span class="bold-text">Plantas:</span>
+                  <span *ngFor="let planta of datosTemperatura.plantas; let last = last">
+                    {{ planta }}{{ !last ? ', ' : '' }}
+                  </span>
+                  <br>
+                  <span class="bold-text">Total de registros históricos:</span> {{ datosTemperatura.tiempos.length }}
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="mostrarGrafica" class="mt-2" #reporteContent>
+              <!-- Panel de información de temperatura -->
+              <div class="row mb-4">
+                <div class="col-md-12">
+                  <div class="card">
+                    <div class="card-body">
+                      <div class="row">
+                        <div class="col-md-3">
+                          <span class="info-box-text">Última temperatura</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-primary">{{ obtenerUltimaTemperatura().valor.toFixed(2)
+                                }} °C</span>
+                              <span class="time-info">{{ formatearHora(obtenerUltimaTemperatura().tiempo) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <span class="info-box-text">Temperatura mínima</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-info">{{ obtenerTemperaturaMinima().valor.toFixed(2) }}
+                                °C</span>
+                              <span class="time-info">{{ formatearHora(obtenerTemperaturaMinima().tiempo) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <span class="info-box-text">Temperatura máxima</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-danger">{{ obtenerTemperaturaMaxima().valor.toFixed(2)
+                                }} °C</span>
+                              <span class="time-info">{{ formatearHora(obtenerTemperaturaMaxima().tiempo) }}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <span class="info-box-text">Período histórico</span>
+                          <div class="info-box">
+                            <div class="info-box-content">
+                              <span class="info-box-number text-success">{{ obtenerTiempoTranscurrido() }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-12">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Historial de Monitoreo - Activo {{ form.get('equipo')?.value || 'Sin número' }}</h3>
+                    <div>
+                      <button mat-raised-button color="accent" [disabled]="!form.valid" (click)="generarPDF()">
+                        <i class="material-icons">picture_as_pdf</i> Descargar informe histórico PDF
+                      </button>
+                    </div>
+                  </div>
+                  <div class="alert alert-info d-flex justify-content-between align-items-center">
+                    <div><i class="material-icons align-middle me-2">info</i>
+                    Visualizando datos históricos de temperatura. Seleccione una planta para ver detalles.
+                    </div>
+                    <button mat-raised-button color="primary" (click)="actualizarDatosManualmente()" class="me-2">
+                        <i class="material-icons">refresh</i> Actualizar datos históricos
+                      </button>
+                  </div>
+                </div>
+              </div>
+              <div class="chart-container" style="position: relative; height: 400px;">
+                <canvas #graficaCanvas></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

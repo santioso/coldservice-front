@@ -5,7 +5,7 @@
       <app-breadcrumb [title]="'Activos'" [items]="['Inicio']" [active_item]="'Activos'"></app-breadcrumb>
     </div>
     <div class="alert alert-info">
-      Este componente administra los activos 
+      Este componente administra los activos
       permite:<br><br>
       <ul class="fa-ul">
         <li class="font-15"><span class="fa-li"><i class="fas fa-angle-double-right"></i></span>Agregar, editar y eliminar activos</li>
@@ -96,16 +96,23 @@
                   <mat-header-cell *matHeaderCellDef mat-sort-header>Capacidad</mat-header-cell>
                   <mat-cell *matCellDef="let row">{{row.capacidad}}</mat-cell>
                 </ng-container>
-                <!-- Nombre Cliente Column -->
-                <ng-container matColumnDef="nombre_cliente">
-                  <mat-header-cell *matHeaderCellDef mat-sort-header>Nombre Cliente</mat-header-cell>
-                  <mat-cell *matCellDef="let row">{{row.nombre_cliente}}</mat-cell>
+                <!-- Estado Column -->
+                <ng-container matColumnDef="estado">
+                  <mat-header-cell *matHeaderCellDef mat-sort-header>Estado</mat-header-cell>
+                  <mat-cell *matCellDef="let row">
+                    <div [ngClass]="{
+                      'estado-disponible': row.estado === 'Disponible' || row.estado === 'Disponible nuevo',
+                      'estado-no-disponible': row.estado !== 'Disponible' && row.estado !== 'Disponible nuevo' && row.estado !== 'Baja',
+                      'estado-baja': row.estado === 'Baja'
+                      }">
+                      {{row.estado}}
+                    </div>
+                  </mat-cell>
                 </ng-container>
-                <!-- Establecimiento Comercial Column -->
-                <ng-container matColumnDef="establecimiento_comercial">
-                  <mat-header-cell *matHeaderCellDef mat-sort-header>Establecimiento Comercial</mat-header-cell>
-                  <mat-cell *matCellDef="let row">{{row.establecimiento_comercial}}</mat-cell>
-                </ng-container>
+
+
+
+
                 <!-- Actions Column -->
                 <ng-container matColumnDef="actions">
                   <mat-header-cell class="pr-0" *matHeaderCellDef>Acciones</mat-header-cell>
@@ -114,10 +121,10 @@
                       (click)="editCall(row)" class="tbl-action-btn">
                       <app-feather-icons [icon]="'edit'" [class]="'tbl-fav-edit'"></app-feather-icons>
                     </button>
-                    <button aria-label="borrar" mat-icon-button color="accent" (click)="$event.stopPropagation()"
+                    <!-- <button aria-label="borrar" mat-icon-button color="accent" (click)="$event.stopPropagation()"
                       (click)="deleteItem(row)" class="tbl-action-btn">
                       <app-feather-icons [icon]="'trash-2'" [class]="'tbl-fav-delete'"></app-feather-icons>
-                    </button>
+                    </button> -->
                   </mat-cell>
                 </ng-container>
                 <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
@@ -145,10 +152,10 @@
                   <mat-icon>create</mat-icon>
                   <span>Editar Registro</span>
                 </button>
-                <button mat-menu-item (click)="deleteItem(item)">
+                <!-- <button mat-menu-item (click)="deleteItem(item)">
                   <mat-icon>delete</mat-icon>
                   <span>Eliminar Registro</span>
-                </button>
+                </button> -->
                 <button mat-menu-item (click)="refresh()">
                   <mat-icon>refresh</mat-icon>
                   <span>Actualizar Registro</span>
@@ -182,7 +189,7 @@
               [style.display]="dataSource.renderedData.length === 0 ? '' : 'none'">
               No hay resultados
             </div>
-            <mat-paginator #paginator [length]="dataSource.filteredData.length" [pageIndex]="0" [pageSize]="10"
+            <mat-paginator #paginator [length]="dataSource.filteredData.length || 0" [pageIndex]="0" [pageSize]="10"
               [pageSizeOptions]="[5, 10, 25, 100]">
             </mat-paginator>
           </div>
