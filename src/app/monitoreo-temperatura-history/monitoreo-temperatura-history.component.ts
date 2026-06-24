@@ -46,8 +46,8 @@ export class MonitoreoTemperaturaHistoryComponent
   datosTemperatura: TemperatureData | null = null;
   mostrarGrafica = false;
   datosListos = false;
-  tituloArchivo: string = 'Cargar Archivo CSV';
-  botonColor: string = 'primary';
+  tituloArchivo = 'Cargar Archivo CSV';
+  botonColor = 'primary';
 
   // Variables del slider
   disabled = false;

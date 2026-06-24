@@ -247,7 +247,9 @@ export class OrdenesSalidaComponent
         );
   }
 
-  removeSelectedRows() {}
+  removeSelectedRows() {
+    this.selection.clear();
+  }
 
   // export table data in excel file
   exportExcel() {

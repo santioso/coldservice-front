@@ -53,7 +53,7 @@ export class FormDialogComponent implements OnInit {
     this.blankObject
   );
   soloLectura: boolean;
-  activoValid: boolean = false;
+  activoValid = false;
   activosEnOrdenEntrada: ActivosEnOrdenEntradaInterface[] = [];
   filteredActivos: ActivosEnOrdenEntradaInterface[] = [];
   displayedColumns: string[] = ['idActivo', 'descripcion', 'observaciones'];
@@ -260,7 +260,7 @@ export class FormDialogComponent implements OnInit {
 
   public confirmAdd(): void {
 
-    let datosForm = this.ordenesSalidaTableForm.getRawValue();
+    const datosForm = this.ordenesSalidaTableForm.getRawValue();
     console.log(datosForm);
     delete datosForm.id;
     delete datosForm.idEntrada;

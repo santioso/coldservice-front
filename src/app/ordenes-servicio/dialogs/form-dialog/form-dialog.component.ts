@@ -163,12 +163,12 @@ export class FormDialogComponent implements OnInit {
       this.ordenesServicioTableForm.get('activoEntradaId')?.setValue(activoId);
       this.ordenesServicioTableForm.get('descripcion')?.setValue(activo.descripcion);
       this.ordenesServicioTableForm.get('capacidad')?.setValue(activo.capacidad);
-    };
+    }
   }
 
   public confirmAdd(): void {
     const datosFormulario = this.ordenesServicioTableForm.getRawValue();
-    let datosForm: CreateOrdenesServicioModel = {
+    const datosForm: CreateOrdenesServicioModel = {
       id: this.ordenesServicioModel.id,
       date_start: datosFormulario.dateStart,
       date_finish: null,
@@ -185,8 +185,6 @@ export class FormDialogComponent implements OnInit {
         error: (err) => {
           this.utilPopupService.mostrarMensaje(err, 'error', 'Error al guardar', false);
         },
-        complete: () => {
-        },
       });
     }
     else {
@@ -197,9 +195,6 @@ export class FormDialogComponent implements OnInit {
         },
         error: (err) => {
           this.utilPopupService.mostrarMensaje(err, 'error', 'Error al editar', false);
-        },
-        complete: () => {
-
         },
       });
     }

@@ -46,8 +46,8 @@ export class MonitoreoTemperaturaComponent
   datosTemperatura: TemperatureData | null = null;
   mostrarGrafica = false;
   datosListos = false;
-  tituloArchivo: string = 'Cargar Archivo CSV';
-  botonColor: string = 'primary';
+  tituloArchivo = 'Cargar Archivo CSV';
+  botonColor = 'primary';
   tipoGas: string[] = ["R290", "R134A", "R404", "R507", "R600"];
 
   // Variables del slider

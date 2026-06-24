@@ -116,7 +116,11 @@ export class CSVFileService {
               } else {
                 const data = results.data as CSVDataRow[];
                 this.csvDataSubject.next(data);
-                try { localStorage.setItem('csvData', JSON.stringify(data)); } catch {}
+                try {
+                  localStorage.setItem('csvData', JSON.stringify(data));
+                } catch {
+                  // Ignore storage failures; parsed CSV data is still returned.
+                }
                 observer.next(data);
                 observer.complete();
               }

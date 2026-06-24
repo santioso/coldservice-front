@@ -257,6 +257,7 @@ export class ClientsComponent
   }
 
   removeSelectedRows() {
+    this.selection.clear();
   }
 
 
