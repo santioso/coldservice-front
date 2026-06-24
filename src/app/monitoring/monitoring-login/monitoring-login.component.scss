@@ -1,0 +1,44 @@
+.monitoring-login {
+  align-items: center;
+  background: linear-gradient(135deg, #e3e9f4 0%, #f7f9fc 55%, #d6e6ff 100%);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.login-card {
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 22px 50px rgba(20, 49, 91, 0.18);
+  max-width: 430px;
+  padding: 36px;
+  width: 100%;
+}
+
+.logo {
+  display: block;
+  margin-bottom: 22px;
+  max-width: 210px;
+}
+
+h1 {
+  color: #17375e;
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+p {
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.full-width,
+button[type="submit"] {
+  width: 100%;
+}
+
+.alert {
+  margin-bottom: 16px;
+}
