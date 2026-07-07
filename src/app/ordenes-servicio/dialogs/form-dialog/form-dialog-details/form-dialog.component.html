@@ -13,44 +13,44 @@
   </div>
   <div mat-dialog-content class="dialogo">
     <div class="highlight-section">
-    <div class="row">
-      <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
-        <label>Fecha:</label>
-        <div>{{ this.dateStartLabel }}</div>
-      </div>
-      <div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 mb-2">
-        <label>Activo:</label>
-        <div>{{ this.activoIdLabel }} - {{ descripcionLabel }}</div>
-      </div>
-      <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
-        <label>Capacidad:</label>
-        <div>{{ this.capacidadLabel }}</div>
-      </div>
-      <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
-        <label>Estado:</label>
-        <div [ngClass]="{
-        'estado-disponible': statusLabel === 'Disponible',
-        'estado-no-disponible': statusLabel !== 'Disponible' && statusLabel !== 'Baja',
-        'estado-baja': statusLabel === 'Baja'
+      <div class="row">
+        <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
+          <label>Fecha:</label>
+          <div>{{ this.dateStartLabel }}</div>
+        </div>
+        <div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 mb-2">
+          <label>Activo:</label>
+          <div>{{ this.activoIdLabel }} - {{ descripcionLabel }}</div>
+        </div>
+        <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
+          <label>Capacidad:</label>
+          <div>{{ this.capacidadLabel }}</div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 mb-2">
+          <label>Estado:</label>
+          <div [ngClass]="{
+          'estado-disponible': (statusLabel === 'Disponible' || statusLabel === 'Disponible nuevo'),
+          'estado-no-disponible': statusLabel !== 'Disponible' && statusLabel !== 'Disponible nuevo' && statusLabel !== 'Baja',
+          'estado-baja': statusLabel === 'Baja'
         }">
-          {{ statusLabel }}
+            {{ statusLabel }}
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
+          <label>Diagnóstico:</label>
+          <div>{{ this.diagnosisLabel }}</div>
+        </div>
+        <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
+          <label>Observaciones:</label>
+          <div>{{ this.observacionesLabel }}</div>
         </div>
       </div>
     </div>
 
-    <div class="row">
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
-        <label>Diagnóstico:</label>
-        <div>{{ this.diagnosisLabel }}</div>
-      </div>
-      <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
-        <label>Observaciones:</label>
-        <div>{{ this.observacionesLabel }}</div>
-      </div>
-    </div>
-    </div>
-
-    <form class="register-form mx-4 my-2" [formGroup]="ordenesServicioTableForm" >
+    <form class="register-form mx-4 my-2" [formGroup]="ordenesServicioTableForm">
       <section>
         <div class="row mb-2">
           <div class="details-div col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
@@ -60,57 +60,63 @@
 
         <div class="body overflow-auto">
           <div class="table-responsive">
-              <table mat-table #table [dataSource]="dataSource" class="table mat-cell">
-                <!-- ID Column -->
-                <ng-container matColumnDef="id">
-                  <mat-header-cell *matHeaderCellDef class="id-column">Id</mat-header-cell>
-                  <mat-cell *matCellDef="let detalle" class="id-column">
-                    {{detalle.id}}
-                  </mat-cell>
-                </ng-container>
-                <!-- Date Column -->
-                <ng-container matColumnDef="created_at">
-                  <mat-header-cell *matHeaderCellDef class="date-column">Fecha</mat-header-cell>
-                  <mat-cell *matCellDef="let detalle" class="date-column">
-                    {{detalle.created_at | slice:0:10}}
-                  </mat-cell>
-                </ng-container>
-                <!-- Estado Column -->
-                <ng-container matColumnDef="status">
-                  <mat-header-cell *matHeaderCellDef class="status-column">Estado</mat-header-cell>
-                  <mat-cell *matCellDef="let detalle" class="status-column">
-                    {{detalle.status}}
-                  </mat-cell>
-                </ng-container>
-                <!-- Observaciones Column -->
-                <ng-container matColumnDef="observaciones">
-                  <mat-header-cell *matHeaderCellDef class="observaciones-column">Observaciones</mat-header-cell>
-                  <mat-cell *matCellDef="let detalle" class="observaciones-column">
-                    {{detalle.observaciones}}
-                  </mat-cell>
-                </ng-container>
-                <!-- Técnico Column -->
-                <ng-container matColumnDef="technical">
-                  <mat-header-cell *matHeaderCellDef class="technical-column">Técnico</mat-header-cell>
-                  <mat-cell *matCellDef="let detalle" class="technical-column">
-                    {{detalle.technical}}
-                  </mat-cell>
-                </ng-container>
-                <!-- Actions Column -->
-                <ng-container matColumnDef="actions">
-                  <mat-header-cell *matHeaderCellDef class="actions-column">Acciones</mat-header-cell>
-                  <mat-cell *matCellDef="let detalle" class="actions-column">
-                    <button mat-icon-button color="primary" (click)="editDetail(detalle)">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn" (click)="deleteDetail(detalle)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
-                  </mat-cell>
-                </ng-container>
-                <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
-                <mat-row *matRowDef="let detalle; columns: displayedColumns;"></mat-row>
-              </table>
+            <table mat-table #table [dataSource]="dataSource" class="table mat-cell">
+              <!-- ID Column -->
+              <ng-container matColumnDef="id">
+                <mat-header-cell *matHeaderCellDef class="id-column">Id</mat-header-cell>
+                <mat-cell *matCellDef="let detalle; let i = index" class="id-column">
+                  {{ i + 1 }}
+                </mat-cell>
+              </ng-container>
+              <!-- Date Column -->
+              <ng-container matColumnDef="created_at">
+                <mat-header-cell *matHeaderCellDef class="date-column">Fecha</mat-header-cell>
+                <mat-cell *matCellDef="let detalle" class="date-column">
+                  {{detalle.created_at | slice:0:10}}
+                </mat-cell>
+              </ng-container>
+              <!-- Estado Column -->
+              <ng-container matColumnDef="status">
+                <mat-header-cell *matHeaderCellDef class="status-column">Estado</mat-header-cell>
+                <mat-cell *matCellDef="let detalle" class="status-column">
+                  <div [ngClass]="{
+                    'estado-disponible': (detalle.status === 'Disponible' || detalle.status === 'Disponible nuevo'),
+                    'estado-no-disponible': detalle.status !== 'Disponible' && detalle.status !== 'Disponible nuevo' && detalle.status !== 'Baja',
+                    'estado-baja': detalle.status === 'Baja'
+                  }">
+                  {{detalle.status}}
+                  </div>
+                </mat-cell>
+              </ng-container>
+              <!-- Observaciones Column -->
+              <ng-container matColumnDef="observaciones">
+                <mat-header-cell *matHeaderCellDef class="observaciones-column">Observaciones</mat-header-cell>
+                <mat-cell *matCellDef="let detalle" class="observaciones-column">
+                  {{detalle.observaciones}}
+                </mat-cell>
+              </ng-container>
+              <!-- Técnico Column -->
+              <ng-container matColumnDef="technical">
+                <mat-header-cell *matHeaderCellDef class="technical-column">Técnico</mat-header-cell>
+                <mat-cell *matCellDef="let detalle" class="technical-column">
+                  {{detalle.technical}}
+                </mat-cell>
+              </ng-container>
+              <!-- Actions Column -->
+              <ng-container matColumnDef="actions">
+                <mat-header-cell *matHeaderCellDef class="actions-column">Acciones</mat-header-cell>
+                <mat-cell *matCellDef="let detalle" class="actions-column">
+                  <!-- <button mat-icon-button color="primary" (click)="editDetail(detalle)">
+                    <mat-icon>edit</mat-icon>
+                  </button> -->
+                  <button mat-icon-button color="warn" (click)="deleteDetail(detalle)">
+                    <app-feather-icons [icon]="'trash-2'" [class]="'tbl-fav-delete'"></app-feather-icons>
+                  </button>
+                </mat-cell>
+              </ng-container>
+              <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+              <mat-row *matRowDef="let detalle; columns: displayedColumns;"></mat-row>
+            </table>
           </div>
         </div>
       </section>
@@ -118,9 +124,9 @@
       <div class="row">
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 mb-2">
           <div class="example-button-row">
-            <button type="button" mat-raised-button color="primary" [disabled]="!ordenesServicioTableForm.valid"
-              (click)="addDetail()">Agregar detalle</button>
-            <button type="button" mat-raised-button color="warn" [mat-dialog-close]="1" (click)="onNoClick()" tabindex="-1">Cerrar</button>
+            <button type="button" mat-raised-button color="primary" (click)="addDetail()">Agregar detalle</button>
+            <button type="button" mat-raised-button color="warn" [mat-dialog-close]="1" (click)="onNoClick()"
+              tabindex="-1">Cerrar</button>
           </div>
         </div>
       </div>

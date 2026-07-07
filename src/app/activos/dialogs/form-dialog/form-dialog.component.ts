@@ -43,7 +43,7 @@ export class FormDialogComponent {
       this.activosModel = data.activosModel;
       this.soloLectura = true
     } else {
-      this.dialogTitle = 'New Record';
+      this.dialogTitle = 'Nuevo activo';
       const blankObject = {} as ActivosModel;
       this.activosModel = new ActivosModel(blankObject);
       this.soloLectura = false
@@ -73,12 +73,6 @@ export class FormDialogComponent {
       descripcion: [this.activosModel.descripcion, [Validators.required]],
       fabricante: [this.activosModel.fabricante, [Validators.required]],
       capacidad: [this.activosModel.capacidad, [Validators.required]],
-      cliente_id: [
-        this.activosModel.cliente_id,
-        [Validators.required],
-      ],
-      nombre_cliente: [this.activosModel.nombre_cliente, [Validators.required]],
-      establecimiento_comercial: [this.activosModel.establecimiento_comercial]
     });
   }
 

@@ -23,6 +23,15 @@
     "ENTRY-EXIT": {
       "TEXT": "Órden de salida"
     },
+    "MONITORING-TEMPERATURE": {
+      "TEXT": "Monitoreo de temperatura"
+    },
+    "MONITORING-TEMPERATURE-ONLINE": {
+      "TEXT": "En linea"
+    },
+    "MONITORING-TEMPERATURE-GUARDADO": {
+      "TEXT": "Anteriores"
+    },
     "DASHBOARD": {
       "TEXT": "Zuhause",
       "LIST": {
