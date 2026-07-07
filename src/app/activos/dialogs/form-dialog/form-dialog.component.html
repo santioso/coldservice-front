@@ -16,11 +16,11 @@
       <div class="row">
         <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
-            <mat-label>Placa No.</mat-label>
+            <mat-label>Activo</mat-label>
             <input aria-label="id" matInput formControlName="id" [readonly]="soloLectura">
             <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>face</mat-icon>
             <mat-error *ngIf="activosTableForm.get('fName')?.hasError('required')">
-              La placa del activo es obligataria
+              El activo es obligatorio
             </mat-error>
           </mat-form-field>
         </div>

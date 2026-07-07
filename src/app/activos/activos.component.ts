@@ -210,7 +210,7 @@ export class ActivosComponent
     // key name with space add in brackets
     const exportData: Partial<TableElement>[] =
       this.dataSource.filteredData.map((x) => ({
-        'Placa': x.id,
+        'Activo': x.id,
         'Descripción': x.descripcion,
         'Fabricante': x.fabricante,
         'Capacidad': x.capacidad,
