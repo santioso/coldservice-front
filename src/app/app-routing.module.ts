@@ -82,6 +82,11 @@ const routes: Routes = [
         (m) => m.AuthenticationModule
       ),
   },
+  {
+    path: 'monitoring',
+    loadChildren: () =>
+      import('./monitoring/monitoring.module').then((m) => m.MonitoringModule),
+  },
   { path: '**', component: Page404Component },
 ];
 
