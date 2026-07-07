@@ -246,7 +246,7 @@ export class AssetsComponent
     const exportData: Partial<TableElement>[] =
       this.dataSource.filteredData.map((x) => ({
         'ID': x.id,
-        'Placa': x.plaque,
+        'Activo': x.plaque,
         'Serie': x.serie,
         'Modelo': x.model,
         'Tipo de activo': x.assetsType
