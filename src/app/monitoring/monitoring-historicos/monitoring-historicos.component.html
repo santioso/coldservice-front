@@ -1,0 +1,254 @@
+<section class="history-page">
+  <header class="page-header">
+    <div class="header-left">
+      <img
+        class="client-logo"
+        *ngIf="authService.currentSession?.client?.logo_url"
+        [src]="authService.currentSession?.client?.logo_url"
+        [alt]="authService.currentSession?.client?.name || 'Cliente'"
+        title="Logo del cliente"
+      />
+      <div class="header-titles">
+        <div class="header-client">
+          <span class="label">Monitoreo</span>
+          <strong>Históricos</strong>
+        </div>
+        <div class="header-user">
+          <span class="label">Cliente</span>
+          <span>{{ authService.currentSession?.client?.name || 'Sin nombre' }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" type="button" (click)="backToPanel()">
+        Volver al panel
+      </button>
+    </div>
+  </header>
+
+  <section class="panel filters-panel">
+    <mat-form-field appearance="outline">
+      <mat-label>Activo</mat-label>
+      <input matInput type="search" [formControl]="filters.controls.placa" placeholder="Mínimo 4 caracteres" />
+      <button
+        mat-icon-button
+        matSuffix
+        type="button"
+        aria-label="Limpiar filtros"
+        *ngIf="filters.controls.placa.value"
+        (click)="clearFilters()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Desde</mat-label>
+      <input matInput [matDatepicker]="fromPicker" [formControl]="filters.controls.from" />
+      <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+      <mat-datepicker #fromPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Hasta</mat-label>
+      <input matInput [matDatepicker]="toPicker" [formControl]="filters.controls.to" />
+      <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+      <mat-datepicker #toPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Registros por página</mat-label>
+      <mat-select [value]="pageSize" (selectionChange)="onPageSizeChange($any($event).value)">
+        <mat-option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <div class="filter-actions">
+      <button mat-raised-button color="primary" type="button" (click)="applyFilters()">Filtrar</button>
+      <button mat-button type="button" (click)="clearFilters()">Limpiar</button>
+    </div>
+    <p class="filter-message" *ngIf="filterMessage">{{ filterMessage }}</p>
+  </section>
+
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+  <div class="alert alert-danger" *ngIf="detailError">{{ detailError }}</div>
+
+  <section class="history-layout" [class.list-collapsed]="listCollapsed">
+    <aside class="panel history-list" *ngIf="!listCollapsed">
+      <div class="list-header">
+        <h2>Mediciones</h2>
+        <button mat-icon-button type="button" title="Ocultar lista" (click)="toggleList()">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+      </div>
+      <div
+        class="history-item"
+        role="button"
+        tabindex="0"
+        *ngFor="let item of items"
+        [class.selected]="selectedItem?.session_id === item.session_id"
+        (click)="selectItem(item)"
+        (keydown.enter)="selectItem(item)"
+      >
+        <span class="history-item-content">
+          <strong>{{ displayActivo(item) }}</strong>
+          <span>{{ formatDate(item.started_at) }}</span>
+        </span>
+        <span class="history-item-actions">
+          <button
+            mat-icon-button
+            color="warn"
+            type="button"
+            title="Eliminar medición"
+            [disabled]="deletingSessionId === item.session_id"
+            (click)="deleteItem($event, item)"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+          <button
+            mat-icon-button
+            color="primary"
+            type="button"
+            title="Descargar PDF"
+            [class.pdf-disabled]="!isPdfEnabled(item)"
+            [disabled]="!isPdfEnabled(item) || pdfLoadingSessionId === item.session_id"
+            (click)="downloadPdf($event, item)"
+          >
+            <mat-icon>picture_as_pdf</mat-icon>
+          </button>
+        </span>
+      </div>
+      <p class="empty" *ngIf="!loading && items.length === 0">No hay mediciones para los filtros seleccionados.</p>
+      <div class="pagination" *ngIf="totalPages > 1">
+        <button mat-stroked-button type="button" [disabled]="page <= 1" (click)="onPageChange(page - 1)">Anterior</button>
+        <span>{{ page }} / {{ totalPages }}</span>
+        <button mat-stroked-button type="button" [disabled]="page >= totalPages" (click)="onPageChange(page + 1)">Siguiente</button>
+      </div>
+    </aside>
+
+    <button class="show-list" mat-icon-button color="primary" type="button" *ngIf="listCollapsed" title="Mostrar lista" (click)="toggleList()">
+      <mat-icon>chevron_right</mat-icon>
+    </button>
+
+    <main class="history-detail">
+      <div class="detail-spinner-overlay" *ngIf="detailLoading && !selected">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p class="loading-text">Cargando medición...</p>
+      </div>
+
+      <ng-container *ngIf="selected as current">
+      <article class="panel info-card">
+        <div class="detail-spinner" *ngIf="detailLoading">
+          <mat-spinner diameter="28"></mat-spinner>
+        </div>
+        <div class="info-sections" [class.loading-content]="detailLoading">
+          <section class="info-section align-left">
+            <h3>Resumen</h3>
+            <p><strong>Fecha:</strong> {{ formatDate(current.started_at) }}</p>
+            <p><strong>Dispositivo:</strong> {{ current.device_id }}</p>
+            <p><strong>Mediciones recibidas:</strong> {{ current.readings_count }}</p>
+          </section>
+          <section class="info-section align-left">
+            <h3>Cliente</h3>
+            <p><strong>Nombre:</strong> {{ current.client?.name || '--' }}</p>
+            <p><strong>NIT:</strong> {{ current.client?.nit || '--' }}</p>
+            <p><strong>Email:</strong> {{ current.client?.email || '--' }}</p>
+            <p><strong>Teléfono:</strong> {{ current.client?.phone || '--' }}</p>
+            <p><strong>Ubicación:</strong> {{ current.client?.ubicacion || '--' }}</p>
+          </section>
+          <section class="info-section align-left">
+            <h3>Equipo e instalación</h3>
+            <p class="activo-row">
+              <span class="activo-value"><strong>Activo:</strong> {{ current.activo_id || '--' }}</span>
+              <button
+                mat-flat-button
+                type="button"
+                class="assign-activo-button"
+                aria-label="Asignar activo a esta medición"
+                matTooltip="Asignar un activo solo a esta medición sin activo"
+                *ngIf="!current.activo_id"
+                [disabled]="assigningActivoSessionId === current.session_id || detailLoading"
+                (click)="openAssignActivoDialog($event, current)"
+              >
+                <mat-spinner
+                  *ngIf="assigningActivoSessionId === current.session_id"
+                  diameter="16"
+                ></mat-spinner>
+                <mat-icon *ngIf="assigningActivoSessionId !== current.session_id">add_link</mat-icon>
+                <span>
+                  {{ assigningActivoSessionId === current.session_id ? 'Asignando...' : 'Asignar activo' }}
+                </span>
+              </button>
+            </p>
+            <p><strong>Descripción:</strong> {{ current.activo?.descripcion || '--' }}</p>
+            <div class="limits-row">
+              <span class="limit-badge limit-low">
+                <mat-icon>ac_unit</mat-icon>
+                Mín: {{ current.installation?.limite_inferior_celsius ?? '--' }} °C
+              </span>
+              <span class="limit-badge limit-high">
+                <mat-icon>whatshot</mat-icon>
+                Máx: {{ current.installation?.limite_superior_celsius ?? '--' }} °C
+              </span>
+            </div>
+            <div class="temp-alert" *ngIf="temperatureAlert as alert" [class.alert-ok]="alert.status === 'ok'" [class.alert-low]="alert.status === 'low'" [class.alert-high]="alert.status === 'high'">
+              <mat-icon *ngIf="alert.status === 'ok'">check_circle</mat-icon>
+              <mat-icon *ngIf="alert.status === 'low'">warning_amber</mat-icon>
+              <mat-icon *ngIf="alert.status === 'high'">error</mat-icon>
+              <span>{{ alert.message }}</span>
+            </div>
+            <p><strong>Ubicación:</strong> {{ current.installation?.ubicacion || '--' }}</p>
+          </section>
+          <section class="info-section align-left">
+            <h3>Técnico</h3>
+            <p><strong>Nombre:</strong> {{ current.technician?.name || '--' }}</p>
+            <p><strong>Cargo:</strong> {{ current.technician?.position || '--' }}</p>
+            <p><strong>Teléfono:</strong> {{ current.technician?.phone || '--' }}</p>
+            <p><strong>Email:</strong> {{ current.technician?.email || '--' }}</p>
+            <p><strong>Fecha instalación:</strong> {{ formatDate(current.technician?.fecha_instalacion || current.installation?.fecha_instalacion) }}</p>
+          </section>
+          <div class="charts-inline-toolbar" *ngIf="current.readings.length">
+            <span class="toolbar-title">Gráficas por fila</span>
+            <mat-button-toggle-group
+              [value]="chartsPerRow"
+              (change)="onChartsPerRowChange($any($event).value)"
+              aria-label="Gráficas por fila"
+            >
+              <mat-button-toggle *ngFor="let option of chartsPerRowOptions" [value]="option">
+                {{ option }}
+              </mat-button-toggle>
+            </mat-button-toggle-group>
+          </div>
+        </div>
+      </article>
+
+      <section class="chart-grid" *ngIf="current.readings.length" [style.--charts-per-row]="chartsPerRow">
+        <article class="chart-card" *ngIf="mainChart as chart">
+          <h2>Corriente vs temp. gabinete</h2>
+          <div class="chart-wrapper"><canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas></div>
+        </article>
+        <article class="chart-card" *ngIf="tempsChart as chart">
+          <h2>Temperaturas</h2>
+          <div class="chart-wrapper"><canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas></div>
+        </article>
+        <article class="chart-card" *ngIf="electricalChart as chart">
+          <h2>Variables eléctricas</h2>
+          <div class="chart-wrapper"><canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas></div>
+        </article>
+        <article class="chart-card" *ngIf="deltaChart as chart">
+          <h2>Eficiencia de intercambio</h2>
+          <div class="chart-wrapper"><canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas></div>
+        </article>
+        <article class="chart-card" *ngIf="powerChart as chart">
+          <h2>Consumo específico (W)</h2>
+          <div class="chart-wrapper"><canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas></div>
+        </article>
+        <article class="chart-card" *ngIf="efficiencyChart as chart">
+          <h2>Índice de eficiencia</h2>
+          <div class="chart-wrapper"><canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas></div>
+        </article>
+        <article class="chart-card" *ngIf="consumptionChart as chart">
+          <h2>Análisis de consumo (kWh)</h2>
+          <div class="chart-wrapper"><canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas></div>
+        </article>
+      </section>
+      </ng-container>
+    </main>
+  </section>
+</section>

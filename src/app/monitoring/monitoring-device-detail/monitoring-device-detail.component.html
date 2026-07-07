@@ -1,0 +1,209 @@
+<section class="detail-page">
+  <header class="detail-header">
+    <div class="header-left">
+      <img
+        class="client-logo"
+        *ngIf="detail?.client?.logo_url"
+        [src]="detail?.client?.logo_url"
+        [alt]="detail?.client?.name || 'Cliente'"
+        title="Logo del cliente"
+      />
+      <div class="header-titles">
+        <div class="header-device">
+          <span class="label">Dispositivo</span>
+          <strong>{{ deviceId }}</strong>
+        </div>
+        <div class="header-model" *ngIf="detail?.device?.modelo as modelo">
+          <span class="label">Modelo</span>
+          <span>{{ modelo }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button color="primary" type="button" (click)="backToPanel()">
+        Volver al panel
+      </button>
+    </div>
+  </header>
+
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <!-- Spinner durante carga inicial -->
+  <section class="panel loading-spinner" *ngIf="loading && !detail">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Cargando medición en vivo...</p>
+  </section>
+
+  <section class="panel empty-live" *ngIf="!loading && noLiveMeasurement">
+    <h2>Este dispositivo no tiene medición en vivo</h2>
+    <p>El detalle solo muestra datos recibidos durante los últimos 5 minutos.</p>
+  </section>
+
+  <section class="info-grid" *ngIf="detail as current">
+    <article class="info-card live-summary-card">
+      <h2>Resumen live</h2>
+      <p><strong>Fecha:</strong> {{ formatDate(current.started_at).split(',')[0] }}</p>
+      <p><strong>Hora:</strong> {{ formatDate(current.started_at).split(',')[1] || '--' }}</p>
+      <p><strong>Número de mediciones recibidas:</strong> {{ current.readings_count }}</p>
+      <div class="notification-toggle-row">
+        <span class="toggle-label">Alertas por email cuando la temperatura exceda los límites</span>
+        <mat-slide-toggle
+          [checked]="current.installation?.notifications_enabled ?? true"
+          [disabled]="togglingNotifications"
+          (change)="toggleNotifications($event.checked)"
+        ></mat-slide-toggle>
+      </div>
+      <div class="card-spinner" *ngIf="togglingNotifications">
+        <mat-spinner diameter="20"></mat-spinner>
+      </div>
+      <p class="text-muted" style="font-size: 13px; margin: 8px 0 0;">
+        Las notificaciones se envían al correo del cliente y del técnico cada 10 minutos mientras la temperatura esté fuera de rango.
+      </p>
+      <!-- Toolbar de gráficas al final del card -->
+      <div class="charts-toolbar-inline" *ngIf="current.readings?.length">
+        <span class="toolbar-label">Gráficas por fila</span>
+        <mat-button-toggle-group
+          [value]="chartsPerRow"
+          (change)="onChartsPerRowChange($any($event).value)"
+          aria-label="Gráficas por fila"
+        >
+          <mat-button-toggle
+            *ngFor="let option of chartsPerRowOptions"
+            [value]="option"
+          >
+            {{ option }}
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </div>
+    </article>
+
+    <article class="info-card card-editable" [class.editing]="editingCard === 'cliente'">
+      <div class="card-header">
+        <h2>Datos del cliente</h2>
+        <button mat-icon-button color="primary" type="button" title="Editar cliente" (click)="openClienteDialog()" [disabled]="editingCard">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </div>
+      <div class="card-spinner" *ngIf="editingCard === 'cliente'">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+      <p><strong>Nombre:</strong> {{ current.client?.name || '--' }}</p>
+      <p><strong>NIT:</strong> {{ current.client?.nit || '--' }}</p>
+      <p><strong>Email:</strong> {{ current.client?.email || '--' }}</p>
+      <p><strong>Teléfono:</strong> {{ current.client?.phone || '--' }}</p>
+      <p><strong>Ubicación:</strong> {{ current.client?.ubicacion || '--' }}</p>
+    </article>
+
+    <article class="info-card card-editable" [class.editing]="editingCard === 'activo'">
+      <div class="card-header">
+        <h2>Datos del equipo e instalación</h2>
+        <button mat-icon-button color="primary" type="button" title="Editar equipo e instalación" (click)="openActivoDialog()" [disabled]="editingCard">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </div>
+      <div class="card-spinner" *ngIf="editingCard === 'activo'">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+      <p>
+        <strong>Activo asignado:</strong>
+        <span *ngIf="current.activo_id" class="activo-badge">{{ current.activo_id }}</span>
+        <span *ngIf="!current.activo_id" class="text-muted">— Sin asignar —</span>
+      </p>
+      <p *ngIf="current.activo as a">
+        <strong>Descripción:</strong> {{ a.descripcion || '—' }}<br />
+        <strong>Fabricante:</strong> {{ a.fabricante || '—' }}<br />
+        <strong>Capacidad:</strong> {{ a.capacidad ?? '—' }}
+      </p>
+      <div class="limits-row">
+        <span class="limit-badge limit-low">
+          <mat-icon>ac_unit</mat-icon>
+          Mín: {{ current.installation?.limite_inferior_celsius ?? '—' }} °C
+        </span>
+        <span class="limit-badge limit-high">
+          <mat-icon>whatshot</mat-icon>
+          Máx: {{ current.installation?.limite_superior_celsius ?? '—' }} °C
+        </span>
+      </div>
+      <div class="temp-alert" *ngIf="temperatureAlert as alert" [class.alert-ok]="alert.status === 'ok'" [class.alert-low]="alert.status === 'low'" [class.alert-high]="alert.status === 'high'">
+        <mat-icon *ngIf="alert.status === 'ok'">check_circle</mat-icon>
+        <mat-icon *ngIf="alert.status === 'low'">warning_amber</mat-icon>
+        <mat-icon *ngIf="alert.status === 'high'">error</mat-icon>
+        <span>{{ alert.message }}</span>
+      </div>
+      <p><strong>Ubicación:</strong> {{ current.installation?.ubicacion || '—' }}</p>
+      <p><strong>Observaciones:</strong> {{ current.installation?.observaciones || '—' }}</p>
+    </article>
+
+    <article class="info-card card-editable" [class.editing]="editingCard === 'tecnico'">
+      <div class="card-header">
+        <h2>Técnico de instalación</h2>
+        <button mat-icon-button color="primary" type="button" title="Editar técnico" (click)="openTecnicoDialog()" [disabled]="editingCard">
+          <mat-icon>edit</mat-icon>
+        </button>
+      </div>
+      <div class="card-spinner" *ngIf="editingCard === 'tecnico'">
+        <mat-spinner diameter="28"></mat-spinner>
+      </div>
+      <p><strong>Nombre:</strong> {{ current.technician?.name || '--' }}</p>
+      <p><strong>Cargo:</strong> {{ current.technician?.position || '--' }}</p>
+      <p><strong>Teléfono:</strong> {{ current.technician?.phone || '--' }}</p>
+      <p><strong>Email:</strong> {{ current.technician?.email || '--' }}</p>
+      <p><strong>Fecha instalación:</strong> {{ formatDate(current.technician?.fecha_instalacion || current.installation?.fecha_instalacion) }}</p>
+    </article>
+  </section>
+
+  <section
+    class="chart-grid"
+    *ngIf="detail?.readings?.length"
+    [style.--charts-per-row]="chartsPerRow"
+  >
+    <article class="chart-card" (click)="openMainZoom()">
+      <h2>Corriente vs temp. gabinete</h2>
+      <div class="chart-wrapper" *ngIf="mainChart as chart">
+        <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
+      </div>
+    </article>
+
+    <article class="chart-card" (click)="openTempsZoom()">
+      <h2>Temperaturas</h2>
+      <div class="chart-wrapper" *ngIf="tempsChart as chart">
+        <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
+      </div>
+    </article>
+
+    <article class="chart-card" (click)="openElectricalZoom()">
+      <h2>Variables eléctricas</h2>
+      <div class="chart-wrapper" *ngIf="electricalChart as chart">
+        <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
+      </div>
+    </article>
+
+    <article class="chart-card" (click)="openDeltaZoom()">
+      <h2>Eficiencia de intercambio</h2>
+      <div class="chart-wrapper" *ngIf="deltaChart as chart">
+        <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
+      </div>
+    </article>
+
+    <article class="chart-card" (click)="openPowerZoom()">
+      <h2>Consumo específico (W)</h2>
+      <div class="chart-wrapper" *ngIf="powerChart as chart">
+        <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
+      </div>
+    </article>
+
+    <article class="chart-card" (click)="openEfficiencyZoom()">
+      <h2>Índice de eficiencia</h2>
+      <div class="chart-wrapper" *ngIf="efficiencyChart as chart">
+        <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
+      </div>
+    </article>
+
+    <article class="chart-card" (click)="openConsumptionZoom()">
+      <h2>Análisis de consumo (kWh)</h2>
+      <div class="chart-wrapper" *ngIf="consumptionChart as chart">
+        <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
+      </div>
+    </article>
+  </section>
+</section>

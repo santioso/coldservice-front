@@ -1,0 +1,161 @@
+<section class="monitoring-page">
+  <header class="page-header">
+    <div class="header-left">
+      <img
+        class="client-logo"
+        *ngIf="authService.currentSession?.client?.logo_url"
+        [src]="authService.currentSession?.client?.logo_url"
+        [alt]="authService.currentSession?.client?.name || 'Cliente'"
+        title="Logo del cliente"
+      />
+      <div class="header-titles">
+        <div class="header-client">
+          <span class="label">Cliente</span>
+          <strong>{{ authService.currentSession?.client?.name || "Sin nombre" }}</strong>
+        </div>
+        <div class="header-user">
+          <span class="label">Usuario</span>
+          <span>{{ authService.currentSession?.user?.email }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button
+        mat-icon-button
+        type="button"
+        class="sound-toggle"
+        [class.muted]="!soundEnabled"
+        (click)="toggleSound()"
+        [title]="soundEnabled ? 'Silenciar alarma' : 'Activar sonido'"
+      >
+        <mat-icon>{{ soundEnabled ? 'volume_up' : 'volume_off' }}</mat-icon>
+      </button>
+      <button mat-raised-button color="primary" type="button" (click)="openHistory()">
+        Históricos
+      </button>
+      <button mat-stroked-button color="primary" type="button" (click)="logout()">
+        Cerrar sesión
+      </button>
+    </div>
+  </header>
+
+  <!-- Alarma global -->
+  <section class="alarm-banner" *ngIf="globalAlarm" [class.high]="globalAlarm === 'high_alarm'" [class.low]="globalAlarm === 'low_alarm'" [class.active-alarm]="!!globalAlarm">
+    <div class="alarm-banner-content">
+      <mat-icon class="alarm-icon">warning</mat-icon>
+      <span class="alarm-text">
+        ⚠️ {{ alarmingDeviceCount }} {{ alarmingDeviceCount === 1 ? 'equipo tiene' : 'equipos tienen' }} una alerta activa
+      </span>
+      <div class="alarm-devices">
+        <span class="alarm-device-tag" *ngFor="let device of alarmingDevices" (click)="openDevice(device.device_id)">
+          {{ device.device_id }}
+          <span class="alarm-temp">{{ device.readings.at(-1)?.T1?.toFixed(1) }}°C</span>
+        </span>
+      </div>
+      <button mat-icon-button type="button" class="alarm-close" (click)="globalAlarm = null" title="Descartar alarma">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </section>
+
+  <section class="panel controls-panel">
+    <div class="panel-title">
+      <h1>Dispositivos en vivo</h1>
+      <p>Solo se muestran equipos con mediciones recibidas en los últimos 5 minutos.</p>
+    </div>
+
+    <div class="controls-filters">
+      <mat-form-field appearance="outline">
+        <mat-label>Orden</mat-label>
+        <mat-select [value]="sort" (selectionChange)="onSortChange($any($event).value)">
+          <mat-option *ngFor="let option of sortOptions" [value]="option.value">
+            {{ option.label }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Dispositivos por página</mat-label>
+        <mat-select
+          [value]="pageSize"
+          (selectionChange)="onPageSizeChange($any($event).value)"
+        >
+          <mat-option *ngFor="let size of pageSizeOptions" [value]="size">
+            {{ size }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </section>
+
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <section class="device-grid" *ngIf="items.length > 0">
+    <article
+      class="device-card"
+      [class.card-alarm-low]="item.alarm_status === 'low_alarm'"
+      [class.card-alarm-high]="item.alarm_status === 'high_alarm'"
+      *ngFor="let item of items"
+      (click)="openDevice(item.device_id)"
+    >
+      <div class="alarm-ribbon" *ngIf="item.alarm_status !== 'ok'">
+        <mat-icon>{{ item.alarm_status === 'low_alarm' ? 'ac_unit' : 'whatshot' }}</mat-icon>
+        <span>{{ item.readings.at(-1)?.T1?.toFixed(1) }}°C</span>
+      </div>
+      <div class="device-card-header">
+        <div>
+          <h2>{{ item.device_id }}</h2>
+          <p>{{ item.modelo || "Sin modelo" }}</p>
+        </div>
+        <span class="live-badge" [class.live]="item.is_live">
+          {{ item.is_live ? "En vivo" : "Sin actividad reciente" }}
+        </span>
+      </div>
+      <p class="last-reading">Última lectura: {{ formatTime(item.last_reading_at) }}</p>
+      <div class="mini-chart" *ngIf="chartByDevice[item.device_id] as chart">
+        <canvas
+          baseChart
+          [data]="chart.data"
+          [options]="chart.options"
+          [type]="chart.type || 'line'"
+        ></canvas>
+      </div>
+      <div class="custom-order-actions" *ngIf="sort === 'custom'" (click)="$event.stopPropagation()">
+        <button mat-button type="button" (click)="moveDevice(item.device_id, -1)">
+          Subir
+        </button>
+        <button mat-button type="button" (click)="moveDevice(item.device_id, 1)">
+          Bajar
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <section class="empty-state panel" *ngIf="!loading && items.length === 0">
+    <h2>No hay dispositivos midiendo en vivo en este momento.</h2>
+    <p>Consulta mediciones anteriores desde el historial.</p>
+    <button mat-raised-button color="primary" type="button" (click)="openHistory()">
+      Ver históricos
+    </button>
+  </section>
+
+  <section class="pagination" *ngIf="totalPages > 1">
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="page <= 1"
+      (click)="onPageChange(page - 1)"
+    >
+      Anterior
+    </button>
+    <span>Página {{ page }} de {{ totalPages }}</span>
+    <button
+      mat-stroked-button
+      type="button"
+      [disabled]="page >= totalPages"
+      (click)="onPageChange(page + 1)"
+    >
+      Siguiente
+    </button>
+  </section>
+</section>
