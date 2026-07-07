@@ -44,13 +44,13 @@
       <div class="row">
         <div class="col-xl-2 col-lg-2 col-md-12 col-sm-12 mb-2">
           <mat-form-field class="example-full-width" appearance="outline">
-            <mat-label>Placa del activo</mat-label>
-            <mat-select aria-label="Placa del activo" formControlName="activoEntradaId">
+            <mat-label>Activo</mat-label>
+            <mat-select aria-label="Activo" formControlName="activoEntradaId">
               <mat-option *ngFor="let activo of activosEntrada" [value]="activo.id"> {{ activo.value }} </mat-option>
             </mat-select>
             <mat-icon class="material-icons-two-tone color-icon p-3" matSuffix>pin</mat-icon>
             <mat-error *ngIf="ordenesServicioTableForm.get('activoEntradaId')?.hasError('required')">
-              La placa del activo es requerida
+              El activo es requerido
             </mat-error>
           </mat-form-field>
         </div>

@@ -303,9 +303,9 @@ export class FormDialogDetailsComponent implements OnInit {
 
   private mostrarMensajeError(value: string, idControl: any): void {
     this.utilPopupService.mostrarMensaje(
-      `La placa ${value} ya está en la orden de entrada, no se puede ingresar mas de una vez`,
+      `El activo ${value} ya está en la orden de entrada, no se puede ingresar mas de una vez`,
       'error',
-      'Placa duplicada',
+      'Activo duplicado',
       false
     );
     idControl.setValue('');
