@@ -46,6 +46,10 @@ export interface ActivoDialogData {
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
 
+      <div *ngIf="!searched && !loading && data?.currentActivoId && data.currentActivoId.length < 4" class="current-badge">
+        Activo actual: <strong>{{ data.currentActivoId }}</strong>
+      </div>
+
       <div *ngIf="loading" class="loading">Buscando...</div>
 
       <div *ngIf="results.length > 0" class="results-list">
@@ -152,6 +156,7 @@ export interface ActivoDialogData {
     `
       .full-width { width: 100%; }
       .loading, .no-results { padding: 1rem; text-align: center; color: #666; }
+      .current-badge { padding: 0.5rem 1rem; text-align: center; color: #17375e; background: #e8f0fe; border-radius: 8px; margin: 0.5rem 0; }
       .results-list { max-height: 220px; overflow-y: auto; }
       .result-item { padding: 0.3rem 0; border-bottom: 1px solid #eee; }
       .result-item.selected { background: #e3f2fd; }
@@ -237,6 +242,12 @@ export class MonitoringActivoDialogComponent implements OnInit {
           this.loading = false;
         },
       });
+
+    // Auto-buscar si ya hay un activo asignado
+    const currentId = this.data?.currentActivoId;
+    if (currentId && currentId.length >= 4) {
+      this.searchCtrl.setValue(currentId);
+    }
   }
 
   onActivoSelect(id: string): void {
