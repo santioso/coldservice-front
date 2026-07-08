@@ -46,8 +46,8 @@ export interface ActivoDialogData {
         <mat-icon matSuffix>search</mat-icon>
       </mat-form-field>
 
-      <div *ngIf="!searched && !loading && data?.currentActivoId && data.currentActivoId.length < 4" class="current-badge">
-        Activo actual: <strong>{{ data.currentActivoId }}</strong>
+      <div *ngIf="!searched && !loading && shortCurrentActivoId" class="current-badge">
+        Activo actual: <strong>{{ shortCurrentActivoId }}</strong>
       </div>
 
       <div *ngIf="loading" class="loading">Buscando...</div>
@@ -172,6 +172,12 @@ export class MonitoringActivoDialogComponent implements OnInit {
   searchCtrl = this.fb.control('');
   results: ActivoItem[] = [];
   selectedId = '';
+
+  /** Activo ID actual si tiene menos de 4 caracteres (no se puede auto-buscar) */
+  get shortCurrentActivoId(): string | null {
+    const id = this.data?.currentActivoId;
+    return id && id.length < 4 ? id : null;
+  }
   loading = false;
   searched = false;
   showCreateActivo = false;
