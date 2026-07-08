@@ -12,6 +12,9 @@
         <div class="header-device">
           <span class="label">Dispositivo</span>
           <strong>{{ deviceId }}</strong>
+          <span class="activo-label" *ngIf="detail?.activo_id as activoId">
+            Activo: <strong>{{ activoId }}</strong>
+          </span>
         </div>
         <div class="header-model" *ngIf="detail?.device?.modelo as modelo">
           <span class="label">Modelo</span>
@@ -96,7 +99,7 @@
 
     <article class="info-card card-editable" [class.editing]="editingCard === 'activo'">
       <div class="card-header">
-        <h2>Datos del equipo e instalación</h2>
+        <h2>Datos del equipo</h2>
         <button mat-icon-button color="primary" type="button" title="Editar equipo e instalación" (click)="openActivoDialog()" [disabled]="editingCard">
           <mat-icon>edit</mat-icon>
         </button>

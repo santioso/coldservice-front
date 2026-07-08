@@ -221,7 +221,7 @@ export class MonitoringService {
     },
   ): Observable<{ success: boolean }> {
     return this.http.patch<{ success: boolean }>(
-      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/tecnico`,
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/technician-snapshot`,
       data,
     );
   }

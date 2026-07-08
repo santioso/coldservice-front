@@ -55,6 +55,20 @@
   gap: 10px;
 }
 
+.header-device .activo-label {
+  margin-left: 4px;
+  font-size: 0.8rem;
+  color: #17375e;
+  background: #e8f0fe;
+  padding: 2px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
 .header-device strong {
   color: #0f172a;
   font-size: 16px;
