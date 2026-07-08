@@ -131,6 +131,9 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
 
   toggleSound(): void {
     this.soundEnabled = !this.soundEnabled;
+    if (!this.soundEnabled) {
+      this.stopContinuousSound();
+    }
     this.persistSoundPreference();
   }
 
@@ -223,7 +226,10 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
       osc1.start();
       osc2.start();
 
-      this.continuousSoundNodes = [{ oscillator: osc1, gain: gain1 }];
+      this.continuousSoundNodes = [
+        { oscillator: osc1, gain: gain1 },
+        { oscillator: osc2, gain: gain2 },
+      ];
 
       // Guardar referencia para limpiar el interval
       (this as any).__alarmInterval = intervalId;
