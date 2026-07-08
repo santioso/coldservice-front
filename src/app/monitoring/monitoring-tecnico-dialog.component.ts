@@ -93,6 +93,10 @@ interface TechnicalItem {
           <mat-label>Teléfono</mat-label>
           <input matInput [(ngModel)]="newTechnical.phone" />
         </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput [(ngModel)]="newTechnical.email" type="email" />
+        </mat-form-field>
       </div>
 
       <!-- Datos propios de la instalación -->
@@ -163,11 +167,12 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
   searched = false;
   showCreate = false;
 
-  newTechnical: { name: string; addres: string; position: string; phone: string } = {
+  newTechnical: { name: string; addres: string; position: string; phone: string; email: string } = {
     name: '',
     addres: '',
     position: '',
     phone: '',
+    email: '',
   };
 
   // Installation-specific fields
@@ -260,11 +265,16 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
           addres: this.newTechnical.addres || null,
           position: this.newTechnical.position || null,
           phone: this.newTechnical.phone || null,
+          email: this.newTechnical.email || null,
         })
         .subscribe({
-          next: () => {
+          next: (created: any) => {
+            // Auto-fill installation fields with the new technician's data
             this.tecnicoNombre = this.newTechnical.name;
-            this.selectedTechnicalId = null;
+            this.tecnicoCargo = this.newTechnical.position;
+            this.tecnicoPhone = this.newTechnical.phone;
+            this.tecnicoEmail = this.newTechnical.email;
+            this.selectedTechnicalId = created?.id ?? null;
             doSave();
           },
           error: () => doSave(),

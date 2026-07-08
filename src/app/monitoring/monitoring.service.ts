@@ -172,7 +172,7 @@ export class MonitoringService {
     activoId: string,
   ): Observable<{ success: boolean }> {
     return this.http.patch<{ success: boolean }>(
-      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/activo`,
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/assign-activo`,
       { activo_id: activoId },
     );
   }
@@ -203,7 +203,7 @@ export class MonitoringService {
     },
   ): Observable<{ success: boolean }> {
     return this.http.patch<{ success: boolean }>(
-      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/installation`,
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/installation-snapshot`,
       data,
     );
   }
