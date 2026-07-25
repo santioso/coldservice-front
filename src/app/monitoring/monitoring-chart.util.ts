@@ -12,6 +12,7 @@ export type MonitoringChartOptions = {
   detailedTimeAxis?: boolean;
   lowerLimit?: number | null;
   upperLimit?: number | null;
+  yAxisTitle?: string;
 };
 
 export function formatTimeLabel(timestamp: string): string {
@@ -114,7 +115,19 @@ function formatAxisTick(value: string | number, unit: string): string {
     return '';
   }
 
-  return formatChartValue(numeric, unit);
+  return numeric.toFixed(decimalsForUnit(unit));
+}
+
+function resolveAxisTitle(unit: string, labels: string[]): string {
+  const normalizedLabels = labels.join(' ').toLowerCase();
+  if (unit === '°C/kWh') return 'Eficiencia (°C/kWh)';
+  if (unit === 'kWh') return 'Consumo (kWh)';
+  if (unit === 'W') return 'Vatios (W)';
+  if (unit === 'A') return 'Corriente (A)';
+  if (unit === 'V') return 'Voltaje (V)';
+  if (unit === '°C' && normalizedLabels.includes('delta t')) return 'Delta T (°C)';
+  if (unit === '°C') return 'Temperatura (°C)';
+  return unit;
 }
 
 function resolveDatasetColor(color: unknown): string {
@@ -250,19 +263,23 @@ export function buildDualAxisChart(
           label: 'Gabinete',
           data: tempValues,
           borderColor: '#0057b8',
-          backgroundColor: 'rgba(0, 87, 184, 0.12)',
+          backgroundColor: '#0057b8',
           yAxisID: 'yTemp',
-          pointRadius: 0,
-          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0,
+          fill: false,
         },
         {
           label: 'Corriente',
           data: currentValues,
           borderColor: '#ff8f00',
-          backgroundColor: 'rgba(255, 143, 0, 0.12)',
+          backgroundColor: '#ff8f00',
           yAxisID: 'yCurrent',
-          pointRadius: 0,
-          tension: 0.3,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0,
+          fill: false,
         },
         ...limitDatasets,
       ],
@@ -280,14 +297,14 @@ export function buildDualAxisChart(
         yTemp: {
           type: 'linear',
           position: 'left',
-          title: { display: true, text: tempUnit },
+          title: { display: true, text: resolveAxisTitle(tempUnit, ['Gabinete']) },
           ticks: { callback: buildAxisTickCallback(tempUnit) },
         },
         yCurrent: {
           type: 'linear',
           position: 'right',
           grid: { drawOnChartArea: false },
-          title: { display: true, text: currentUnit },
+          title: { display: true, text: resolveAxisTitle(currentUnit, ['Corriente']) },
           ticks: { callback: buildAxisTickCallback(currentUnit) },
         },
       },
@@ -353,9 +370,11 @@ export function buildMultiSeriesChart(
             return typeof value === 'number' ? value : null;
           }),
           borderColor: item.color,
-          backgroundColor: `${item.color}22`,
-          pointRadius: 0,
-          tension: 0.3,
+          backgroundColor: item.color,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0,
+          fill: false,
         })),
         ...limitDatasets,
       ],
@@ -372,8 +391,13 @@ export function buildMultiSeriesChart(
         x: buildXScaleOptions(labels, options),
         y: {
           beginAtZero: false,
-          title: sharedUnit
-            ? { display: true, text: sharedUnit }
+          title: sharedUnit || options.yAxisTitle
+            ? {
+                display: true,
+                text: sharedUnit
+                  ? resolveAxisTitle(sharedUnit, series.map((item) => item.label))
+                  : options.yAxisTitle,
+              }
             : { display: false },
           ticks: sharedUnit
             ? { callback: buildAxisTickCallback(sharedUnit) }
@@ -397,15 +421,11 @@ export function computeEfficiencyIndex(readings: MonitoringReading[]): number[] 
 }
 
 export function computeDeltaTEvap(reading: MonitoringReading): number {
-  const t1 = Math.abs(reading.T1 ?? 0);
-  const t2 = Math.abs(reading.T2 ?? 0);
-  return t2 - t1;
+  return (reading.T1 ?? 0) - (reading.T2 ?? 0);
 }
 
 export function computeDeltaTCond(reading: MonitoringReading): number {
-  const t3 = Math.abs(reading.T3 ?? 0);
-  const t4 = Math.abs(reading.T4 ?? 0);
-  return t4 - t3;
+  return (reading.T4 ?? 0) - (reading.T3 ?? 0);
 }
 
 export function computePower(reading: MonitoringReading): number {

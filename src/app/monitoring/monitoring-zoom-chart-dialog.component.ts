@@ -6,6 +6,7 @@ import {
   buildDualAxisChart,
   buildMultiSeriesChart,
   ChartSeriesConfig,
+  MonitoringChartOptions,
 } from './monitoring-chart.util';
 
 export type ZoomChartDialogData = {
@@ -13,6 +14,7 @@ export type ZoomChartDialogData = {
   mode: 'dual' | 'multi';
   readings: MonitoringReading[];
   series?: ChartSeriesConfig[];
+  options?: MonitoringChartOptions;
 };
 
 @Component({
@@ -47,7 +49,7 @@ export class MonitoringZoomChartDialogComponent {
   }
 
   private buildChart(readings: MonitoringReading[]): ChartConfiguration<'line'> {
-    const chartOptions = { detailedTimeAxis: true };
+    const chartOptions = { ...(this.data.options ?? {}), detailedTimeAxis: true };
     if (this.data.mode === 'dual') {
       return buildDualAxisChart(readings, chartOptions);
     }

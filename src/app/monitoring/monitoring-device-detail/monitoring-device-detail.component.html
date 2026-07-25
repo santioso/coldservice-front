@@ -189,7 +189,7 @@
     </article>
 
     <article class="chart-card" (click)="openPowerZoom()">
-      <h2>Consumo específico (W)</h2>
+      <h2>Vatios (W)</h2>
       <div class="chart-wrapper" *ngIf="powerChart as chart">
         <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
       </div>
