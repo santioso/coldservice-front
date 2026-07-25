@@ -164,8 +164,9 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       series: [
         { label: 'V', color: '#2563eb', value: (r) => r.V },
         { label: 'A', color: '#ff8f00', value: (r) => r.A },
-        { label: 'W', color: '#7c3aed', value: (r) => computePower(r) },
+        { label: 'Vatios (W)', color: '#7c3aed', value: (r) => computePower(r) },
       ],
+      options: { yAxisTitle: 'Variables eléctricas (V, A, W)' },
     });
   }
 
@@ -193,10 +194,10 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   openPowerZoom(): void {
     if (!this.detail) return;
     this.openZoom({
-      title: 'Consumo específico (W)',
+      title: 'Vatios (W)',
       mode: 'multi',
       readings: this.detail.readings,
-      series: [{ label: 'W', color: '#0f766e', value: (r) => computePower(r) }],
+      series: [{ label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) }],
     });
   }
 
@@ -434,8 +435,8 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     this.electricalChart = buildMultiSeriesChart(readings, [
       { label: 'V', color: '#2563eb', value: (r) => r.V },
       { label: 'A', color: '#ff8f00', value: (r) => r.A },
-      { label: 'W', color: '#7c3aed', value: (r) => computePower(r) },
-    ]);
+      { label: 'Vatios (W)', color: '#7c3aed', value: (r) => computePower(r) },
+    ], { yAxisTitle: 'Variables eléctricas (V, A, W)' });
     this.deltaChart = buildMultiSeriesChart(readings, [
       {
         label: 'Delta T evaporación',
@@ -449,7 +450,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       },
     ]);
     this.powerChart = buildMultiSeriesChart(readings, [
-      { label: 'W', color: '#0f766e', value: (r) => computePower(r) },
+      { label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) },
     ]);
     const efficiencyValues = computeEfficiencyIndex(readings);
     this.efficiencyChart = buildMultiSeriesChart(readings, [

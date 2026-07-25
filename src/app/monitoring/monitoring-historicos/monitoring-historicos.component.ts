@@ -269,10 +269,14 @@ export class MonitoringHistoricosComponent implements OnInit {
         const filename = this.extractFilename(
           response.headers.get('Content-Disposition'),
         );
+        const fallbackDateValue = item.started_at ? new Date(item.started_at) : null;
+        const fallbackDate = fallbackDateValue && !Number.isNaN(fallbackDateValue.getTime())
+          ? fallbackDateValue.toISOString().slice(0, 19).replace(/[:T]/g, '-')
+          : 'sin-fecha';
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = filename || `reporte-${item.placa || item.activo_id || item.session_id}.pdf`;
+        link.download = filename || `${item.placa || item.activo_id || item.session_id}-W-${fallbackDate}.pdf`;
         link.click();
         window.URL.revokeObjectURL(url);
         this.pdfLoadingSessionId = null;
@@ -353,14 +357,14 @@ export class MonitoringHistoricosComponent implements OnInit {
     this.electricalChart = buildMultiSeriesChart(readings, [
       { label: 'V', color: '#2563eb', value: (r) => r.V },
       { label: 'A', color: '#ff8f00', value: (r) => r.A },
-      { label: 'W', color: '#7c3aed', value: (r) => computePower(r) },
-    ]);
+      { label: 'Vatios (W)', color: '#7c3aed', value: (r) => computePower(r) },
+    ], { yAxisTitle: 'Variables eléctricas (V, A, W)' });
     this.deltaChart = buildMultiSeriesChart(readings, [
       { label: 'Delta T evaporación', color: '#4f46e5', value: (r) => computeDeltaTEvap(r) },
       { label: 'Delta T condensación', color: '#ea580c', value: (r) => computeDeltaTCond(r) },
     ]);
     this.powerChart = buildMultiSeriesChart(readings, [
-      { label: 'W', color: '#0f766e', value: (r) => computePower(r) },
+      { label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) },
     ]);
     const efficiencyValues = computeEfficiencyIndex(readings);
     this.efficiencyChart = buildMultiSeriesChart(readings, [
