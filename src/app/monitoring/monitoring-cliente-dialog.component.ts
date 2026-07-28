@@ -14,6 +14,8 @@ interface ClienteItem {
   name: string;
   nit: string | null;
   ubicacion: string | null;
+  email: string | null;
+  phone: string | null;
   logoUrl: string | null;
 }
 
@@ -46,6 +48,10 @@ interface ClienteItem {
               <span class="text-muted" *ngIf="item.nit"> — {{ item.nit }}</span>
               <br />
               <small class="text-muted">{{ item.ubicacion || 'Sin ubicación' }}</small>
+              <br />
+              <small class="text-muted" *ngIf="item.email || item.phone">
+                {{ item.email || 'Sin email' }} · {{ item.phone || 'Sin teléfono' }}
+              </small>
             </mat-radio-button>
           </mat-list-item>
         </mat-radio-group>
@@ -71,6 +77,18 @@ interface ClienteItem {
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Ubicación</mat-label>
           <input matInput [(ngModel)]="newClient.ubicacion" placeholder="Ej: Bogotá" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" [(ngModel)]="newClient.email" placeholder="Ej: contacto@cliente.com" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Teléfono de contacto</mat-label>
+          <input matInput [(ngModel)]="newClient.phone" placeholder="Ej: +57 300 000 0000" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Logo para reportes (URL)</mat-label>
+          <input matInput [(ngModel)]="newClient.logoUrl" placeholder="Ej: assets/logos/cliente.png" />
         </mat-form-field>
       </div>
     </mat-dialog-content>
@@ -101,6 +119,7 @@ interface ClienteItem {
   ],
 })
 export class MonitoringClienteDialogComponent implements OnInit {
+  private readonly clientsApiUrl = `${environment.apiUrl}/api/v1/clients`;
   searchCtrl = this.fb.control('');
   results: ClienteItem[] = [];
   selectedId: number | null = null;
@@ -112,6 +131,9 @@ export class MonitoringClienteDialogComponent implements OnInit {
     name: '',
     nit: '',
     ubicacion: '',
+    email: '',
+    phone: '',
+    logoUrl: '',
   };
 
   constructor(
@@ -138,7 +160,7 @@ export class MonitoringClienteDialogComponent implements OnInit {
           }
           this.loading = true;
           return this.http.get<ClienteItem[]>(
-            `${environment.apiUrl}/clients/search?q=${encodeURIComponent(q)}`,
+            `${this.clientsApiUrl}/search?q=${encodeURIComponent(q)}`,
           );
         }),
       )
@@ -148,7 +170,8 @@ export class MonitoringClienteDialogComponent implements OnInit {
           this.searched = true;
           this.loading = false;
         },
-        error: () => {
+        error: (error) => {
+          console.error('Error searching clients', error);
           this.results = [];
           this.searched = true;
           this.loading = false;
@@ -165,52 +188,56 @@ export class MonitoringClienteDialogComponent implements OnInit {
 
   confirm(): void {
     if (this.showCreate) {
+      const name = (this.newClient.name ?? '').trim();
+      const nit = (this.newClient.nit ?? '').trim() || null;
+      const ubicacion = (this.newClient.ubicacion ?? '').trim() || null;
+      const email = (this.newClient.email ?? '').trim() || null;
+      const phone = (this.newClient.phone ?? '').trim() || null;
+      const logoUrl = (this.newClient.logoUrl ?? '').trim() || null;
+
       this.http
-        .post(`${environment.apiUrl}/clients`, {
-          name: this.newClient.name,
-          nit: this.newClient.nit || null,
-          ubicacion: this.newClient.ubicacion || null,
+        .post<ClienteItem & { message?: string }>(`${this.clientsApiUrl}`, {
+          name,
+          nit,
+          ubicacion,
+          email,
+          phone,
+          logoUrl,
         })
         .subscribe({
-          next: (res: any) => {
-            if (res?.message) {
-              // Need to re-fetch to get the id; use the search
-              this.http
-                .get<ClienteItem[]>(
-                  `${environment.apiUrl}/clients/search?q=${encodeURIComponent(this.newClient.name!)}`,
-                )
-                .subscribe({
-                  next: (items) => {
-                    const found = items.find(
-                      (i) => i.name.toLowerCase() === this.newClient.name!.toLowerCase(),
-                    );
-                    if (found) {
-                      this.dialogRef.close({ cliente_id: found.id } as ClienteDialogResult);
-                    }
-                  },
-                });
+          next: (res) => {
+            if (res?.id) {
+              this.dialogRef.close({ cliente_id: res.id } as ClienteDialogResult);
+              return;
             }
+
+            this.findCreatedClientByName(name);
           },
-          error: () => {
-            // Try to find the client by name anyway
-            this.http
-              .get<ClienteItem[]>(
-                `${environment.apiUrl}/clients/search?q=${encodeURIComponent(this.newClient.name!)}`,
-              )
-              .subscribe({
-                next: (items) => {
-                  const found = items.find(
-                    (i) => i.name.toLowerCase() === this.newClient.name!.toLowerCase(),
-                  );
-                  if (found) {
-                    this.dialogRef.close({ cliente_id: found.id } as ClienteDialogResult);
-                  }
-                },
-              });
+          error: (error) => {
+            console.error('Error creating client', error);
           },
         });
     } else {
       this.dialogRef.close({ cliente_id: this.selectedId! } as ClienteDialogResult);
     }
+  }
+
+  private findCreatedClientByName(name: string): void {
+    this.http
+      .get<ClienteItem[]>(`${this.clientsApiUrl}/search?q=${encodeURIComponent(name)}`)
+      .subscribe({
+        next: (items) => {
+          const found = items.find((i) => i.name.trim().toLowerCase() === name.toLowerCase());
+          if (found) {
+            this.dialogRef.close({ cliente_id: found.id } as ClienteDialogResult);
+            return;
+          }
+
+          console.error('Created client response did not include an id and search did not find it');
+        },
+        error: (error) => {
+          console.error('Error searching created client', error);
+        },
+      });
   }
 }

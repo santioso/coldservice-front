@@ -8,6 +8,7 @@ import { environment } from 'environments/environment';
 export interface TecnicoDialogResult {
   tecnico_nombre: string | null;
   technical_id: number | null;
+  addres: string | null;
   position: string | null;
   phone: string | null;
   email: string | null;
@@ -19,6 +20,7 @@ export interface TecnicoDialogData {
   sessionId: number;
   tecnico_nombre?: string | null;
   technical_id?: number | null;
+  addres?: string | null;
   position?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -31,6 +33,7 @@ interface TechnicalItem {
   addres: string;
   position: string;
   phone: string;
+  email: string | null;
 }
 
 @Component({
@@ -70,32 +73,32 @@ interface TechnicalItem {
 
       <div *ngIf="searched && results.length === 0 && !loading" class="no-results">
         <p>No se encontraron técnicos.</p>
-        <button mat-stroked-button color="primary" type="button" (click)="showCreate = true">
+        <button mat-stroked-button color="primary" type="button" (click)="startNewTechnical()">
           + Agregar nuevo técnico
         </button>
       </div>
 
-      <div *ngIf="showCreate" class="sub-form">
-        <h4>Nuevo técnico</h4>
+      <div class="sub-form">
+        <h4>Información del técnico</h4>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nombre *</mat-label>
-          <input matInput [(ngModel)]="newTechnical.name" placeholder="Ej: Juan Pérez" />
+          <input matInput [(ngModel)]="tecnicoNombre" placeholder="Ej: Juan Pérez" />
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Dirección</mat-label>
-          <input matInput [(ngModel)]="newTechnical.addres" />
+          <input matInput [(ngModel)]="tecnicoDireccion" />
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Cargo</mat-label>
-          <input matInput [(ngModel)]="newTechnical.position" />
+          <input matInput [(ngModel)]="tecnicoCargo" />
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Teléfono</mat-label>
-          <input matInput [(ngModel)]="newTechnical.phone" />
+          <input matInput [(ngModel)]="tecnicoPhone" />
         </mat-form-field>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Email</mat-label>
-          <input matInput [(ngModel)]="newTechnical.email" type="email" />
+          <input matInput [(ngModel)]="tecnicoEmail" type="email" />
         </mat-form-field>
       </div>
 
@@ -103,29 +106,7 @@ interface TechnicalItem {
       <h3>Datos de esta instalación</h3>
       <div class="sub-form">
         <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Nombre del técnico</mat-label>
-          <input matInput [(ngModel)]="tecnicoNombre" placeholder="Se usa el nombre del técnico seleccionado" />
-        </mat-form-field>
-        <div class="row">
-          <div class="col">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Cargo</mat-label>
-              <input matInput [(ngModel)]="tecnicoCargo" placeholder="Ej: Técnico de refrigeración" />
-            </mat-form-field>
-          </div>
-          <div class="col">
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Teléfono</mat-label>
-              <input matInput [(ngModel)]="tecnicoPhone" placeholder="Ej: 3001234567" />
-            </mat-form-field>
-          </div>
-        </div>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Email</mat-label>
-          <input matInput [(ngModel)]="tecnicoEmail" placeholder="Ej: tecnico@email.com" type="email" />
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Fecha de instalación</mat-label>
+          <mat-label>Fecha de instalación del equipo</mat-label>
           <input matInput type="date" [(ngModel)]="fechaInstalacion" />
         </mat-form-field>
       </div>
@@ -154,8 +135,6 @@ interface TechnicalItem {
       h3 { margin: 1rem 0 0.5rem; font-size: 1rem; color: #17375e; }
       h4 { margin: 0.5rem 0; font-size: 0.9rem; color: #555; }
       .text-muted { color: #888; }
-      .row { display: flex; gap: 12px; }
-      .col { flex: 1; }
     `,
   ],
 })
@@ -165,18 +144,9 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
   selectedTechnicalId: number | null = null;
   loading = false;
   searched = false;
-  showCreate = false;
 
-  newTechnical: { name: string; addres: string; position: string; phone: string; email: string } = {
-    name: '',
-    addres: '',
-    position: '',
-    phone: '',
-    email: '',
-  };
-
-  // Installation-specific fields
   tecnicoNombre = '';
+  tecnicoDireccion = '';
   tecnicoCargo = '';
   tecnicoPhone = '';
   tecnicoEmail = '';
@@ -189,14 +159,13 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
     private readonly http: HttpClient,
   ) {
     this.tecnicoNombre = data.tecnico_nombre ?? '';
+    this.tecnicoDireccion = data.addres ?? '';
     this.tecnicoCargo = data.position ?? '';
     this.tecnicoPhone = data.phone ?? '';
     this.tecnicoEmail = data.email ?? '';
     this.selectedTechnicalId = data.technical_id ?? null;
     const rawDate = data.fecha_instalacion;
-    this.fechaInstalacion = rawDate
-      ? new Date(rawDate).toISOString().split('T')[0]
-      : '';
+    this.fechaInstalacion = rawDate ? this.toDateInputValue(rawDate) : this.todayDateInputValue();
   }
 
   ngOnInit(): void {
@@ -238,8 +207,44 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
   selectTechnical(t: TechnicalItem): void {
     this.selectedTechnicalId = t.id;
     this.tecnicoNombre = t.name;
-    if (t.position) this.tecnicoCargo = t.position;
-    if (t.phone) this.tecnicoPhone = t.phone;
+    this.tecnicoDireccion = t.addres ?? '';
+    this.tecnicoCargo = t.position ?? '';
+    this.tecnicoPhone = t.phone ?? '';
+    this.tecnicoEmail = t.email ?? '';
+  }
+
+  startNewTechnical(): void {
+    const searchTerm = (this.searchCtrl.value ?? '').trim();
+    this.selectedTechnicalId = null;
+    this.results = [];
+    if (!this.tecnicoNombre.trim()) {
+      this.tecnicoNombre = searchTerm;
+    }
+  }
+
+  private todayDateInputValue(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private toDateInputValue(value: string): string {
+    const dateOnly = value.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+    if (dateOnly) {
+      return dateOnly;
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return this.todayDateInputValue();
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   confirm(): void {
@@ -251,6 +256,7 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
       this.dialogRef.close({
         tecnico_nombre: this.tecnicoNombre.trim() || null,
         technical_id: this.selectedTechnicalId,
+        addres: this.tecnicoDireccion.trim() || null,
         position: this.tecnicoCargo.trim() || null,
         phone: this.tecnicoPhone.trim() || null,
         email: this.tecnicoEmail.trim() || null,
@@ -258,22 +264,17 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
       } as TecnicoDialogResult);
     };
 
-    if (this.showCreate && this.newTechnical.name.trim()) {
+    if (!this.selectedTechnicalId && this.tecnicoNombre.trim()) {
       this.http
         .post(`${environment.apiUrl}/technicals`, {
-          name: this.newTechnical.name,
-          addres: this.newTechnical.addres || null,
-          position: this.newTechnical.position || null,
-          phone: this.newTechnical.phone || null,
-          email: this.newTechnical.email || null,
+          name: this.tecnicoNombre.trim(),
+          addres: this.tecnicoDireccion.trim() || null,
+          position: this.tecnicoCargo.trim() || null,
+          phone: this.tecnicoPhone.trim() || null,
+          email: this.tecnicoEmail.trim() || null,
         })
         .subscribe({
           next: (created: any) => {
-            // Auto-fill installation fields with the new technician's data
-            this.tecnicoNombre = this.newTechnical.name;
-            this.tecnicoCargo = this.newTechnical.position;
-            this.tecnicoPhone = this.newTechnical.phone;
-            this.tecnicoEmail = this.newTechnical.email;
             this.selectedTechnicalId = created?.id ?? null;
             doSave();
           },

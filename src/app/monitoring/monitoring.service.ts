@@ -7,6 +7,7 @@ import {
   DeviceSortMode,
   MeasurementSessionDetail,
   MeasurementHistoryPage,
+  MonitoringClient,
   MonitoringDevice,
   MonitoringReading,
 } from './monitoring.models';
@@ -27,6 +28,10 @@ export class MonitoringService {
       `${this.baseUrl}/activos/search`,
       { params },
     );
+  }
+
+  clients(): Observable<MonitoringClient[]> {
+    return this.http.get<MonitoringClient[]>(`${environment.apiUrl}/api/v1/clients`);
   }
 
   overview(
@@ -166,14 +171,50 @@ export class MonitoringService {
     );
   }
 
+  createAndAssignSessionActivo(
+    deviceId: string,
+    sessionId: number,
+    data: {
+      id: string;
+      descripcion?: string | null;
+      fabricante?: string | null;
+      capacidad?: number | null;
+      cliente_id?: number | string | null;
+      nombre_cliente?: string | null;
+      establecimiento_comercial?: string | null;
+    },
+  ): Observable<MeasurementSessionDetail> {
+    return this.http.post<MeasurementSessionDetail>(
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/activos`,
+      data,
+    );
+  }
+
   updateSessionActivo(
     deviceId: string,
     sessionId: number,
     activoId: string,
   ): Observable<{ success: boolean }> {
     return this.http.patch<{ success: boolean }>(
-      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/assign-activo`,
-      { activo_id: activoId },
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/activo-snapshot`,
+      { activoId },
+    );
+  }
+
+  updateMonitoringActivo(
+    deviceId: string,
+    sessionId: number,
+    activoId: string,
+    data: {
+      descripcion?: string | null;
+      fabricante?: string | null;
+      capacidad?: number | null;
+      establecimiento_comercial?: string | null;
+    },
+  ): Observable<{ success: boolean }> {
+    return this.http.patch<{ success: boolean }>(
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/activos/${encodeURIComponent(activoId)}`,
+      data,
     );
   }
 
@@ -181,10 +222,10 @@ export class MonitoringService {
     deviceId: string,
     sessionId: number,
     clienteId: number,
-  ): Observable<{ success: boolean }> {
-    return this.http.patch<{ success: boolean }>(
-      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/cliente`,
-      { cliente_id: clienteId },
+  ): Observable<MeasurementSessionDetail> {
+    return this.http.patch<MeasurementSessionDetail>(
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/client-snapshot`,
+      { newClientId: clienteId },
     );
   }
 
@@ -196,6 +237,7 @@ export class MonitoringService {
       equipo_modelo?: string;
       limite_inferior_celsius?: number;
       limite_superior_celsius?: number;
+      valor_kwh?: number | null;
       observaciones?: string;
       ubicacion?: string;
       fecha_instalacion?: string | null;
@@ -214,6 +256,7 @@ export class MonitoringService {
     data: {
       tecnico_nombre?: string | null;
       technical_id?: number | null;
+      addres?: string | null;
       position?: string | null;
       phone?: string | null;
       email?: string | null;

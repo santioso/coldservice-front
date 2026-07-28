@@ -103,9 +103,12 @@
         <span>{{ item.readings.at(-1)?.T1?.toFixed(1) }}°C</span>
       </div>
       <div class="device-card-header">
-        <div>
+        <div class="device-title-block">
           <h2>{{ item.device_id }}</h2>
           <p>{{ item.modelo || "Sin modelo" }}</p>
+        </div>
+        <div class="device-active-inline" *ngIf="item.activo_id as activoId">
+          <span class="active-label">Activo:</span> {{ activoId }}
         </div>
         <span class="live-badge" [class.live]="item.is_live">
           {{ item.is_live ? "En vivo" : "Sin actividad reciente" }}

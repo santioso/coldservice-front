@@ -133,6 +133,11 @@
         <mat-icon *ngIf="alert.status === 'high'">error</mat-icon>
         <span>{{ alert.message }}</span>
       </div>
+      <div class="energy-cost-panel">
+        <div class="energy-cost-summary">
+          <strong>Valor del consumo: {{ accumulatedConsumptionCost != null ? '$ ' + (accumulatedConsumptionCost | number:'1.0-2') : '—' }}</strong>
+        </div>
+      </div>
       <p><strong>Ubicación:</strong> {{ current.installation?.ubicacion || '—' }}</p>
       <p><strong>Observaciones:</strong> {{ current.installation?.observaciones || '—' }}</p>
     </article>
@@ -151,7 +156,7 @@
       <p><strong>Cargo:</strong> {{ current.technician?.position || '--' }}</p>
       <p><strong>Teléfono:</strong> {{ current.technician?.phone || '--' }}</p>
       <p><strong>Email:</strong> {{ current.technician?.email || '--' }}</p>
-      <p><strong>Fecha instalación:</strong> {{ formatDate(current.technician?.fecha_instalacion || current.installation?.fecha_instalacion) }}</p>
+      <p><strong>Fecha instalación:</strong> {{ formatDateOnly(current.technician?.fecha_instalacion || current.installation?.fecha_instalacion) }}</p>
     </article>
   </section>
 
@@ -203,7 +208,7 @@
     </article>
 
     <article class="chart-card" (click)="openConsumptionZoom()">
-      <h2>Análisis de consumo (kWh)</h2>
+      <h2>{{ consumptionChartTitle }}</h2>
       <div class="chart-wrapper" *ngIf="consumptionChart as chart">
         <canvas baseChart [data]="chart.data" [options]="chart.options" [type]="chart.type || 'line'"></canvas>
       </div>

@@ -83,6 +83,7 @@ export class MonitoringHistoricosComponent implements OnInit {
   powerChart: ChartConfiguration<'line'> | null = null;
   efficiencyChart: ChartConfiguration<'line'> | null = null;
   consumptionChart: ChartConfiguration<'line'> | null = null;
+  consumptionChartTitle = 'Análisis de consumo (kWh)';
 
   constructor(
     private readonly fb: FormBuilder,
@@ -210,6 +211,8 @@ export class MonitoringHistoricosComponent implements OnInit {
     const dialogRef = this.dialog.open(MonitoringActivoDialogComponent, {
       width: '650px',
       data: {
+        deviceId: current.device_id,
+        sessionId: current.session_id,
         equipo_placa: currentInstall?.equipo_placa,
         equipo_modelo: currentInstall?.equipo_modelo,
         limite_inferior_celsius: currentInstall?.limite_inferior_celsius,
@@ -358,7 +361,7 @@ export class MonitoringHistoricosComponent implements OnInit {
       { label: 'V', color: '#2563eb', value: (r) => r.V },
       { label: 'A', color: '#ff8f00', value: (r) => r.A },
       { label: 'Vatios (W)', color: '#7c3aed', value: (r) => computePower(r) },
-    ], { yAxisTitle: 'Variables eléctricas (V, A, W)' });
+    ], { yAxisTitle: 'Variables eléctricas (V, A, W)', nonNegativeYAxis: true });
     this.deltaChart = buildMultiSeriesChart(readings, [
       { label: 'Delta T evaporación', color: '#4f46e5', value: (r) => computeDeltaTEvap(r) },
       { label: 'Delta T condensación', color: '#ea580c', value: (r) => computeDeltaTCond(r) },
@@ -376,10 +379,27 @@ export class MonitoringHistoricosComponent implements OnInit {
           return efficiencyValues[index];
         },
       },
-    ]);
+    ], { lineTension: 0.35 });
+    const firstKwh = this.firstValidKwh(readings);
+    this.consumptionChartTitle = 'Análisis de consumo (kWh)';
     this.consumptionChart = buildMultiSeriesChart(readings, [
-      { label: 'kWh', color: '#c2410c', value: (r) => r.kWh },
-    ]);
+      {
+        label: 'Consumo (kWh)',
+        color: '#c2410c',
+        unit: 'kWh',
+        value: (r) => this.consumptionValue(r.kWh, firstKwh),
+      },
+    ], { lineTension: 0.35, nonNegativeYAxis: true });
+  }
+
+  get accumulatedConsumptionKwh(): number | null {
+    return this.consumptionDeltaKwh(this.selected?.readings ?? []);
+  }
+
+  get accumulatedConsumptionCost(): number | null {
+    const consumption = this.accumulatedConsumptionKwh;
+    const kwhPrice = this.selected?.installation?.valor_kwh;
+    return consumption != null && kwhPrice != null ? consumption * kwhPrice : null;
   }
 
   private clearCharts(): void {
@@ -390,6 +410,25 @@ export class MonitoringHistoricosComponent implements OnInit {
     this.powerChart = null;
     this.efficiencyChart = null;
     this.consumptionChart = null;
+    this.consumptionChartTitle = 'Análisis de consumo (kWh)';
+  }
+
+  private consumptionDeltaKwh(readings: MeasurementSessionDetail['readings']): number | null {
+    const values = readings
+      .map((reading) => reading.kWh)
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+    if (values.length < 2) return null;
+    return values[values.length - 1] - values[0];
+  }
+
+  private firstValidKwh(readings: MeasurementSessionDetail['readings']): number | null {
+    const first = readings.find((reading) => typeof reading.kWh === 'number' && Number.isFinite(reading.kWh));
+    return first?.kWh ?? null;
+  }
+
+  private consumptionValue(currentKwh: number | undefined, firstKwh: number | null): number | undefined {
+    if (currentKwh == null || firstKwh == null) return undefined;
+    return currentKwh - firstKwh;
   }
 
   private isSelectedItem(item: MeasurementHistoryItem): boolean {

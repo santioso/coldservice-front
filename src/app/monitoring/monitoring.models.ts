@@ -53,6 +53,7 @@ export interface DeviceOverviewItem {
   device_id: string;
   modelo: string | null;
   activo: boolean;
+  activo_id: string | null;
   is_live: boolean;
   last_reading_at: string | null;
   readings: MonitoringReading[];
@@ -111,6 +112,7 @@ export interface MeasurementSessionDetail {
     equipo_modelo: string | null;
     limite_inferior_celsius: number | null;
     limite_superior_celsius: number | null;
+    valor_kwh: number | null;
     observaciones: string | null;
     ubicacion: string | null;
     fecha_instalacion: string | null;

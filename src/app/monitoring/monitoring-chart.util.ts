@@ -12,6 +12,10 @@ export type MonitoringChartOptions = {
   detailedTimeAxis?: boolean;
   lowerLimit?: number | null;
   upperLimit?: number | null;
+  lineTension?: number;
+  nonNegativeYAxis?: boolean;
+  pointRadius?: number;
+  pointHoverRadius?: number;
   yAxisTitle?: string;
 };
 
@@ -58,6 +62,9 @@ export function resolveSeriesUnit(label: string, unit?: string): string {
   if (normalized === 'w' || normalized.includes('(w)')) {
     return 'W';
   }
+  if (normalized === 'wh' || normalized.includes('(wh)')) {
+    return 'Wh';
+  }
   if (normalized === 'kwh' || normalized.includes('kwh')) {
     return 'kWh';
   }
@@ -89,7 +96,10 @@ export function resolveSeriesUnit(label: string, unit?: string): string {
 
 function decimalsForUnit(unit: string): number {
   if (unit === 'kWh') {
-    return 3;
+    return 5;
+  }
+  if (unit === 'Wh') {
+    return 1;
   }
   if (unit === '°C/kWh') {
     return 2;
@@ -121,6 +131,7 @@ function formatAxisTick(value: string | number, unit: string): string {
 function resolveAxisTitle(unit: string, labels: string[]): string {
   const normalizedLabels = labels.join(' ').toLowerCase();
   if (unit === '°C/kWh') return 'Eficiencia (°C/kWh)';
+  if (unit === 'Wh') return 'Consumo (Wh)';
   if (unit === 'kWh') return 'Consumo (kWh)';
   if (unit === 'W') return 'Vatios (W)';
   if (unit === 'A') return 'Corriente (A)';
@@ -206,7 +217,28 @@ function buildTooltipOptions(
 }
 
 function buildAxisTickCallback(unit: string) {
-  return (value: string | number) => formatAxisTick(value, unit);
+  return (
+    value: string | number,
+    index: number,
+    ticks: Array<{ value: string | number }> = [],
+  ) => {
+    const formatted = formatAxisTick(value, unit);
+    const previous = ticks[index - 1];
+
+    if (previous && formatAxisTick(previous.value, unit) === formatted) {
+      return '';
+    }
+
+    return formatted;
+  };
+}
+
+function isNonNegativeUnit(unit: string): boolean {
+  return ['A', 'V', 'W', 'Wh', 'kWh'].includes(unit);
+}
+
+function isGabineteTemperatureSeries(label: string, unit?: string): boolean {
+  return label.trim().toLowerCase().includes('gabinete') && resolveSeriesUnit(label, unit) === '°C';
 }
 
 export function buildDualAxisChart(
@@ -217,9 +249,25 @@ export function buildDualAxisChart(
   } = {},
 ): ChartConfiguration<'line'> {
   const labels = readings.map((item) => formatTimeLabel(item.timestamp));
+  const pointRadius = options.pointRadius ?? 0;
+  const pointHoverRadius = options.pointHoverRadius ?? 4;
   const tempValues = readings.map((item) =>
     typeof item.T1 === 'number' ? item.T1 : null,
   );
+  const tempScaleValues = [
+    ...tempValues.filter((value): value is number =>
+      typeof value === 'number' && Number.isFinite(value),
+    ),
+    options.lowerLimit,
+    options.upperLimit,
+  ].filter((value): value is number =>
+    typeof value === 'number' && Number.isFinite(value),
+  );
+  const tempMin = tempScaleValues.length ? Math.min(...tempScaleValues) : undefined;
+  const tempMax = tempScaleValues.length ? Math.max(...tempScaleValues) : undefined;
+  const tempRange =
+    tempMin != null && tempMax != null ? Math.max(tempMax - tempMin, 1) : undefined;
+  const tempPadding = tempRange != null ? Math.max(tempRange * 0.12, 0.5) : undefined;
   const currentValues = readings.map((item) =>
     typeof item.A === 'number' ? item.A : null,
   );
@@ -264,10 +312,11 @@ export function buildDualAxisChart(
           data: tempValues,
           borderColor: '#0057b8',
           backgroundColor: '#0057b8',
+          borderWidth: 2,
           yAxisID: 'yTemp',
-          pointRadius: 2,
-          pointHoverRadius: 4,
-          tension: 0,
+          pointRadius,
+          pointHoverRadius,
+          tension: 0.3,
           fill: false,
         },
         {
@@ -275,9 +324,10 @@ export function buildDualAxisChart(
           data: currentValues,
           borderColor: '#ff8f00',
           backgroundColor: '#ff8f00',
+          borderWidth: 2,
           yAxisID: 'yCurrent',
-          pointRadius: 2,
-          pointHoverRadius: 4,
+          pointRadius,
+          pointHoverRadius,
           tension: 0,
           fill: false,
         },
@@ -297,12 +347,16 @@ export function buildDualAxisChart(
         yTemp: {
           type: 'linear',
           position: 'left',
+          min: tempMin != null && tempPadding != null ? tempMin - tempPadding : undefined,
+          max: tempMax != null && tempPadding != null ? tempMax + tempPadding : undefined,
           title: { display: true, text: resolveAxisTitle(tempUnit, ['Gabinete']) },
           ticks: { callback: buildAxisTickCallback(tempUnit) },
         },
         yCurrent: {
           type: 'linear',
           position: 'right',
+          beginAtZero: true,
+          min: 0,
           grid: { drawOnChartArea: false },
           title: { display: true, text: resolveAxisTitle(currentUnit, ['Corriente']) },
           ticks: { callback: buildAxisTickCallback(currentUnit) },
@@ -318,6 +372,8 @@ export function buildMultiSeriesChart(
   options: MonitoringChartOptions = {},
 ): ChartConfiguration<'line'> {
   const labels = readings.map((item) => formatTimeLabel(item.timestamp));
+  const pointRadius = options.pointRadius ?? 0;
+  const pointHoverRadius = options.pointHoverRadius ?? 4;
   const units = series.map((item) =>
     resolveSeriesUnit(item.label, item.unit),
   );
@@ -331,6 +387,9 @@ export function buildMultiSeriesChart(
     units.length > 0 && units.every((unit) => unit === units[0])
       ? units[0]
       : '';
+  const nonNegativeYAxis =
+    options.nonNegativeYAxis ||
+    (units.length > 0 && units.every((unit) => isNonNegativeUnit(unit)));
 
   const limitDatasets: ChartConfiguration<'line'>['data']['datasets'] = [];
   if (options.lowerLimit != null) {
@@ -371,9 +430,11 @@ export function buildMultiSeriesChart(
           }),
           borderColor: item.color,
           backgroundColor: item.color,
-          pointRadius: 2,
-          pointHoverRadius: 4,
-          tension: 0,
+          borderWidth: 2,
+          pointRadius,
+          pointHoverRadius,
+          tension: options.lineTension ??
+            (isGabineteTemperatureSeries(item.label, item.unit) ? 0.3 : 0),
           fill: false,
         })),
         ...limitDatasets,
@@ -390,7 +451,8 @@ export function buildMultiSeriesChart(
       scales: {
         x: buildXScaleOptions(labels, options),
         y: {
-          beginAtZero: false,
+          beginAtZero: nonNegativeYAxis,
+          min: nonNegativeYAxis ? 0 : undefined,
           title: sharedUnit || options.yAxisTitle
             ? {
                 display: true,
@@ -400,7 +462,10 @@ export function buildMultiSeriesChart(
               }
             : { display: false },
           ticks: sharedUnit
-            ? { callback: buildAxisTickCallback(sharedUnit) }
+            ? {
+                callback: buildAxisTickCallback(sharedUnit),
+                maxTicksLimit: sharedUnit === 'kWh' ? 6 : undefined,
+              }
             : undefined,
         },
       },

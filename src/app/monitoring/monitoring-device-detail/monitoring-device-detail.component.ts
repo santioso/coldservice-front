@@ -28,6 +28,7 @@ import {
   computeDeltaTEvap,
   computeEfficiencyIndex,
   computePower,
+  MonitoringChartOptions,
 } from '../monitoring-chart.util';
 import {
   MeasurementSessionDetail,
@@ -37,6 +38,7 @@ import { MonitoringService } from '../monitoring.service';
 type ChartsPerRow = 1 | 2 | 3 | 4;
 const CHARTS_PER_ROW_STORAGE_KEY = 'monitoring-device-charts-per-row';
 const LARGE_SCREEN_MIN_WIDTH = 960;
+const LIVE_LINE_OPTIONS: MonitoringChartOptions = { pointRadius: 0 };
 
 @Component({
   selector: 'app-monitoring-device-detail',
@@ -58,6 +60,8 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   powerChart: ChartConfiguration<'line'> | null = null;
   efficiencyChart: ChartConfiguration<'line'> | null = null;
   consumptionChart: ChartConfiguration<'line'> | null = null;
+  consumptionChartTitle = 'Análisis de consumo (kWh)';
+  kwhPrice: number | null = null;
   readonly chartsPerRowOptions: ChartsPerRow[] = [1, 2, 3, 4];
   chartsPerRow: ChartsPerRow = 2;
   private savedChartsPerRow: ChartsPerRow | null = null;
@@ -110,8 +114,10 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         this.detail = detail;
         this.noLiveMeasurement = !detail;
         if (detail) {
+          this.kwhPrice = detail.installation?.valor_kwh ?? null;
           this.buildCharts(detail);
         } else {
+          this.kwhPrice = null;
           this.clearCharts();
         }
         this.loading = false;
@@ -137,6 +143,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       title: 'Corriente vs temp. gabinete',
       mode: 'dual',
       readings: this.detail.readings,
+      options: LIVE_LINE_OPTIONS,
     });
   }
 
@@ -152,6 +159,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         { label: 'Ambiente', color: '#f59e0b', value: (r) => r.T3 },
         { label: 'Condensador', color: '#dc2626', value: (r) => r.T4 },
       ],
+      options: LIVE_LINE_OPTIONS,
     });
   }
 
@@ -166,7 +174,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         { label: 'A', color: '#ff8f00', value: (r) => r.A },
         { label: 'Vatios (W)', color: '#7c3aed', value: (r) => computePower(r) },
       ],
-      options: { yAxisTitle: 'Variables eléctricas (V, A, W)' },
+      options: { ...LIVE_LINE_OPTIONS, yAxisTitle: 'Variables eléctricas (V, A, W)', nonNegativeYAxis: true },
     });
   }
 
@@ -188,6 +196,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
           value: (r) => computeDeltaTCond(r),
         },
       ],
+      options: LIVE_LINE_OPTIONS,
     });
   }
 
@@ -198,6 +207,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       mode: 'multi',
       readings: this.detail.readings,
       series: [{ label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) }],
+      options: LIVE_LINE_OPTIONS,
     });
   }
 
@@ -218,21 +228,46 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
           },
         },
       ],
+      options: { ...LIVE_LINE_OPTIONS, lineTension: 0.35 },
     });
   }
 
   openConsumptionZoom(): void {
     if (!this.detail) return;
+    const firstKwh = this.firstValidKwh(this.detail.readings);
     this.openZoom({
-      title: 'Análisis de consumo (kWh)',
+      title: this.consumptionChartTitle,
       mode: 'multi',
       readings: this.detail.readings,
-      series: [{ label: 'kWh', color: '#c2410c', value: (r) => r.kWh }],
+      series: [
+        {
+          label: 'Consumo (kWh)',
+          color: '#c2410c',
+          unit: 'kWh',
+          value: (r) => this.consumptionValue(r.kWh, firstKwh),
+        },
+      ],
+      options: { ...LIVE_LINE_OPTIONS, lineTension: 0.35, nonNegativeYAxis: true },
     });
   }
 
   formatDate(value: string | null | undefined): string {
     return value ? new Date(value).toLocaleString() : '--';
+  }
+
+  formatDateOnly(value: string | null | undefined): string {
+    if (!value) {
+      return '--';
+    }
+
+    const dateOnly = value.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+    if (dateOnly) {
+      const [year, month, day] = dateOnly.split('-').map(Number);
+      return new Date(year, month - 1, day).toLocaleDateString();
+    }
+
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '--' : date.toLocaleDateString();
   }
 
   openActivoDialog(): void {
@@ -241,23 +276,28 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     const dialogRef = this.dialog.open(MonitoringActivoDialogComponent, {
       width: '650px',
       data: {
+        deviceId: this.deviceId,
+        sessionId: this.detail.session_id,
         currentActivoId: this.detail.activo_id ?? undefined,
+        activo: this.detail.activo,
         equipo_placa: currentInstall?.equipo_placa,
         equipo_modelo: currentInstall?.equipo_modelo,
         limite_inferior_celsius: currentInstall?.limite_inferior_celsius,
         limite_superior_celsius: currentInstall?.limite_superior_celsius,
         ubicacion: currentInstall?.ubicacion,
         observaciones: currentInstall?.observaciones,
+        kwhPrice: currentInstall?.valor_kwh ?? this.kwhPrice,
       },
     });
     dialogRef.afterClosed().subscribe((result: ActivoDialogResult | undefined) => {
       if (!result) return;
+      this.kwhPrice = result.kwhPrice ?? null;
       this.editingCard = 'activo';
       const detail = this.detail!;
       const observables: Array<Observable<{ success: boolean }>> = [];
 
       // 1. Update activo if changed
-      const activoChanged = result.activo_id && result.activo_id !== detail.activo_id;
+      const activoChanged = !result.createdActivo && result.activo_id && result.activo_id !== detail.activo_id;
       if (activoChanged) {
         observables.push(
           this.monitoringService.updateSessionActivo(this.deviceId, detail.session_id, result.activo_id),
@@ -270,6 +310,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
           equipo_modelo: result.equipo_modelo ?? undefined,
           limite_inferior_celsius: result.limite_inferior_celsius ?? undefined,
           limite_superior_celsius: result.limite_superior_celsius ?? undefined,
+          valor_kwh: result.kwhPrice ?? null,
           ubicacion: result.ubicacion ?? undefined,
           observaciones: result.observaciones ?? undefined,
         }),
@@ -305,9 +346,11 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       this.monitoringService
         .updateSessionCliente(this.deviceId, this.detail!.session_id, result.cliente_id)
         .subscribe({
-          next: () => {
+          next: (detail) => {
             this.editingCard = null;
-            this.loadLiveMeasurement();
+            this.detail = detail;
+            this.kwhPrice = detail.installation?.valor_kwh ?? null;
+            this.buildCharts(detail);
             this.snackBar.open('Información guardada — se verá reflejada en la próxima toma de lectura', 'Cerrar', { duration: 4000 });
           },
           error: () => {
@@ -325,6 +368,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       sessionId: this.detail.session_id,
       tecnico_nombre: this.detail.technician?.name,
       technical_id: this.detail.technician?.id,
+      addres: this.detail.technician?.addres,
       position: this.detail.technician?.position,
       phone: this.detail.technician?.phone,
       email: this.detail.technician?.email,
@@ -343,6 +387,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         .updateSessionTechnician(this.deviceId, this.detail!.session_id, {
           tecnico_nombre: result.tecnico_nombre,
           technical_id: result.technical_id,
+          addres: result.addres,
           position: result.position,
           phone: result.phone,
           email: result.email,
@@ -423,6 +468,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   private buildCharts(detail: MeasurementSessionDetail): void {
     const readings = detail.readings;
     this.mainChart = buildDualAxisChart(readings, {
+      ...LIVE_LINE_OPTIONS,
       lowerLimit: detail.installation?.limite_inferior_celsius,
       upperLimit: detail.installation?.limite_superior_celsius,
     });
@@ -431,12 +477,12 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       { label: 'Evaporador', color: '#16a34a', value: (r) => r.T2 },
       { label: 'Ambiente', color: '#f59e0b', value: (r) => r.T3 },
       { label: 'Condensador', color: '#dc2626', value: (r) => r.T4 },
-    ]);
+    ], LIVE_LINE_OPTIONS);
     this.electricalChart = buildMultiSeriesChart(readings, [
       { label: 'V', color: '#2563eb', value: (r) => r.V },
       { label: 'A', color: '#ff8f00', value: (r) => r.A },
       { label: 'Vatios (W)', color: '#7c3aed', value: (r) => computePower(r) },
-    ], { yAxisTitle: 'Variables eléctricas (V, A, W)' });
+    ], { ...LIVE_LINE_OPTIONS, yAxisTitle: 'Variables eléctricas (V, A, W)', nonNegativeYAxis: true });
     this.deltaChart = buildMultiSeriesChart(readings, [
       {
         label: 'Delta T evaporación',
@@ -448,10 +494,10 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         color: '#ea580c',
         value: (r) => computeDeltaTCond(r),
       },
-    ]);
+    ], LIVE_LINE_OPTIONS);
     this.powerChart = buildMultiSeriesChart(readings, [
       { label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) },
-    ]);
+    ], LIVE_LINE_OPTIONS);
     const efficiencyValues = computeEfficiencyIndex(readings);
     this.efficiencyChart = buildMultiSeriesChart(readings, [
       {
@@ -462,15 +508,17 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
           return efficiencyValues[index];
         },
       },
-    ]);
-    const firstKwh = readings[0]?.kWh;
+    ], { ...LIVE_LINE_OPTIONS, lineTension: 0.35 });
+    const firstKwh = this.firstValidKwh(readings);
+    this.consumptionChartTitle = 'Análisis de consumo (kWh)';
     this.consumptionChart = buildMultiSeriesChart(readings, [
       {
         label: 'Consumo (kWh)',
         color: '#c2410c',
-        value: (r) => (r.kWh != null && firstKwh != null ? r.kWh - firstKwh : undefined),
+        unit: 'kWh',
+        value: (r) => this.consumptionValue(r.kWh, firstKwh),
       },
-    ]);
+    ], { ...LIVE_LINE_OPTIONS, lineTension: 0.35, nonNegativeYAxis: true });
   }
 
   get temperatureAlert(): { status: 'ok' | 'low' | 'high' | 'none'; message: string } | null {
@@ -492,6 +540,33 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  get accumulatedConsumptionKwh(): number | null {
+    return this.consumptionDeltaKwh(this.detail?.readings ?? []);
+  }
+
+  get accumulatedConsumptionCost(): number | null {
+    const consumption = this.accumulatedConsumptionKwh;
+    return consumption != null && this.kwhPrice != null ? consumption * this.kwhPrice : null;
+  }
+
+  private consumptionDeltaKwh(readings: MeasurementSessionDetail['readings']): number | null {
+    const values = readings
+      .map((reading) => reading.kWh)
+      .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+    if (values.length < 2) return null;
+    return values[values.length - 1] - values[0];
+  }
+
+  private firstValidKwh(readings: MeasurementSessionDetail['readings']): number | null {
+    const first = readings.find((reading) => typeof reading.kWh === 'number' && Number.isFinite(reading.kWh));
+    return first?.kWh ?? null;
+  }
+
+  private consumptionValue(currentKwh: number | undefined, firstKwh: number | null): number | undefined {
+    if (currentKwh == null || firstKwh == null) return undefined;
+    return currentKwh - firstKwh;
+  }
+
   clearCharts(): void {
     this.mainChart = null;
     this.tempsChart = null;
@@ -500,5 +575,6 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     this.powerChart = null;
     this.efficiencyChart = null;
     this.consumptionChart = null;
+    this.consumptionChartTitle = 'Análisis de consumo (kWh)';
   }
 }

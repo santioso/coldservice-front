@@ -42,3 +42,8 @@ testem.log
 Thumbs.db
 
 dist.zip
+
+# Environment files
+.env
+.env.*
+!.env.example
