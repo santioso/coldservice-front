@@ -31,7 +31,9 @@ export class MonitoringService {
   }
 
   clients(): Observable<MonitoringClient[]> {
-    return this.http.get<MonitoringClient[]>(`${environment.apiUrl}/api/v1/clients`);
+    return this.http.get<MonitoringClient[]>(
+      `${environment.apiUrl}/api/v1/monitoring/clients/available`,
+    );
   }
 
   overview(
@@ -159,8 +161,11 @@ export class MonitoringService {
     sessionId: number,
     data: {
       activo_id: string;
+      equipo_placa?: string | null;
+      equipo_modelo?: string | null;
       limite_inferior_celsius?: number | null;
       limite_superior_celsius?: number | null;
+      valor_kwh?: number | null;
       ubicacion?: string | null;
       observaciones?: string | null;
     },
@@ -182,6 +187,13 @@ export class MonitoringService {
       cliente_id?: number | string | null;
       nombre_cliente?: string | null;
       establecimiento_comercial?: string | null;
+      equipo_placa?: string | null;
+      equipo_modelo?: string | null;
+      limite_inferior_celsius?: number | null;
+      limite_superior_celsius?: number | null;
+      valor_kwh?: number | null;
+      ubicacion?: string | null;
+      observaciones?: string | null;
     },
   ): Observable<MeasurementSessionDetail> {
     return this.http.post<MeasurementSessionDetail>(

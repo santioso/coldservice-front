@@ -3,7 +3,11 @@ import { FormBuilder } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import { ActivoInfo, MonitoringClient } from './monitoring.models';
+import {
+  ActivoInfo,
+  MeasurementSessionDetail,
+  MonitoringClient,
+} from './monitoring.models';
 import { MonitoringActivoSearchItem, MonitoringService } from './monitoring.service';
 
 export interface ActivoDialogResult {
@@ -16,6 +20,7 @@ export interface ActivoDialogResult {
   observaciones?: string | null;
   kwhPrice?: number | null;
   createdActivo?: boolean;
+  detail?: MeasurementSessionDetail;
 }
 
 type ActivoItem = MonitoringActivoSearchItem;
@@ -458,7 +463,11 @@ export class MonitoringActivoDialogComponent implements OnInit {
   confirm(): void {
     if (this.saving) return;
     this.saveError = '';
-    const doSave = (activoId: string, createdActivo = false) => {
+    const doSave = (
+      activoId: string,
+      createdActivo = false,
+      detail?: MeasurementSessionDetail,
+    ) => {
       this.dialogRef.close({
         activo_id: activoId || null,
         equipo_placa: this.instEquipoPlaca || null,
@@ -469,6 +478,7 @@ export class MonitoringActivoDialogComponent implements OnInit {
         observaciones: this.instObservaciones || null,
         kwhPrice: this.kwhPrice,
         createdActivo,
+        detail,
       } as ActivoDialogResult);
     };
 
@@ -485,9 +495,16 @@ export class MonitoringActivoDialogComponent implements OnInit {
           cliente_id: this.selectedClientId,
           nombre_cliente: this.newActivo.nombre_cliente || null,
           establecimiento_comercial: this.normalizeActivoTextValue(this.newActivo.establecimiento_comercial),
+          equipo_placa: this.instEquipoPlaca || null,
+          equipo_modelo: this.instEquipoModelo || null,
+          limite_inferior_celsius: this.instLimiteInferior,
+          limite_superior_celsius: this.instLimiteSuperior,
+          valor_kwh: this.kwhPrice,
+          ubicacion: this.instUbicacion || null,
+          observaciones: this.instObservaciones || null,
         })
         .subscribe({
-          next: () => doSave(newActivoId, true),
+          next: (detail) => doSave(newActivoId, true, detail),
           error: (error) => {
             console.error('Error creating monitoring activo', error);
             this.saving = false;

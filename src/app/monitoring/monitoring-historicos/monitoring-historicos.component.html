@@ -110,7 +110,14 @@
             [disabled]="!isPdfEnabled(item) || pdfLoadingSessionId === item.session_id"
             (click)="downloadPdf($event, item)"
           >
-            <mat-icon>picture_as_pdf</mat-icon>
+            <mat-spinner
+              *ngIf="pdfLoadingSessionId === item.session_id; else pdfIcon"
+              diameter="20"
+              class="pdf-spinner"
+            ></mat-spinner>
+            <ng-template #pdfIcon>
+              <mat-icon>picture_as_pdf</mat-icon>
+            </ng-template>
           </button>
         </span>
       </div>
