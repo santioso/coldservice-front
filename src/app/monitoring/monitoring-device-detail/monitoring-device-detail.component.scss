@@ -203,8 +203,11 @@
 }
 
 .energy-cost-panel {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
   margin: 12px 0;
   padding: 12px;
   border: 1px solid #e2e8f0;
@@ -212,15 +215,39 @@
   background: #f8fafc;
 }
 
-.energy-cost-summary {
+.energy-cost-metric {
   display: grid;
   gap: 4px;
   color: #334155;
   font-size: 0.9rem;
 }
 
-.energy-cost-summary strong {
+.energy-cost-metric-right {
+  text-align: right;
+}
+
+.energy-cost-metric span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.energy-cost-metric strong {
   color: #0f172a;
+}
+
+@media (max-width: 640px) {
+  .energy-cost-panel {
+    align-items: stretch;
+  }
+
+  .energy-cost-metric,
+  .energy-cost-metric-right {
+    width: 100%;
+    text-align: left;
+  }
 }
 
 .activo-badge {
