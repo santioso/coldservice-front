@@ -139,6 +139,7 @@ interface TechnicalItem {
   ],
 })
 export class MonitoringTecnicoDialogComponent implements OnInit {
+  private readonly technicalsApiUrl = `${environment.apiUrl}/api/v1/monitoring/technicals`;
   searchCtrl = this.fb.control('');
   results: TechnicalItem[] = [];
   selectedTechnicalId: number | null = null;
@@ -183,7 +184,7 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
           }
           this.loading = true;
           return this.http.get<TechnicalItem[]>(
-            `${environment.apiUrl}/technicals/search?q=${encodeURIComponent(q)}`,
+            `${this.technicalsApiUrl}/search?q=${encodeURIComponent(q)}`,
           );
         }),
       )
@@ -214,11 +215,19 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
   }
 
   startNewTechnical(): void {
-    const searchTerm = (this.searchCtrl.value ?? '').trim();
+    const searchedName = (this.searchCtrl.value ?? '').trim();
     this.selectedTechnicalId = null;
     this.results = [];
-    if (!this.tecnicoNombre.trim()) {
-      this.tecnicoNombre = searchTerm;
+    this.searchCtrl.setValue('', { emitEvent: false });
+    this.searched = false;
+    this.loading = false;
+    this.tecnicoNombre = searchedName;
+    this.tecnicoDireccion = '';
+    this.tecnicoCargo = '';
+    this.tecnicoPhone = '';
+    this.tecnicoEmail = '';
+    if (!this.fechaInstalacion) {
+      this.fechaInstalacion = this.todayDateInputValue();
     }
   }
 
@@ -266,7 +275,7 @@ export class MonitoringTecnicoDialogComponent implements OnInit {
 
     if (!this.selectedTechnicalId && this.tecnicoNombre.trim()) {
       this.http
-        .post(`${environment.apiUrl}/technicals`, {
+        .post(`${this.technicalsApiUrl}`, {
           name: this.tecnicoNombre.trim(),
           addres: this.tecnicoDireccion.trim() || null,
           position: this.tecnicoCargo.trim() || null,

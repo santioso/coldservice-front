@@ -84,6 +84,7 @@ export class MonitoringHistoricosComponent implements OnInit {
   efficiencyChart: ChartConfiguration<'line'> | null = null;
   consumptionChart: ChartConfiguration<'line'> | null = null;
   consumptionChartTitle = 'Análisis de consumo (kWh)';
+  private loadHistorySequence = 0;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -217,6 +218,7 @@ export class MonitoringHistoricosComponent implements OnInit {
         equipo_modelo: currentInstall?.equipo_modelo,
         limite_inferior_celsius: currentInstall?.limite_inferior_celsius,
         limite_superior_celsius: currentInstall?.limite_superior_celsius,
+        kwhPrice: currentInstall?.valor_kwh,
         ubicacion: currentInstall?.ubicacion,
         observaciones: currentInstall?.observaciones,
       },
@@ -224,27 +226,47 @@ export class MonitoringHistoricosComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe((result: ActivoDialogResult | undefined) => {
       if (!result?.activo_id) return;
+      if (result.createdActivo) {
+        if (result.detail) {
+          this.applyAssignedActivoDetail(result.detail);
+          this.snackBar.open('Activo asignado correctamente', 'Cerrar', { duration: 4000 });
+          return;
+        }
+        this.assigningActivoSessionId = current.session_id;
+        this.monitoringService.session(current.device_id, current.session_id).subscribe({
+          next: (detail) => {
+            this.applyAssignedActivoDetail(detail);
+            this.assigningActivoSessionId = null;
+            this.snackBar.open('Activo asignado correctamente', 'Cerrar', { duration: 4000 });
+          },
+          error: () => {
+            this.assigningActivoSessionId = null;
+            this.snackBar.open(
+              'Activo creado, pero no fue posible actualizar el detalle',
+              'Cerrar',
+              { duration: 5000 },
+            );
+          },
+        });
+        return;
+      }
+      const latestItem = this.items.find((item) => item.session_id === current.session_id);
+      if (latestItem?.activo_id) return;
       this.assigningActivoSessionId = current.session_id;
       this.monitoringService
         .assignSessionActivo(current.device_id, current.session_id, {
           activo_id: result.activo_id,
+          equipo_placa: result.equipo_placa,
+          equipo_modelo: result.equipo_modelo,
           limite_inferior_celsius: result.limite_inferior_celsius,
           limite_superior_celsius: result.limite_superior_celsius,
+          valor_kwh: result.kwhPrice,
           ubicacion: result.ubicacion,
           observaciones: result.observaciones,
         })
         .subscribe({
           next: (detail) => {
-            this.selected = detail;
-            this.selectedItem = this.selectedItem
-              ? { ...this.selectedItem, activo_id: detail.activo_id, placa: detail.activo_id }
-              : this.selectedItem;
-            this.items = this.items.map((item) =>
-              item.session_id === detail.session_id
-                ? { ...item, activo_id: detail.activo_id, placa: detail.activo_id }
-                : item,
-            );
-            this.buildCharts(detail);
+            this.applyAssignedActivoDetail(detail);
             this.assigningActivoSessionId = null;
             this.snackBar.open('Activo asignado correctamente', 'Cerrar', { duration: 4000 });
           },
@@ -254,6 +276,19 @@ export class MonitoringHistoricosComponent implements OnInit {
           },
         });
     });
+  }
+
+  private applyAssignedActivoDetail(detail: MeasurementSessionDetail): void {
+    this.items = this.items.map((item) =>
+      item.session_id === detail.session_id
+        ? { ...item, activo_id: detail.activo_id, placa: detail.activo_id }
+        : item,
+    );
+    if (this.selectedItem?.session_id !== detail.session_id) return;
+
+    this.selected = detail;
+    this.selectedItem = { ...this.selectedItem, activo_id: detail.activo_id, placa: detail.activo_id };
+    this.buildCharts(detail);
   }
 
   downloadPdf(event: Event, item: MeasurementHistoryItem): void {
@@ -308,6 +343,7 @@ export class MonitoringHistoricosComponent implements OnInit {
   }
 
   private loadHistory(): void {
+    const requestSequence = ++this.loadHistorySequence;
     this.loading = true;
     this.error = '';
     const raw = this.filters.value;
@@ -321,6 +357,7 @@ export class MonitoringHistoricosComponent implements OnInit {
       })
       .subscribe({
         next: (response) => {
+          if (requestSequence !== this.loadHistorySequence) return;
           this.items = response.items;
           this.total = response.total;
           this.page = response.page;
@@ -339,6 +376,7 @@ export class MonitoringHistoricosComponent implements OnInit {
           }
         },
         error: () => {
+          if (requestSequence !== this.loadHistorySequence) return;
           this.error = 'No fue posible cargar históricos';
           this.loading = false;
         },

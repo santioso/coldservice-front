@@ -119,7 +119,7 @@ interface ClienteItem {
   ],
 })
 export class MonitoringClienteDialogComponent implements OnInit {
-  private readonly clientsApiUrl = `${environment.apiUrl}/api/v1/clients`;
+  private readonly clientsApiUrl = `${environment.apiUrl}/api/v1/monitoring/clients`;
   searchCtrl = this.fb.control('');
   results: ClienteItem[] = [];
   selectedId: number | null = null;
