@@ -134,8 +134,13 @@
         <span>{{ alert.message }}</span>
       </div>
       <div class="energy-cost-panel">
-        <div class="energy-cost-summary">
-          <strong>Valor del consumo: {{ accumulatedConsumptionCost !== null ? '$ ' + (accumulatedConsumptionCost | number:'1.0-2') : '—' }}</strong>
+        <div class="energy-cost-metric">
+          <span>Valor del consumo</span>
+          <strong>{{ accumulatedConsumptionCost !== null ? '$ ' + (accumulatedConsumptionCost | number:'1.0-2') : '—' }}</strong>
+        </div>
+        <div class="energy-cost-metric energy-cost-metric-right">
+          <span>Tiempo set point</span>
+          <strong>{{ setPointDuration }}</strong>
         </div>
       </div>
       <p><strong>Ubicación:</strong> {{ current.installation?.ubicacion || '—' }}</p>

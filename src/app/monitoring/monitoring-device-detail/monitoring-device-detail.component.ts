@@ -549,6 +549,25 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     return consumption != null && this.kwhPrice != null ? consumption * this.kwhPrice : null;
   }
 
+  get setPointDuration(): string {
+    const detail = this.detail;
+    const lower = detail?.installation?.limite_inferior_celsius;
+    if (lower == null || !detail?.readings?.length) return '—';
+
+    const reachedReading = detail.readings.find((reading) => {
+      return typeof reading.T1 === 'number' && Number.isFinite(reading.T1) && reading.T1 <= lower;
+    });
+    if (!reachedReading) return '—';
+
+    const reachedMs = this.parseTimestamp(reachedReading.timestamp);
+    if (reachedMs == null) return '—';
+
+    const startMs = this.firstValidReadingTimestamp(detail.readings, reachedMs);
+    if (startMs == null) return '—';
+
+    return this.formatCompactMinutes(Math.round((reachedMs - startMs) / 60000));
+  }
+
   private consumptionDeltaKwh(readings: MeasurementSessionDetail['readings']): number | null {
     const values = readings
       .map((reading) => reading.kWh)
@@ -560,6 +579,34 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   private firstValidKwh(readings: MeasurementSessionDetail['readings']): number | null {
     const first = readings.find((reading) => typeof reading.kWh === 'number' && Number.isFinite(reading.kWh));
     return first?.kWh ?? null;
+  }
+
+  private firstValidReadingTimestamp(
+    readings: MeasurementSessionDetail['readings'],
+    maxTimestampMs: number,
+  ): number | null {
+    for (const reading of readings) {
+      const timestampMs = this.parseTimestamp(reading.timestamp);
+      if (timestampMs != null && timestampMs <= maxTimestampMs) {
+        return timestampMs;
+      }
+    }
+    return null;
+  }
+
+  private parseTimestamp(value: string | null | undefined): number | null {
+    if (!value) return null;
+    const parsed = new Date(value).getTime();
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  private formatCompactMinutes(totalMinutes: number): string {
+    if (!Number.isFinite(totalMinutes) || totalMinutes < 0) return '—';
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0 && minutes > 0) return `${hours} h ${minutes} min`;
+    if (hours > 0) return `${hours} h`;
+    return `${minutes} min`;
   }
 
   private consumptionValue(currentKwh: number | undefined, firstKwh: number | null): number | undefined {
