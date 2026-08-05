@@ -418,14 +418,13 @@ export class MonitoringHistoricosComponent implements OnInit {
         },
       },
     ], { lineTension: 0.35 });
-    const firstKwh = this.firstValidKwh(readings);
     this.consumptionChartTitle = 'Análisis de consumo (kWh)';
     this.consumptionChart = buildMultiSeriesChart(readings, [
       {
         label: 'Consumo (kWh)',
         color: '#c2410c',
         unit: 'kWh',
-        value: (r) => this.consumptionValue(r.kWh, firstKwh),
+        value: (r) => r.kWh,
       },
     ], { lineTension: 0.35, nonNegativeYAxis: true });
   }
@@ -457,16 +456,6 @@ export class MonitoringHistoricosComponent implements OnInit {
       .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
     if (values.length < 2) return null;
     return values[values.length - 1] - values[0];
-  }
-
-  private firstValidKwh(readings: MeasurementSessionDetail['readings']): number | null {
-    const first = readings.find((reading) => typeof reading.kWh === 'number' && Number.isFinite(reading.kWh));
-    return first?.kWh ?? null;
-  }
-
-  private consumptionValue(currentKwh: number | undefined, firstKwh: number | null): number | undefined {
-    if (currentKwh == null || firstKwh == null) return undefined;
-    return currentKwh - firstKwh;
   }
 
   private isSelectedItem(item: MeasurementHistoryItem): boolean {

@@ -43,7 +43,7 @@ interface ClienteItem {
             class="result-item"
             [class.selected]="selectedId === item.id"
           >
-            <mat-radio-button [value]="item.id" class="radio-btn">
+            <mat-radio-button [value]="item.id" class="radio-btn" (change)="onClientSelect(item)">
               <strong>{{ item.name }}</strong>
               <span class="text-muted" *ngIf="item.nit"> — {{ item.nit }}</span>
               <br />
@@ -90,7 +90,46 @@ interface ClienteItem {
           <mat-label>Logo para reportes (URL)</mat-label>
           <input matInput [(ngModel)]="newClient.logoUrl" placeholder="Ej: assets/logos/cliente.png" />
         </mat-form-field>
+        <div class="file-field">
+          <label>Archivo de logo para reportes</label>
+          <input type="file" accept="image/png,image/jpeg" (change)="onLogoFileSelected($event, 'new')" />
+          <small class="text-muted" *ngIf="newLogoFile">{{ newLogoFile.name }}</small>
+        </div>
       </div>
+
+      <div *ngIf="selectedClient" class="create-form">
+        <h3>Datos del cliente</h3>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Nombre *</mat-label>
+          <input matInput [(ngModel)]="selectedClient.name" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>NIT</mat-label>
+          <input matInput [(ngModel)]="selectedClient.nit" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Ubicación</mat-label>
+          <input matInput [(ngModel)]="selectedClient.ubicacion" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" [(ngModel)]="selectedClient.email" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Teléfono de contacto</mat-label>
+          <input matInput [(ngModel)]="selectedClient.phone" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Logo para reportes (ruta)</mat-label>
+          <input matInput [(ngModel)]="selectedClient.logoUrl" placeholder="Ej: /uploads/client-logos/logo.png" />
+        </mat-form-field>
+        <div class="file-field">
+          <label>Nuevo archivo de logo para reportes</label>
+          <input type="file" accept="image/png,image/jpeg" (change)="onLogoFileSelected($event, 'existing')" />
+          <small class="text-muted" *ngIf="existingLogoFile">{{ existingLogoFile.name }}</small>
+        </div>
+      </div>
+      <div *ngIf="saveError" class="error-message">{{ saveError }}</div>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button type="button" (click)="dialogRef.close()">Cancelar</button>
@@ -114,6 +153,8 @@ interface ClienteItem {
       .result-item.selected { background: #e3f2fd; }
       .result-item .radio-btn { width: 100%; }
       .create-form { margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #e0e0e0; }
+      .file-field { display: grid; gap: 0.35rem; margin: 0.5rem 0 1rem; }
+      .error-message { margin-top: 0.75rem; color: #c62828; font-size: 0.85rem; }
       .text-muted { color: #888; }
     `,
   ],
@@ -123,9 +164,13 @@ export class MonitoringClienteDialogComponent implements OnInit {
   searchCtrl = this.fb.control('');
   results: ClienteItem[] = [];
   selectedId: number | null = null;
+  selectedClient: ClienteItem | null = null;
   loading = false;
   searched = false;
   showCreate = false;
+  saveError = '';
+  newLogoFile: File | null = null;
+  existingLogoFile: File | null = null;
 
   newClient: Partial<ClienteItem> = {
     name: '',
@@ -138,11 +183,22 @@ export class MonitoringClienteDialogComponent implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<MonitoringClienteDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { currentClientId?: number },
+    @Inject(MAT_DIALOG_DATA) public data: { currentClient?: Partial<ClienteItem> & { logo_url?: string | null }; currentClientId?: number },
     private readonly fb: FormBuilder,
     private readonly http: HttpClient,
   ) {
-    this.selectedId = data?.currentClientId ?? null;
+    this.selectedId = data?.currentClient?.id ?? data?.currentClientId ?? null;
+    this.selectedClient = data?.currentClient?.id
+      ? {
+          id: data.currentClient.id,
+          name: data.currentClient.name ?? '',
+          nit: data.currentClient.nit ?? null,
+          ubicacion: data.currentClient.ubicacion ?? null,
+          email: data.currentClient.email ?? null,
+          phone: data.currentClient.phone ?? null,
+          logoUrl: data.currentClient.logoUrl ?? data.currentClient.logo_url ?? null,
+        }
+      : null;
   }
 
   ngOnInit(): void {
@@ -167,6 +223,8 @@ export class MonitoringClienteDialogComponent implements OnInit {
       .subscribe({
         next: (items) => {
           this.results = items ?? [];
+          const selected = this.results.find((item) => item.id === this.selectedId);
+          this.selectedClient = selected ? { ...selected } : null;
           this.searched = true;
           this.loading = false;
         },
@@ -183,7 +241,22 @@ export class MonitoringClienteDialogComponent implements OnInit {
     if (this.showCreate) {
       return (this.newClient.name ?? '').trim().length > 0;
     }
-    return this.selectedId != null;
+    return this.selectedClient != null || this.selectedId != null;
+  }
+
+  onClientSelect(client: ClienteItem): void {
+    this.selectedId = client.id;
+    this.selectedClient = { ...client };
+  }
+
+  onLogoFileSelected(event: Event, target: 'new' | 'existing'): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (target === 'new') {
+      this.newLogoFile = file;
+    } else {
+      this.existingLogoFile = file;
+    }
   }
 
   confirm(): void {
@@ -195,15 +268,17 @@ export class MonitoringClienteDialogComponent implements OnInit {
       const phone = (this.newClient.phone ?? '').trim() || null;
       const logoUrl = (this.newClient.logoUrl ?? '').trim() || null;
 
+      const formData = this.buildClientFormData({
+        name,
+        nit,
+        ubicacion,
+        email,
+        phone,
+        logoUrl,
+      }, this.newLogoFile);
+
       this.http
-        .post<ClienteItem & { message?: string }>(`${this.clientsApiUrl}`, {
-          name,
-          nit,
-          ubicacion,
-          email,
-          phone,
-          logoUrl,
-        })
+        .post<ClienteItem & { message?: string }>(`${this.clientsApiUrl}`, formData)
         .subscribe({
           next: (res) => {
             if (res?.id) {
@@ -215,11 +290,48 @@ export class MonitoringClienteDialogComponent implements OnInit {
           },
           error: (error) => {
             console.error('Error creating client', error);
+            this.saveError = 'No fue posible crear el cliente.';
           },
         });
     } else {
-      this.dialogRef.close({ cliente_id: this.selectedId! } as ClienteDialogResult);
+      if (!this.selectedClient) {
+        this.dialogRef.close({ cliente_id: this.selectedId! } as ClienteDialogResult);
+        return;
+      }
+
+      const formData = this.buildClientFormData({
+        name: this.selectedClient.name,
+        nit: this.selectedClient.nit,
+        ubicacion: this.selectedClient.ubicacion,
+        email: this.selectedClient.email,
+        phone: this.selectedClient.phone,
+        logoUrl: this.selectedClient.logoUrl,
+      }, this.existingLogoFile);
+
+      this.http
+        .patch(`${this.clientsApiUrl}/${this.selectedClient.id}`, formData)
+        .subscribe({
+          next: () => this.dialogRef.close({ cliente_id: this.selectedClient!.id } as ClienteDialogResult),
+          error: (error) => {
+            console.error('Error updating client', error);
+            this.saveError = 'No fue posible actualizar el cliente.';
+          },
+        });
     }
+  }
+
+  private buildClientFormData(client: Partial<ClienteItem>, logoFile: File | null): FormData {
+    const formData = new FormData();
+    formData.append('name', (client.name ?? '').trim());
+    formData.append('nit', (client.nit ?? '').trim());
+    formData.append('ubicacion', (client.ubicacion ?? '').trim());
+    formData.append('email', (client.email ?? '').trim());
+    formData.append('phone', (client.phone ?? '').trim());
+    formData.append('logoUrl', (client.logoUrl ?? '').trim());
+    if (logoFile) {
+      formData.append('logoFile', logoFile);
+    }
+    return formData;
   }
 
   private findCreatedClientByName(name: string): void {

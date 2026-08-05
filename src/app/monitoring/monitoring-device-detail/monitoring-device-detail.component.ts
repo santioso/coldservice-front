@@ -234,7 +234,6 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
 
   openConsumptionZoom(): void {
     if (!this.detail) return;
-    const firstKwh = this.firstValidKwh(this.detail.readings);
     this.openZoom({
       title: this.consumptionChartTitle,
       mode: 'multi',
@@ -244,7 +243,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
           label: 'Consumo (kWh)',
           color: '#c2410c',
           unit: 'kWh',
-          value: (r) => this.consumptionValue(r.kWh, firstKwh),
+          value: (r) => r.kWh,
         },
       ],
       options: { ...LIVE_LINE_OPTIONS, lineTension: 0.35, nonNegativeYAxis: true },
@@ -338,7 +337,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     if (!this.detail) return;
     const dialogRef = this.dialog.open(MonitoringClienteDialogComponent, {
       width: '600px',
-      data: { currentClientId: this.detail.client?.id },
+      data: { currentClient: this.detail.client, currentClientId: this.detail.client?.id },
     });
     dialogRef.afterClosed().subscribe((result: ClienteDialogResult | undefined) => {
       if (!result?.cliente_id) return;
@@ -509,14 +508,13 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         },
       },
     ], { ...LIVE_LINE_OPTIONS, lineTension: 0.35 });
-    const firstKwh = this.firstValidKwh(readings);
     this.consumptionChartTitle = 'Análisis de consumo (kWh)';
     this.consumptionChart = buildMultiSeriesChart(readings, [
       {
         label: 'Consumo (kWh)',
         color: '#c2410c',
         unit: 'kWh',
-        value: (r) => this.consumptionValue(r.kWh, firstKwh),
+        value: (r) => r.kWh,
       },
     ], { ...LIVE_LINE_OPTIONS, lineTension: 0.35, nonNegativeYAxis: true });
   }
@@ -576,11 +574,6 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     return values[values.length - 1] - values[0];
   }
 
-  private firstValidKwh(readings: MeasurementSessionDetail['readings']): number | null {
-    const first = readings.find((reading) => typeof reading.kWh === 'number' && Number.isFinite(reading.kWh));
-    return first?.kWh ?? null;
-  }
-
   private firstValidReadingTimestamp(
     readings: MeasurementSessionDetail['readings'],
     maxTimestampMs: number,
@@ -607,11 +600,6 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     if (hours > 0 && minutes > 0) return `${hours} h ${minutes} min`;
     if (hours > 0) return `${hours} h`;
     return `${minutes} min`;
-  }
-
-  private consumptionValue(currentKwh: number | undefined, firstKwh: number | null): number | undefined {
-    if (currentKwh == null || firstKwh == null) return undefined;
-    return currentKwh - firstKwh;
   }
 
   clearCharts(): void {

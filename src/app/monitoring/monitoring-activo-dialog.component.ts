@@ -76,6 +76,10 @@ export interface ActivoDialogData {
               <small class="text-muted">
                 Fab: {{ item.fabricante || '—' }} | Cap: {{ item.capacidad ?? '—' }} | Cliente: {{ item.nombre_cliente || '—' }}
               </small>
+              <br />
+              <small class="location-badge" [class.external]="item.ubicacion_activo === 'externo'">
+                {{ getActivoLocationLabel(item) }}
+              </small>
             </mat-radio-button>
           </mat-list-item>
         </mat-radio-group>
@@ -194,6 +198,9 @@ export interface ActivoDialogData {
         <div class="current-badge">
           Activo seleccionado: <strong>{{ selectedId }}</strong>
         </div>
+        <div *ngIf="existingActivo.ubicacion_activo" class="current-badge location">
+          Ubicación del activo: <strong>{{ getActivoLocationLabel(existingActivo) }}</strong>
+        </div>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Descripción</mat-label>
           <input
@@ -251,6 +258,9 @@ export interface ActivoDialogData {
       .loading, .no-results { padding: 1rem; text-align: center; color: #666; }
       .error-message { margin-top: 0.5rem; color: #c62828; font-size: 0.85rem; }
       .current-badge { padding: 0.5rem 1rem; text-align: center; color: #17375e; background: #e8f0fe; border-radius: 8px; margin: 0.5rem 0; }
+      .current-badge.location { color: #14532d; background: #dcfce7; }
+      .location-badge { display: inline-block; margin-top: 0.25rem; padding: 0.1rem 0.4rem; border-radius: 999px; color: #14532d; background: #dcfce7; }
+      .location-badge.external { color: #7c2d12; background: #ffedd5; }
       .results-list { max-height: 220px; overflow-y: auto; }
       .result-item { padding: 0.3rem 0; border-bottom: 1px solid #eee; }
       .result-item.selected { background: #e3f2fd; }
@@ -433,6 +443,12 @@ export class MonitoringActivoDialogComponent implements OnInit {
     this.selectedClientId = client?.id ?? null;
     this.newActivo.cliente_id = client ? String(client.id) : '';
     this.newActivo.nombre_cliente = client?.name ?? '';
+  }
+
+  getActivoLocationLabel(activo: Partial<ActivoItem>): string {
+    return activo.ubicacion_activo === 'taller'
+      ? 'En taller'
+      : 'Externo';
   }
 
   private loadClients(): void {

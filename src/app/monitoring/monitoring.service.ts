@@ -291,4 +291,5 @@ export interface MonitoringActivoSearchItem {
   cliente_id: string | null;
   nombre_cliente: string | null;
   establecimiento_comercial: string | null;
+  ubicacion_activo?: 'taller' | 'externo';
 }

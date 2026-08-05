@@ -494,9 +494,8 @@ export function computeDeltaTCond(reading: MonitoringReading): number {
 }
 
 export function computePower(reading: MonitoringReading): number {
-  if (typeof reading.W === 'number') return reading.W;
   const v = reading.V ?? 0;
   const a = reading.A ?? 0;
-  const fp = reading.FP ?? 1;
+  const fp = Math.max(0, Math.min(reading.FP ?? 1, 1));
   return v * a * fp;
 }
