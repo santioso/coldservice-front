@@ -80,6 +80,15 @@ export class MonitoringAuthService {
     this.router.navigate(['/monitoring/login']);
   }
 
+  clearExpiredSession(): void {
+    this.stopInactivityTracking();
+    localStorage.removeItem(MONITORING_SESSION_KEY);
+    this.sessionSubject.next(null);
+    if (this.router.url !== '/monitoring/login') {
+      this.router.navigate(['/monitoring/login']);
+    }
+  }
+
   startInactivityTracking(targetUrl = this.router.url): void {
     if (!this.isProtectedMonitoringRoute(targetUrl)) {
       this.stopInactivityTracking();

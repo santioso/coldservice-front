@@ -23,7 +23,7 @@ export class MonitoringService {
   }
 
   searchActivos(q: string): Observable<MonitoringActivoSearchItem[]> {
-    const params = new HttpParams().set('q', q.trim());
+    const params = new HttpParams().set('q', q.trim().toUpperCase());
     return this.http.get<MonitoringActivoSearchItem[]>(
       `${this.baseUrl}/activos/search`,
       { params },
@@ -292,4 +292,6 @@ export interface MonitoringActivoSearchItem {
   nombre_cliente: string | null;
   establecimiento_comercial: string | null;
   ubicacion_activo?: 'taller' | 'externo';
+  has_activo?: boolean;
+  requires_activo_create?: boolean;
 }

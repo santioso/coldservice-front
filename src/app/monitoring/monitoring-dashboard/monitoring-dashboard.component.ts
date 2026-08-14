@@ -83,6 +83,9 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
           this.loading = false;
         },
         error: () => {
+          if (!this.authService.currentSession?.token) {
+            this.pollingSubscription?.unsubscribe();
+          }
           this.error = 'No fue posible cargar el panel de dispositivos';
           this.loading = false;
         },

@@ -8,10 +8,14 @@ import {
 } from "@angular/common/http";
 import { Observable, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
+import { MonitoringAuthService } from "app/monitoring/monitoring-auth.service";
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
-  constructor(private authenticationService: AuthService) {}
+  constructor(
+    private authenticationService: AuthService,
+    private monitoringAuthService: MonitoringAuthService,
+  ) {}
 
   intercept(
     request: HttpRequest<any>,
@@ -20,6 +24,11 @@ export class ErrorInterceptor implements HttpInterceptor {
     return next.handle(request).pipe(
       catchError((err) => {
         if (err.status === 401) {
+          if (request.url.includes('/api/v1/monitoring/')) {
+            this.monitoringAuthService.clearExpiredSession();
+            return throwError(err);
+          }
+
           // auto logout if 401 response returned from api
           this.authenticationService.logout();
           location.reload();

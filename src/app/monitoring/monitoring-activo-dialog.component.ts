@@ -80,9 +80,18 @@ export interface ActivoDialogData {
               <small class="location-badge" [class.external]="item.ubicacion_activo === 'externo'">
                 {{ getActivoLocationLabel(item) }}
               </small>
+              <small *ngIf="item.requires_activo_create" class="orphan-badge">
+                Requiere completar datos para crear ficha
+              </small>
             </mat-radio-button>
           </mat-list-item>
         </mat-radio-group>
+      </div>
+
+      <div *ngIf="selectedRequiresActivoCreate && !showCreateActivo" class="orphan-action">
+        <button mat-stroked-button color="primary" type="button" (click)="enableCreateForSelectedActivo()">
+          Completar ficha del activo seleccionado
+        </button>
       </div>
 
       <div *ngIf="searched && results.length === 0 && !loading && !showEditActivo" class="no-results">
@@ -261,6 +270,8 @@ export interface ActivoDialogData {
       .current-badge.location { color: #14532d; background: #dcfce7; }
       .location-badge { display: inline-block; margin-top: 0.25rem; padding: 0.1rem 0.4rem; border-radius: 999px; color: #14532d; background: #dcfce7; }
       .location-badge.external { color: #7c2d12; background: #ffedd5; }
+      .orphan-badge { display: inline-block; margin-top: 0.25rem; margin-left: 0.25rem; padding: 0.1rem 0.4rem; border-radius: 999px; color: #1e3a8a; background: #dbeafe; }
+      .orphan-action { margin: 0.5rem 0; }
       .results-list { max-height: 220px; overflow-y: auto; }
       .result-item { padding: 0.3rem 0; border-bottom: 1px solid #eee; }
       .result-item.selected { background: #e3f2fd; }
@@ -286,6 +297,7 @@ export class MonitoringActivoDialogComponent implements OnInit {
   loading = false;
   searched = false;
   showCreateActivo = false;
+  autoOpenedCreateActivoSnapshot: string | null = null;
   saving = false;
   saveError = '';
   lastSearchTerm = '';
@@ -314,7 +326,16 @@ export class MonitoringActivoDialogComponent implements OnInit {
   };
 
   get showEditActivo(): boolean {
-    return Boolean(this.data?.currentActivoId && this.selectedId && !this.showCreateActivo);
+    return Boolean(
+      this.data?.currentActivoId &&
+      this.selectedId &&
+      !this.showCreateActivo &&
+      !this.selectedRequiresActivoCreate,
+    );
+  }
+
+  get selectedRequiresActivoCreate(): boolean {
+    return Boolean(this.results.find((item) => item.id === this.selectedId)?.requires_activo_create);
   }
 
   // Installation fields
@@ -402,22 +423,41 @@ export class MonitoringActivoDialogComponent implements OnInit {
   onActivoSelect(id: string): void {
     this.selectedId = id;
     this.showCreateActivo = false;
+    this.autoOpenedCreateActivoSnapshot = null;
     const selected = this.results.find((item) => item.id === id);
     if (selected) {
       this.setExistingActivo(selected);
     }
     // Auto-fill equipo_placa with the selected activo id
     this.instEquipoPlaca = id;
+    if (selected?.requires_activo_create) {
+      this.enableCreateForSelectedActivo(true);
+    }
   }
 
   enableCreateActivo(): void {
     this.showCreateActivo = true;
+    this.autoOpenedCreateActivoSnapshot = null;
     this.selectedId = '';
     const searchedActivoId = this.normalizeActivoId(this.lastSearchTerm);
     if (searchedActivoId) {
       this.newActivo.id = searchedActivoId;
       this.instEquipoPlaca = searchedActivoId;
     }
+  }
+
+  enableCreateForSelectedActivo(autoOpened = false): void {
+    const selected = this.results.find((item) => item.id === this.selectedId);
+    if (!selected?.requires_activo_create) return;
+    this.showCreateActivo = true;
+    this.newActivo = {
+      ...this.newActivo,
+      ...selected,
+      id: selected.id,
+    };
+    this.selectedClientId = this.resolveDefaultClientId();
+    this.instEquipoPlaca = selected.id;
+    this.autoOpenedCreateActivoSnapshot = autoOpened ? this.getCreateActivoSnapshot() : null;
   }
 
   onNewActivoIdChange(value: string): void {
@@ -470,7 +510,8 @@ export class MonitoringActivoDialogComponent implements OnInit {
 
   canConfirm(): boolean {
     if (this.saving) return false;
-    if (this.showCreateActivo) {
+    if (this.showCreateActivo || this.hasSelectedActivoCompletionFields()) {
+      if (!this.shouldCreateActivo()) return Boolean(this.selectedId);
       return Boolean(this.normalizeActivoId(this.newActivo.id) && this.selectedClientId);
     }
     return true; // Installation fields are optional
@@ -498,8 +539,16 @@ export class MonitoringActivoDialogComponent implements OnInit {
       } as ActivoDialogResult);
     };
 
+    if (
+      this.selectedRequiresActivoCreate &&
+      !this.showCreateActivo &&
+      this.hasSelectedActivoCompletionFields()
+    ) {
+      this.prepareCreateForSelectedActivo();
+    }
+
     const newActivoId = this.normalizeActivoId(this.newActivo.id);
-    if (this.showCreateActivo && newActivoId) {
+    if (this.shouldCreateActivo() && newActivoId) {
       this.newActivo.id = newActivoId;
       this.saving = true;
       this.monitoringService
@@ -527,7 +576,7 @@ export class MonitoringActivoDialogComponent implements OnInit {
             this.saveError = 'No fue posible crear el activo. Verifique los datos e intente nuevamente.';
           },
         });
-    } else if (this.showEditActivo) {
+    } else if (this.showEditActivo && !this.selectedRequiresActivoCreate) {
       const selectedActivoId = this.normalizeActivoId(this.selectedId);
       this.saving = true;
       this.monitoringService
@@ -578,5 +627,66 @@ export class MonitoringActivoDialogComponent implements OnInit {
         activo.establecimiento_comercial,
       ),
     };
+  }
+
+  private hasSelectedActivoCompletionFields(): boolean {
+    if (!this.selectedRequiresActivoCreate) return false;
+    return Boolean(
+      this.normalizeActivoTextValue(this.newActivo.descripcion) ||
+      this.normalizeActivoTextValue(this.newActivo.fabricante) ||
+      this.newActivo.capacidad != null ||
+      this.normalizeActivoTextValue(this.newActivo.establecimiento_comercial) ||
+      this.normalizeActivoTextValue(this.existingActivo.descripcion) ||
+      this.normalizeActivoTextValue(this.existingActivo.fabricante) ||
+      this.existingActivo.capacidad != null ||
+      this.normalizeActivoTextValue(this.existingActivo.establecimiento_comercial),
+    );
+  }
+
+  private prepareCreateForSelectedActivo(): void {
+    const selected = this.results.find((item) => item.id === this.selectedId);
+    if (!selected?.requires_activo_create) return;
+    this.showCreateActivo = true;
+    this.newActivo = {
+      ...this.newActivo,
+      ...selected,
+      id: selected.id,
+      descripcion: this.newActivo.descripcion || this.existingActivo.descripcion,
+      fabricante: this.newActivo.fabricante || this.existingActivo.fabricante,
+      capacidad: this.newActivo.capacidad ?? this.existingActivo.capacidad ?? null,
+      establecimiento_comercial:
+        this.newActivo.establecimiento_comercial || this.existingActivo.establecimiento_comercial,
+    };
+    this.selectedClientId = this.selectedClientId ?? this.resolveDefaultClientId();
+    this.autoOpenedCreateActivoSnapshot = null;
+  }
+
+  private shouldCreateActivo(): boolean {
+    if (!this.showCreateActivo) return this.hasSelectedActivoCompletionFields();
+    return !(this.selectedRequiresActivoCreate && this.isAutoOpenedCreateUnchanged());
+  }
+
+  private isAutoOpenedCreateUnchanged(): boolean {
+    return this.autoOpenedCreateActivoSnapshot === this.getCreateActivoSnapshot();
+  }
+
+  private getCreateActivoSnapshot(): string {
+    return JSON.stringify({
+      id: this.normalizeActivoId(this.newActivo.id),
+      descripcion: this.normalizeActivoTextValue(this.newActivo.descripcion),
+      fabricante: this.normalizeActivoTextValue(this.newActivo.fabricante),
+      capacidad: this.newActivo.capacidad ?? null,
+      establecimiento_comercial: this.normalizeActivoTextValue(this.newActivo.establecimiento_comercial),
+      selectedClientId: this.selectedClientId,
+    });
+  }
+
+  private resolveDefaultClientId(): number | null {
+    const rawClientId = this.newActivo.cliente_id;
+    const numericClientId = rawClientId ? Number(rawClientId) : NaN;
+    if (Number.isInteger(numericClientId) && numericClientId > 0) {
+      return numericClientId;
+    }
+    return this.clients.length === 1 ? this.clients[0].id : null;
   }
 }
