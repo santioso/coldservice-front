@@ -22,6 +22,7 @@ import { MonitoringActivoDialogComponent } from './monitoring-activo-dialog.comp
 import { MonitoringClienteDialogComponent } from './monitoring-cliente-dialog.component';
 import { MonitoringTecnicoDialogComponent } from './monitoring-tecnico-dialog.component';
 import { MonitoringConfirmDialogComponent } from './monitoring-confirm-dialog.component';
+import { MonitoringWhatsappRecipientsDialogComponent } from './monitoring-whatsapp-recipients-dialog.component';
 import { MonitoringRoutingModule } from './monitoring-routing.module';
 
 @NgModule({
@@ -35,6 +36,7 @@ import { MonitoringRoutingModule } from './monitoring-routing.module';
     MonitoringClienteDialogComponent,
     MonitoringTecnicoDialogComponent,
     MonitoringConfirmDialogComponent,
+    MonitoringWhatsappRecipientsDialogComponent,
   ],
   imports: [
     CommonModule,

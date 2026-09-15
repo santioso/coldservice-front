@@ -10,6 +10,8 @@ import {
   MonitoringClient,
   MonitoringDevice,
   MonitoringReading,
+  MonitoringNotificationRecipientInput,
+  MonitoringNotificationRecipientsResponse,
 } from './monitoring.models';
 
 @Injectable({ providedIn: 'root' })
@@ -278,6 +280,24 @@ export class MonitoringService {
     return this.http.patch<{ success: boolean }>(
       `${this.baseUrl}/${encodeURIComponent(deviceId)}/sessions/${sessionId}/technician-snapshot`,
       data,
+    );
+  }
+
+  getNotificationRecipients(
+    deviceId: string,
+  ): Observable<MonitoringNotificationRecipientsResponse> {
+    return this.http.get<MonitoringNotificationRecipientsResponse>(
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/alarm-configuration/recipients`,
+    );
+  }
+
+  replaceNotificationRecipients(
+    deviceId: string,
+    recipients: MonitoringNotificationRecipientInput[],
+  ): Observable<MonitoringNotificationRecipientsResponse> {
+    return this.http.put<MonitoringNotificationRecipientsResponse>(
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/alarm-configuration/recipients`,
+      { recipients },
     );
   }
 

@@ -1,0 +1,64 @@
+:host {
+  display: block;
+}
+
+mat-dialog-content {
+  min-width: min(420px, 75vw);
+}
+
+.format-help {
+  color: #64748b;
+  font-size: 0.82rem;
+  margin: 0 0 16px;
+}
+
+.alert {
+  margin-bottom: 12px;
+}
+
+.whatsapp-level-list {
+  display: grid;
+  gap: 8px;
+}
+
+.whatsapp-level-row {
+  align-items: flex-start;
+  display: flex;
+  gap: 10px;
+  min-height: 56px;
+}
+
+.whatsapp-level-row mat-checkbox {
+  flex: 0 0 84px;
+  margin-top: 8px;
+}
+
+.level-help {
+  color: #64748b;
+  flex: 0 0 150px;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  margin-top: 8px;
+}
+
+.whatsapp-level-row mat-form-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.whatsapp-level-row button {
+  flex: 0 0 40px;
+  margin-top: 2px;
+}
+
+.whatsapp-level-row mat-spinner {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@media (max-width: 520px) {
+  mat-dialog-content {
+    min-width: 0;
+  }
+}

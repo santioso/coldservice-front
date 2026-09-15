@@ -22,6 +22,10 @@ import {
   ZoomChartDialogData,
 } from '../monitoring-zoom-chart-dialog.component';
 import {
+  MonitoringWhatsappRecipientsDialogComponent,
+  WhatsappRecipientsDialogData,
+} from '../monitoring-whatsapp-recipients-dialog.component';
+import {
   buildDualAxisChart,
   buildMultiSeriesChart,
   computeDeltaTCond,
@@ -32,6 +36,8 @@ import {
 } from '../monitoring-chart.util';
 import {
   MeasurementSessionDetail,
+  getWhatsappRecipient,
+  MonitoringNotificationRecipientsResponse,
 } from '../monitoring.models';
 import { MonitoringService } from '../monitoring.service';
 
@@ -53,6 +59,8 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   error = '';
   editingCard: 'cliente' | 'activo' | 'tecnico' | null = null;
   togglingNotifications = false;
+  whatsappLoading = false;
+  whatsappError = '';
   mainChart: ChartConfiguration<'line'> | null = null;
   tempsChart: ChartConfiguration<'line'> | null = null;
   electricalChart: ChartConfiguration<'line'> | null = null;
@@ -66,6 +74,8 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   chartsPerRow: ChartsPerRow = 2;
   private savedChartsPerRow: ChartsPerRow | null = null;
   private pollingSubscription: Subscription | null = null;
+  private routeSubscription: Subscription | null = null;
+  notificationRecipients: MonitoringNotificationRecipientsResponse | null = null;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -76,9 +86,17 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.deviceId = this.route.snapshot.paramMap.get('deviceId') ?? '';
     this.loadChartsPerRowPreference();
-    this.loadLiveMeasurement();
+    this.routeSubscription = this.route.paramMap.subscribe((params) => {
+      const deviceId = params.get('deviceId') ?? '';
+      if (!deviceId || deviceId === this.deviceId) {
+        return;
+      }
+      this.deviceId = deviceId;
+      this.detail = null;
+      this.loadLiveMeasurement();
+      this.loadWhatsappRecipients();
+    });
     this.startPolling();
   }
 
@@ -100,6 +118,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pollingSubscription?.unsubscribe();
+    this.routeSubscription?.unsubscribe();
   }
 
   backToPanel(): void {
@@ -432,6 +451,80 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
           });
         },
       });
+  }
+
+  openWhatsappRecipientsDialog(): void {
+    if (!this.notificationRecipients || this.whatsappLoading) {
+      return;
+    }
+
+    const data: WhatsappRecipientsDialogData = {
+      configuration: this.notificationRecipients,
+    };
+    const dialogRef = this.dialog.open(MonitoringWhatsappRecipientsDialogComponent, {
+      width: '500px',
+      maxWidth: '95vw',
+      data,
+    });
+    dialogRef.afterClosed().subscribe((configuration: MonitoringNotificationRecipientsResponse | undefined) => {
+      if (configuration) {
+        this.applyWhatsappConfiguration(configuration);
+      }
+    });
+  }
+
+  private loadWhatsappRecipients(): void {
+    const requestedDeviceId = this.deviceId;
+    this.whatsappLoading = true;
+    this.whatsappError = '';
+    this.notificationRecipients = null;
+    this.monitoringService.getNotificationRecipients(this.deviceId).subscribe({
+      next: (configuration) => {
+        if (requestedDeviceId !== this.deviceId) {
+          return;
+        }
+        this.applyWhatsappConfiguration(configuration);
+        this.whatsappLoading = false;
+      },
+      error: () => {
+        if (requestedDeviceId !== this.deviceId) {
+          return;
+        }
+        this.whatsappLoading = false;
+        this.whatsappError = 'No fue posible cargar los destinatarios de WhatsApp';
+      },
+    });
+  }
+
+  private applyWhatsappConfiguration(
+    configuration: MonitoringNotificationRecipientsResponse,
+  ): void {
+    this.notificationRecipients = configuration;
+  }
+
+  get whatsappRecipientsSummary(): string {
+    if (this.whatsappLoading) {
+      return 'Cargando destinatarios de WhatsApp...';
+    }
+    if (this.whatsappError) {
+      return 'No fue posible cargar los destinatarios de WhatsApp.';
+    }
+    if (!this.notificationRecipients) {
+      return 'No se reportarán alarmas por WhatsApp.';
+    }
+
+    const recipients = (['level_1', 'level_2'] as const)
+      .map((level) => {
+        const recipient = getWhatsappRecipient(this.notificationRecipients!, level);
+        return recipient?.enabled && recipient.address.trim()
+          ? `${level === 'level_1' ? 'Nivel 1' : 'Nivel 2'}: ${recipient.address.trim()}`
+          : null;
+      })
+      .filter((recipient): recipient is string => recipient !== null);
+
+    return recipients.length
+      ? `Reportar alarmas a: ${recipients.join(' · ')}`
+      : 'No se reportarán alarmas por WhatsApp.';
   }
 
   private startPolling(): void {

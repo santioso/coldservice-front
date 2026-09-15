@@ -1,0 +1,97 @@
+<h2 mat-dialog-title>Administrar destinatarios de Alarmas</h2>
+
+<mat-dialog-content>
+  <p class="format-help">Formato internacional, por ejemplo +573001234567</p>
+
+  <div class="alert alert-danger" *ngIf="whatsappError">{{ whatsappError }}</div>
+
+  <div class="whatsapp-level-list">
+    <div class="whatsapp-level-row">
+      <mat-checkbox
+        [(ngModel)]="whatsappLevel1Enabled"
+        name="whatsappLevel1Enabled"
+        [disabled]="whatsappSaving"
+        (ngModelChange)="onWhatsappLevel1Change()"
+      >
+        Nivel 1
+      </mat-checkbox>
+      <mat-form-field appearance="outline">
+        <mat-label>Número de WhatsApp</mat-label>
+        <input
+          matInput
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          [(ngModel)]="whatsappLevel1"
+          name="whatsappLevel1"
+          [disabled]="whatsappSaving"
+          (ngModelChange)="onWhatsappLevel1Change()"
+        />
+        <mat-error *ngIf="whatsappNumberError(whatsappLevel1, whatsappLevel1Enabled) as error">
+          {{ error }}
+        </mat-error>
+      </mat-form-field>
+      <button
+        mat-icon-button
+        type="button"
+        *ngIf="whatsappLevel1"
+        title="Eliminar número de Nivel 1"
+        aria-label="Eliminar número de Nivel 1"
+        [disabled]="whatsappSaving"
+        (click)="clearWhatsappLevel('level_1')"
+      >
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+
+    <div class="whatsapp-level-row">
+      <mat-checkbox
+        [(ngModel)]="whatsappLevel2Enabled"
+        name="whatsappLevel2Enabled"
+        [disabled]="whatsappSaving || !canEnableWhatsappLevel2"
+      >
+        Nivel 2
+      </mat-checkbox>
+      <mat-form-field appearance="outline">
+        <mat-label>Número de WhatsApp</mat-label>
+        <input
+          matInput
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          [(ngModel)]="whatsappLevel2"
+          name="whatsappLevel2"
+          [disabled]="whatsappSaving || !canEnableWhatsappLevel2"
+        />
+        <mat-error *ngIf="whatsappNumberError(whatsappLevel2, whatsappLevel2Enabled) as error">
+          {{ error }}
+        </mat-error>
+      </mat-form-field>
+      <button
+        mat-icon-button
+        type="button"
+        *ngIf="whatsappLevel2"
+        title="Eliminar número de Nivel 2"
+        aria-label="Eliminar número de Nivel 2"
+        [disabled]="whatsappSaving"
+        (click)="clearWhatsappLevel('level_2')"
+      >
+        <mat-icon>delete_outline</mat-icon>
+      </button>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" [disabled]="whatsappSaving" (click)="close()">Cancelar</button>
+  <button
+    mat-raised-button
+    color="primary"
+    type="button"
+    [disabled]="whatsappSaving || !isWhatsappFormValid()"
+    (click)="save()"
+  >
+    <mat-spinner *ngIf="whatsappSaving" diameter="18"></mat-spinner>
+    <span *ngIf="!whatsappSaving">Guardar</span>
+  </button>
+</mat-dialog-actions>

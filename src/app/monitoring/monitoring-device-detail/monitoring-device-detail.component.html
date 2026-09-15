@@ -22,6 +22,22 @@
         </div>
       </div>
     </div>
+    <div class="header-notifications" *ngIf="detail">
+      <mat-icon color="primary">chat</mat-icon>
+      <span class="whatsapp-summary">{{ whatsappRecipientsSummary }}</span>
+      <button
+        mat-stroked-button
+        color="primary"
+        class="whatsapp-manage-button"
+        type="button"
+        title="Configurar alarmas"
+        [disabled]="whatsappLoading || !notificationRecipients"
+        (click)="openWhatsappRecipientsDialog()"
+      >
+        <mat-icon>settings</mat-icon>
+        Configurar alarmas
+      </button>
+    </div>
     <div class="header-actions">
       <button mat-stroked-button color="primary" type="button" (click)="backToPanel()">
         Volver al panel
