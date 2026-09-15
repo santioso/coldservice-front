@@ -135,6 +135,84 @@ export interface MeasurementSessionDetail {
   readings: MonitoringReading[];
 }
 
+export type MonitoringNotificationLevel = 'level_1' | 'level_2';
+export type MonitoringNotificationChannel = 'email' | 'whatsapp' | 'sms';
+
+export interface MonitoringNotificationRecipient {
+  id?: number;
+  address: string;
+  enabled: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface MonitoringNotificationChannels {
+  email: MonitoringNotificationRecipient[];
+  whatsapp: MonitoringNotificationRecipient[];
+  sms: MonitoringNotificationRecipient[];
+}
+
+export interface MonitoringNotificationRecipientsResponse {
+  device_id: string;
+  levels: Record<MonitoringNotificationLevel, MonitoringNotificationChannels>;
+}
+
+export interface MonitoringNotificationRecipientInput {
+  level: MonitoringNotificationLevel;
+  channel: MonitoringNotificationChannel;
+  address: string;
+  enabled?: boolean;
+}
+
+export interface WhatsappNotificationFormValue {
+  level: MonitoringNotificationLevel;
+  address: string;
+  enabled: boolean;
+}
+
+export function getWhatsappRecipient(
+  configuration: MonitoringNotificationRecipientsResponse,
+  level: MonitoringNotificationLevel,
+): MonitoringNotificationRecipient | null {
+  return configuration.levels[level]?.whatsapp?.[0] ?? null;
+}
+
+export function buildNotificationRecipientsPayload(
+  configuration: MonitoringNotificationRecipientsResponse,
+  whatsappValues: WhatsappNotificationFormValue[],
+): MonitoringNotificationRecipientInput[] {
+  const payload: MonitoringNotificationRecipientInput[] = [];
+
+  for (const level of ['level_1', 'level_2'] as MonitoringNotificationLevel[]) {
+    for (const channel of ['email', 'sms'] as const) {
+      for (const recipient of configuration.levels[level]?.[channel] ?? []) {
+        payload.push({
+          level,
+          channel,
+          address: recipient.address,
+          enabled: recipient.enabled,
+        });
+      }
+    }
+  }
+
+  for (const value of whatsappValues) {
+    const address = value.address.trim();
+    if (!address) {
+      continue;
+    }
+    payload.push({
+      level: value.level,
+      channel: 'whatsapp',
+      address,
+      enabled: value.enabled,
+    });
+  }
+
+  return payload;
+}
+
 export interface MeasurementHistoryItem {
   session_id: number;
   device_id: string;

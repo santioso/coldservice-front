@@ -17,7 +17,7 @@
   align-items: center;
   display: grid;
   gap: 12px;
-  grid-template-columns: auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   height: 80px;
   justify-content: space-between;
   line-height: normal;
@@ -90,6 +90,42 @@
 .header-actions {
   display: flex;
   justify-content: flex-end;
+}
+
+.header-notifications {
+  align-items: center;
+  color: #334155;
+  display: flex;
+  gap: 8px;
+  justify-self: end;
+  min-width: 0;
+}
+
+.header-notifications > mat-icon {
+  flex: 0 0 auto;
+}
+
+.whatsapp-summary {
+  font-size: 0.82rem;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.whatsapp-manage-button {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  line-height: 30px;
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.whatsapp-manage-button mat-icon {
+  font-size: 17px;
+  height: 17px;
+  margin-right: 4px;
+  width: 17px;
 }
 
 .panel,
@@ -362,6 +398,11 @@
 }
 
 @media (max-width: 640px) {
+  .header-notifications {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
   .detail-header {
     grid-template-columns: 1fr;
   }
