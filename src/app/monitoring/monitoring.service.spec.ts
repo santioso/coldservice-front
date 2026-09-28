@@ -46,3 +46,49 @@ describe('MonitoringService notification recipients', () => {
     expect(response).toEqual({ device_id: 'device-1', levels: {} });
   });
 });
+
+describe('MonitoringService alarm configuration', () => {
+  let service: MonitoringService;
+  let http: HttpTestingController;
+  const url = `${environment.apiUrl}/api/v1/monitoring/devices/device-1/alarm-configuration`;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [MonitoringService],
+    });
+    service = TestBed.inject(MonitoringService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('loads the alarm configuration for the selected device', () => {
+    const configuration = { device_id: 'device-1', repeat_count: 4 };
+    let response: unknown;
+    service.getAlarmConfiguration('device-1').subscribe((value) => (response = value));
+
+    const request = http.expectOne(url);
+    expect(request.request.method).toBe('GET');
+    request.flush(configuration);
+    expect(response).toEqual(configuration);
+  });
+
+  it('saves the approved repeat schedule through the alarm configuration API', () => {
+    const configuration = {
+      enabled: true,
+      out_of_range_duration_minutes: 10,
+      in_range_resolution_duration_minutes: 5,
+      stale_data_after_minutes: 5,
+      repeat_interval_minutes: 30,
+      repeat_count: 4,
+      post_repeat_interval_minutes: 60,
+    };
+    service.saveAlarmConfiguration('device-1', configuration).subscribe();
+
+    const request = http.expectOne(url);
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual(configuration);
+    request.flush({ device_id: 'device-1', ...configuration });
+  });
+});

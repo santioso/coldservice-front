@@ -10,6 +10,7 @@ import {
   MonitoringClient,
   MonitoringDevice,
   MonitoringReading,
+  MonitoringAlarmConfiguration,
   MonitoringNotificationRecipientInput,
   MonitoringNotificationRecipientsResponse,
 } from './monitoring.models';
@@ -288,6 +289,24 @@ export class MonitoringService {
   ): Observable<MonitoringNotificationRecipientsResponse> {
     return this.http.get<MonitoringNotificationRecipientsResponse>(
       `${this.baseUrl}/${encodeURIComponent(deviceId)}/alarm-configuration/recipients`,
+    );
+  }
+
+  getAlarmConfiguration(
+    deviceId: string,
+  ): Observable<MonitoringAlarmConfiguration> {
+    return this.http.get<MonitoringAlarmConfiguration>(
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/alarm-configuration`,
+    );
+  }
+
+  saveAlarmConfiguration(
+    deviceId: string,
+    configuration: Partial<MonitoringAlarmConfiguration>,
+  ): Observable<MonitoringAlarmConfiguration> {
+    return this.http.put<MonitoringAlarmConfiguration>(
+      `${this.baseUrl}/${encodeURIComponent(deviceId)}/alarm-configuration`,
+      configuration,
     );
   }
 

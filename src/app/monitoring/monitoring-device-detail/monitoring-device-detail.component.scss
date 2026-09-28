@@ -301,17 +301,34 @@
   font-style: italic;
 }
 
-.notification-toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
+.alarm-configuration-card {
+  margin-bottom: 24px;
 }
-.toggle-label {
-  color: #334155;
-  font-size: 14px;
-  line-height: 1.4;
+
+.alarm-help {
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.alarm-form-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.alarm-actions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.validation-hint {
+  color: #b45309;
+  font-size: 0.82rem;
 }
 
 .info-grid,
@@ -392,6 +409,10 @@
     grid-template-columns: 1fr;
   }
 
+  .alarm-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .chart-grid {
     grid-template-columns: repeat(min(var(--charts-per-row, 2), 2), minmax(0, 1fr));
   }
@@ -413,5 +434,14 @@
 
   .chart-grid {
     grid-template-columns: 1fr;
+  }
+
+  .alarm-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .alarm-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

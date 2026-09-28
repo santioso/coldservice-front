@@ -28,6 +28,21 @@ export interface MonitoringDevice {
   fecha_registro: string;
 }
 
+export interface MonitoringAlarmConfiguration {
+  device_id: string;
+  temperature_metric: string;
+  minimum_celsius: number;
+  maximum_celsius: number;
+  enabled: boolean;
+  out_of_range_duration_minutes: number;
+  in_range_resolution_duration_minutes: number;
+  stale_data_after_minutes: number;
+  repeat_interval_minutes: number;
+  repeat_count: number;
+  post_repeat_interval_minutes: number;
+  escalation_after_minutes?: number;
+}
+
 export interface MonitoringReading {
   timestamp: string;
   V?: number;

@@ -37,6 +37,7 @@ import {
 import {
   MeasurementSessionDetail,
   getWhatsappRecipient,
+  MonitoringAlarmConfiguration,
   MonitoringNotificationRecipientsResponse,
 } from '../monitoring.models';
 import { MonitoringService } from '../monitoring.service';
@@ -58,7 +59,6 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   loading = false;
   error = '';
   editingCard: 'cliente' | 'activo' | 'tecnico' | null = null;
-  togglingNotifications = false;
   whatsappLoading = false;
   whatsappError = '';
   mainChart: ChartConfiguration<'line'> | null = null;
@@ -76,6 +76,14 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   private pollingSubscription: Subscription | null = null;
   private routeSubscription: Subscription | null = null;
   notificationRecipients: MonitoringNotificationRecipientsResponse | null = null;
+  alarmConfiguration: MonitoringAlarmConfiguration | null = null;
+  alarmConfigurationLoading = false;
+  alarmConfigurationSaving = false;
+  alarmConfigurationError = '';
+  readonly alarmConfigurationLimits = {
+    durationMax: 10080,
+    repeatCountMax: 100,
+  };
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -96,6 +104,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       this.detail = null;
       this.loadLiveMeasurement();
       this.loadWhatsappRecipients();
+      this.loadAlarmConfiguration();
     });
     this.startPolling();
   }
@@ -425,34 +434,6 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleNotifications(enabled: boolean): void {
-    if (!this.detail) return;
-    this.togglingNotifications = true;
-    this.monitoringService
-      .updateSessionInstallation(this.deviceId, this.detail.session_id, {
-        notifications_enabled: enabled,
-      })
-      .subscribe({
-        next: () => {
-          this.togglingNotifications = false;
-          if (this.detail?.installation) {
-            this.detail.installation.notifications_enabled = enabled;
-          }
-          this.snackBar.open(
-            `Notificaciones ${enabled ? 'activadas' : 'desactivadas'}`,
-            'Cerrar',
-            { duration: 3000 },
-          );
-        },
-        error: () => {
-          this.togglingNotifications = false;
-          this.snackBar.open('Error al actualizar notificaciones', 'Cerrar', {
-            duration: 5000,
-          });
-        },
-      });
-  }
-
   openWhatsappRecipientsDialog(): void {
     if (!this.notificationRecipients || this.whatsappLoading) {
       return;
@@ -470,6 +451,53 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       if (configuration) {
         this.applyWhatsappConfiguration(configuration);
       }
+    });
+  }
+
+  isAlarmConfigurationValid(): boolean {
+    const configuration = this.alarmConfiguration;
+    if (!configuration) return false;
+    const positiveIntegers = [
+      configuration.out_of_range_duration_minutes,
+      configuration.in_range_resolution_duration_minutes,
+      configuration.stale_data_after_minutes,
+      configuration.repeat_interval_minutes,
+      configuration.repeat_count,
+      configuration.post_repeat_interval_minutes,
+    ];
+    return positiveIntegers.every((value) => Number.isInteger(value) && value > 0)
+      && configuration.out_of_range_duration_minutes <= this.alarmConfigurationLimits.durationMax
+      && configuration.in_range_resolution_duration_minutes <= this.alarmConfigurationLimits.durationMax
+      && configuration.stale_data_after_minutes <= this.alarmConfigurationLimits.durationMax
+      && configuration.repeat_interval_minutes <= this.alarmConfigurationLimits.durationMax
+      && configuration.repeat_count <= this.alarmConfigurationLimits.repeatCountMax
+      && configuration.post_repeat_interval_minutes <= this.alarmConfigurationLimits.durationMax;
+  }
+
+  saveAlarmConfiguration(): void {
+    if (!this.alarmConfiguration || !this.isAlarmConfigurationValid() || this.alarmConfigurationSaving) {
+      return;
+    }
+    this.alarmConfigurationSaving = true;
+    this.alarmConfigurationError = '';
+    this.monitoringService.saveAlarmConfiguration(this.deviceId, {
+      enabled: this.alarmConfiguration.enabled,
+      out_of_range_duration_minutes: this.alarmConfiguration.out_of_range_duration_minutes,
+      in_range_resolution_duration_minutes: this.alarmConfiguration.in_range_resolution_duration_minutes,
+      stale_data_after_minutes: this.alarmConfiguration.stale_data_after_minutes,
+      repeat_interval_minutes: this.alarmConfiguration.repeat_interval_minutes,
+      repeat_count: this.alarmConfiguration.repeat_count,
+      post_repeat_interval_minutes: this.alarmConfiguration.post_repeat_interval_minutes,
+    }).subscribe({
+      next: (configuration) => {
+        this.alarmConfiguration = configuration;
+        this.alarmConfigurationSaving = false;
+        this.snackBar.open('Configuración de alarmas guardada', 'Cerrar', { duration: 4000 });
+      },
+      error: () => {
+        this.alarmConfigurationSaving = false;
+        this.alarmConfigurationError = 'No fue posible guardar la configuración de alarmas';
+      },
     });
   }
 
@@ -494,6 +522,47 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         this.whatsappError = 'No fue posible cargar los destinatarios de WhatsApp';
       },
     });
+  }
+
+  private loadAlarmConfiguration(): void {
+    const requestedDeviceId = this.deviceId;
+    this.alarmConfigurationLoading = true;
+    this.alarmConfigurationError = '';
+    this.alarmConfiguration = null;
+    this.monitoringService.getAlarmConfiguration(this.deviceId).subscribe({
+      next: (configuration) => {
+        if (requestedDeviceId !== this.deviceId) return;
+        this.alarmConfiguration = configuration;
+        this.alarmConfigurationLoading = false;
+      },
+      error: (error) => {
+        if (requestedDeviceId !== this.deviceId) return;
+        this.alarmConfigurationLoading = false;
+        if (error?.status === 404) {
+          this.alarmConfiguration = this.defaultAlarmConfiguration();
+          this.alarmConfigurationError =
+            'No existe una configuración guardada; revisa los valores predeterminados y guárdalos.';
+          return;
+        }
+        this.alarmConfigurationError = 'No fue posible cargar la configuración de alarmas';
+      },
+    });
+  }
+
+  private defaultAlarmConfiguration(): MonitoringAlarmConfiguration {
+    return {
+      device_id: this.deviceId,
+      temperature_metric: 'T1',
+      minimum_celsius: this.detail?.installation?.limite_inferior_celsius ?? 0,
+      maximum_celsius: this.detail?.installation?.limite_superior_celsius ?? 0,
+      enabled: true,
+      out_of_range_duration_minutes: 10,
+      in_range_resolution_duration_minutes: 5,
+      stale_data_after_minutes: 5,
+      repeat_interval_minutes: 30,
+      repeat_count: 4,
+      post_repeat_interval_minutes: 60,
+    };
   }
 
   private applyWhatsappConfiguration(
