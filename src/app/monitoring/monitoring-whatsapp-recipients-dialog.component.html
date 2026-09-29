@@ -1,97 +1,129 @@
-<h2 mat-dialog-title>Administrar destinatarios de Alarmas</h2>
+<h2 mat-dialog-title>Configurar alarmas</h2>
 
 <mat-dialog-content>
-  <p class="format-help">Formato internacional, por ejemplo +573001234567</p>
-
-  <div class="alert alert-danger" *ngIf="whatsappError">{{ whatsappError }}</div>
-
-  <div class="whatsapp-level-list">
-    <div class="whatsapp-level-row">
-      <mat-checkbox
-        [(ngModel)]="whatsappLevel1Enabled"
-        name="whatsappLevel1Enabled"
-        [disabled]="whatsappSaving"
-        (ngModelChange)="onWhatsappLevel1Change()"
+  <section class="dialog-section">
+    <h3>Configuración de alarmas T1</h3>
+    <p class="text-muted">Esta configuración aplica únicamente a {{ alarmConfiguration.device_id }}.</p>
+    <div class="alert alert-warning" *ngIf="alarmConfigurationNotice">{{ alarmConfigurationNotice }}</div>
+    <div class="alert alert-danger" *ngIf="alarmConfigurationError">{{ alarmConfigurationError }}</div>
+    <div class="alarm-header">
+      <p class="alarm-help">
+        Después de la activación se envían {{ alarmConfiguration.repeat_count }} repeticiones cada
+        {{ alarmConfiguration.repeat_interval_minutes }} minutos y luego un aviso cada
+        {{ alarmConfiguration.post_repeat_interval_minutes }} minutos hasta resolver la ocurrencia.
+        {{ whatsappNotificationNotice }}
+      </p>
+      <mat-slide-toggle
+        [(ngModel)]="alarmConfiguration.enabled"
+        name="alarmEnabled"
+        [disabled]="isSaving"
+        aria-label="Activar alarmas T1"
       >
-        Nivel 1
-      </mat-checkbox>
+        Activada
+      </mat-slide-toggle>
+    </div>
+    <div class="alarm-form-grid">
       <mat-form-field appearance="outline">
-        <mat-label>Número de WhatsApp</mat-label>
-        <input
-          matInput
-          type="tel"
-          inputmode="tel"
-          autocomplete="tel"
-          [(ngModel)]="whatsappLevel1"
-          name="whatsappLevel1"
-          [disabled]="whatsappSaving"
+        <mat-label>Activación fuera de rango (minutos)</mat-label>
+        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarmConfiguration.out_of_range_duration_minutes" name="outOfRangeDurationMinutes" [disabled]="isSaving" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Resolución dentro de rango (minutos)</mat-label>
+        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarmConfiguration.in_range_resolution_duration_minutes" name="inRangeResolutionDurationMinutes" [disabled]="isSaving" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Datos obsoletos (minutos)</mat-label>
+        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarmConfiguration.stale_data_after_minutes" name="staleDataAfterMinutes" [disabled]="isSaving" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Intervalo de repetición (minutos)</mat-label>
+        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarmConfiguration.repeat_interval_minutes" name="repeatIntervalMinutes" [disabled]="isSaving" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Cantidad de repeticiones</mat-label>
+        <input matInput type="number" min="1" max="100" [(ngModel)]="alarmConfiguration.repeat_count" name="repeatCount" [disabled]="isSaving" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Intervalo posterior (minutos)</mat-label>
+        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarmConfiguration.post_repeat_interval_minutes" name="postRepeatIntervalMinutes" [disabled]="isSaving" />
+      </mat-form-field>
+    </div>
+    <span class="validation-hint" *ngIf="!isAlarmConfigurationValid()">Usa números enteros positivos dentro de los límites permitidos.</span>
+  </section>
+
+  <section class="dialog-section">
+    <h3>Destinatarios WhatsApp</h3>
+    <p class="format-help">Formato internacional, por ejemplo +573001234567</p>
+    <div class="alert alert-danger" *ngIf="whatsappError">{{ whatsappError }}</div>
+
+    <div class="whatsapp-level-list">
+      <div class="whatsapp-level-row">
+        <mat-checkbox
+          [(ngModel)]="whatsappLevel1Enabled"
+          name="whatsappLevel1Enabled"
+          [disabled]="isSaving"
           (ngModelChange)="onWhatsappLevel1Change()"
-        />
-        <mat-error *ngIf="whatsappNumberError(whatsappLevel1, whatsappLevel1Enabled) as error">
-          {{ error }}
-        </mat-error>
-      </mat-form-field>
-      <button
-        mat-icon-button
-        type="button"
-        *ngIf="whatsappLevel1"
-        title="Eliminar número de Nivel 1"
-        aria-label="Eliminar número de Nivel 1"
-        [disabled]="whatsappSaving"
-        (click)="clearWhatsappLevel('level_1')"
-      >
-        <mat-icon>delete_outline</mat-icon>
-      </button>
-    </div>
+        >
+          Nivel 1
+        </mat-checkbox>
+        <mat-form-field appearance="outline">
+          <mat-label>Número de WhatsApp</mat-label>
+          <input
+            matInput
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            [(ngModel)]="whatsappLevel1"
+            name="whatsappLevel1"
+            [disabled]="isSaving"
+            (ngModelChange)="onWhatsappLevel1Change()"
+          />
+          <mat-error *ngIf="whatsappNumberError(whatsappLevel1, whatsappLevel1Enabled) as error">
+            {{ error }}
+          </mat-error>
+        </mat-form-field>
+      </div>
 
-    <div class="whatsapp-level-row">
-      <mat-checkbox
-        [(ngModel)]="whatsappLevel2Enabled"
-        name="whatsappLevel2Enabled"
-        [disabled]="whatsappSaving || !canEnableWhatsappLevel2"
-      >
-        Nivel 2
-      </mat-checkbox>
-      <mat-form-field appearance="outline">
-        <mat-label>Número de WhatsApp</mat-label>
-        <input
-          matInput
-          type="tel"
-          inputmode="tel"
-          autocomplete="tel"
-          [(ngModel)]="whatsappLevel2"
-          name="whatsappLevel2"
-          [disabled]="whatsappSaving || !canEnableWhatsappLevel2"
-        />
-        <mat-error *ngIf="whatsappNumberError(whatsappLevel2, whatsappLevel2Enabled) as error">
-          {{ error }}
-        </mat-error>
-      </mat-form-field>
-      <button
-        mat-icon-button
-        type="button"
-        *ngIf="whatsappLevel2"
-        title="Eliminar número de Nivel 2"
-        aria-label="Eliminar número de Nivel 2"
-        [disabled]="whatsappSaving"
-        (click)="clearWhatsappLevel('level_2')"
-      >
-        <mat-icon>delete_outline</mat-icon>
-      </button>
+      <div class="whatsapp-level-row">
+        <mat-checkbox
+          [(ngModel)]="whatsappLevel2Enabled"
+          name="whatsappLevel2Enabled"
+          [disabled]="isSaving || !canEnableWhatsappLevel2"
+        >
+          Nivel 2
+        </mat-checkbox>
+        <mat-form-field appearance="outline">
+          <mat-label>Número de WhatsApp</mat-label>
+          <input
+            matInput
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            [(ngModel)]="whatsappLevel2"
+            name="whatsappLevel2"
+            [disabled]="isSaving || !canEnableWhatsappLevel2"
+          />
+          <mat-error *ngIf="whatsappNumberError(whatsappLevel2, whatsappLevel2Enabled) as error">
+            {{ error }}
+          </mat-error>
+        </mat-form-field>
+      </div>
     </div>
-  </div>
+    <span class="validation-hint" *ngIf="!isWhatsappFormValid()">Revisa los números de WhatsApp antes de guardar.</span>
+
+  </section>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button type="button" [disabled]="whatsappSaving" (click)="close()">Cancelar</button>
+  <button mat-button type="button" [disabled]="isSaving" (click)="close()">Cancelar</button>
   <button
     mat-raised-button
     color="primary"
     type="button"
-    [disabled]="whatsappSaving || !isWhatsappFormValid()"
+    [disabled]="isSaving || !isAlarmConfigurationValid() || !isWhatsappFormValid()"
     (click)="save()"
   >
-    <mat-spinner *ngIf="whatsappSaving" diameter="18"></mat-spinner>
-    <span *ngIf="!whatsappSaving">Guardar</span>
+    <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+    <span *ngIf="!isSaving">Guardar configuración</span>
   </button>
 </mat-dialog-actions>

@@ -68,7 +68,7 @@
       <mat-form-field appearance="outline">
         <mat-label>Orden</mat-label>
         <mat-select [value]="sort" (selectionChange)="onSortChange($any($event).value)">
-          <mat-option *ngFor="let option of sortOptions" [value]="option.value">
+          <mat-option *ngFor="let option of sortOptions" [value]="option.value" >
             {{ option.label }}
           </mat-option>
         </mat-select>

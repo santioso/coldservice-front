@@ -23,6 +23,7 @@ import {
 } from '../monitoring-zoom-chart-dialog.component';
 import {
   MonitoringWhatsappRecipientsDialogComponent,
+  MonitoringWhatsappRecipientsDialogResult,
   WhatsappRecipientsDialogData,
 } from '../monitoring-whatsapp-recipients-dialog.component';
 import {
@@ -78,12 +79,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   notificationRecipients: MonitoringNotificationRecipientsResponse | null = null;
   alarmConfiguration: MonitoringAlarmConfiguration | null = null;
   alarmConfigurationLoading = false;
-  alarmConfigurationSaving = false;
   alarmConfigurationError = '';
-  readonly alarmConfigurationLimits = {
-    durationMax: 10080,
-    repeatCountMax: 100,
-  };
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -435,69 +431,30 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   openWhatsappRecipientsDialog(): void {
-    if (!this.notificationRecipients || this.whatsappLoading) {
+    if (
+      !this.notificationRecipients
+      || !this.alarmConfiguration
+      || this.whatsappLoading
+      || this.alarmConfigurationLoading
+    ) {
       return;
     }
 
     const data: WhatsappRecipientsDialogData = {
       configuration: this.notificationRecipients,
+      alarmConfiguration: { ...this.alarmConfiguration },
+      alarmConfigurationNotice: this.alarmConfigurationError || undefined,
     };
     const dialogRef = this.dialog.open(MonitoringWhatsappRecipientsDialogComponent, {
-      width: '500px',
+      width: '860px',
       maxWidth: '95vw',
+      disableClose: true,
       data,
     });
-    dialogRef.afterClosed().subscribe((configuration: MonitoringNotificationRecipientsResponse | undefined) => {
-      if (configuration) {
-        this.applyWhatsappConfiguration(configuration);
+    dialogRef.afterClosed().subscribe((result: MonitoringWhatsappRecipientsDialogResult | undefined) => {
+      if (result) {
+        this.applyDialogResult(result);
       }
-    });
-  }
-
-  isAlarmConfigurationValid(): boolean {
-    const configuration = this.alarmConfiguration;
-    if (!configuration) return false;
-    const positiveIntegers = [
-      configuration.out_of_range_duration_minutes,
-      configuration.in_range_resolution_duration_minutes,
-      configuration.stale_data_after_minutes,
-      configuration.repeat_interval_minutes,
-      configuration.repeat_count,
-      configuration.post_repeat_interval_minutes,
-    ];
-    return positiveIntegers.every((value) => Number.isInteger(value) && value > 0)
-      && configuration.out_of_range_duration_minutes <= this.alarmConfigurationLimits.durationMax
-      && configuration.in_range_resolution_duration_minutes <= this.alarmConfigurationLimits.durationMax
-      && configuration.stale_data_after_minutes <= this.alarmConfigurationLimits.durationMax
-      && configuration.repeat_interval_minutes <= this.alarmConfigurationLimits.durationMax
-      && configuration.repeat_count <= this.alarmConfigurationLimits.repeatCountMax
-      && configuration.post_repeat_interval_minutes <= this.alarmConfigurationLimits.durationMax;
-  }
-
-  saveAlarmConfiguration(): void {
-    if (!this.alarmConfiguration || !this.isAlarmConfigurationValid() || this.alarmConfigurationSaving) {
-      return;
-    }
-    this.alarmConfigurationSaving = true;
-    this.alarmConfigurationError = '';
-    this.monitoringService.saveAlarmConfiguration(this.deviceId, {
-      enabled: this.alarmConfiguration.enabled,
-      out_of_range_duration_minutes: this.alarmConfiguration.out_of_range_duration_minutes,
-      in_range_resolution_duration_minutes: this.alarmConfiguration.in_range_resolution_duration_minutes,
-      stale_data_after_minutes: this.alarmConfiguration.stale_data_after_minutes,
-      repeat_interval_minutes: this.alarmConfiguration.repeat_interval_minutes,
-      repeat_count: this.alarmConfiguration.repeat_count,
-      post_repeat_interval_minutes: this.alarmConfiguration.post_repeat_interval_minutes,
-    }).subscribe({
-      next: (configuration) => {
-        this.alarmConfiguration = configuration;
-        this.alarmConfigurationSaving = false;
-        this.snackBar.open('Configuración de alarmas guardada', 'Cerrar', { duration: 4000 });
-      },
-      error: () => {
-        this.alarmConfigurationSaving = false;
-        this.alarmConfigurationError = 'No fue posible guardar la configuración de alarmas';
-      },
     });
   }
 
@@ -569,6 +526,16 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     configuration: MonitoringNotificationRecipientsResponse,
   ): void {
     this.notificationRecipients = configuration;
+  }
+
+  private applyDialogResult(result: MonitoringWhatsappRecipientsDialogResult): void {
+    if (result.notificationRecipients) {
+      this.applyWhatsappConfiguration(result.notificationRecipients);
+    }
+    if (result.alarmConfiguration) {
+      this.alarmConfiguration = result.alarmConfiguration;
+      this.alarmConfigurationError = '';
+    }
   }
 
   get whatsappRecipientsSummary(): string {

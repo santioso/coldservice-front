@@ -18,7 +18,7 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   page = 1;
   pageSize = 10;
   total = 0;
-  sort: DeviceSortMode = 'latest';
+  sort: DeviceSortMode = 'serial_asc';
   readonly pageSizeOptions = [6, 10, 14, 20];
   readonly sortOptions: Array<{ value: DeviceSortMode; label: string }> = [
     { value: 'latest', label: 'Última lectura' },

@@ -1,15 +1,95 @@
 :host {
   display: block;
+  min-width: 0;
+}
+
+:host ::ng-deep .mat-mdc-dialog-content,
+:host ::ng-deep .mat-dialog-content {
+  max-height: none !important;
+  overflow: hidden !important;
 }
 
 mat-dialog-content {
-  min-width: min(420px, 75vw);
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  padding: 0 4px;
+}
+
+.dialog-section {
+  border-bottom: 1px solid #e2e8f0;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 8px 0 20px;
+}
+
+.dialog-section + .dialog-section {
+  padding-top: 20px;
+}
+
+.dialog-section:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.dialog-section h3 {
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+
+.text-muted {
+  color: #64748b;
+  font-size: 0.85rem;
+  margin: 0 0 12px;
+}
+
+.alarm-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+}
+
+.alarm-help {
+  color: #475569;
+  flex: 1;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  margin: 0 0 16px;
+  min-width: 0;
+}
+
+.alarm-header mat-slide-toggle {
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+
+.alarm-form-grid {
+  display: grid;
+  gap: 12px 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.alarm-form-grid mat-form-field,
+.whatsapp-level-row mat-form-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.validation-hint {
+  display: block;
+  color: #b45309;
+  font-size: 0.82rem;
+  margin-top: 8px;
 }
 
 .format-help {
   color: #64748b;
   font-size: 0.82rem;
-  margin: 0 0 16px;
+  margin: 0 0 12px;
 }
 
 .alert {
@@ -18,37 +98,30 @@ mat-dialog-content {
 
 .whatsapp-level-list {
   display: grid;
-  gap: 8px;
+  gap: 14px 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 100%;
 }
 
 .whatsapp-level-row {
   align-items: flex-start;
-  display: flex;
-  gap: 10px;
-  min-height: 56px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: grid;
+  gap: 10px 14px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  padding: 14px;
 }
 
 .whatsapp-level-row mat-checkbox {
-  flex: 0 0 84px;
-  margin-top: 8px;
-}
-
-.level-help {
-  color: #64748b;
-  flex: 0 0 150px;
-  font-size: 0.72rem;
-  line-height: 1.25;
-  margin-top: 8px;
+  padding-top: 8px;
 }
 
 .whatsapp-level-row mat-form-field {
-  flex: 1;
   min-width: 0;
-}
-
-.whatsapp-level-row button {
-  flex: 0 0 40px;
-  margin-top: 2px;
 }
 
 .whatsapp-level-row mat-spinner {
@@ -57,7 +130,28 @@ mat-dialog-content {
   vertical-align: middle;
 }
 
-@media (max-width: 520px) {
+@media (max-width: 840px) {
+  mat-dialog-content {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .whatsapp-level-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .alarm-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .alarm-form-grid {
+    grid-template-columns: 1fr;
+  }
+
   mat-dialog-content {
     min-width: 0;
   }

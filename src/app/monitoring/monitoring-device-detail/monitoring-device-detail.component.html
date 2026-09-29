@@ -31,7 +31,7 @@
         class="whatsapp-manage-button"
         type="button"
         title="Configurar alarmas"
-        [disabled]="whatsappLoading || !notificationRecipients"
+        [disabled]="whatsappLoading || alarmConfigurationLoading || !notificationRecipients || !alarmConfiguration"
         (click)="openWhatsappRecipientsDialog()"
       >
         <mat-icon>settings</mat-icon>
@@ -165,61 +165,6 @@
       <p><strong>Email:</strong> {{ current.technician?.email || '--' }}</p>
       <p><strong>Fecha instalación:</strong> {{ formatDateOnly(current.technician?.fecha_instalacion || current.installation?.fecha_instalacion) }}</p>
     </article>
-  </section>
-
-  <section class="alarm-configuration-card info-card" *ngIf="alarmConfiguration as alarm">
-    <div class="card-header">
-      <div>
-        <h2>Configuración de alarmas T1</h2>
-        <p class="text-muted">Esta configuración aplica únicamente a {{ deviceId }}.</p>
-      </div>
-      <mat-slide-toggle
-        [(ngModel)]="alarm.enabled"
-        [disabled]="alarmConfigurationSaving"
-        aria-label="Activar alarmas T1"
-      >
-        Activada
-      </mat-slide-toggle>
-    </div>
-    <div class="alert alert-danger" *ngIf="alarmConfigurationError">{{ alarmConfigurationError }}</div>
-    <p class="alarm-help">
-      Después de la activación se envían {{ alarm.repeat_count }} repeticiones cada {{ alarm.repeat_interval_minutes }} minutos
-      y luego un aviso cada {{ alarm.post_repeat_interval_minutes }} minutos hasta resolver la ocurrencia.
-      Las repeticiones y avisos posteriores se envían a los niveles 1 y 2, usando los canales habilitados de cada destinatario.
-    </p>
-    <div class="alarm-form-grid">
-      <mat-form-field appearance="outline">
-        <mat-label>Activación fuera de rango (minutos)</mat-label>
-        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarm.out_of_range_duration_minutes" name="outOfRangeDurationMinutes" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Resolución dentro de rango (minutos)</mat-label>
-        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarm.in_range_resolution_duration_minutes" name="inRangeResolutionDurationMinutes" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Datos obsoletos (minutos)</mat-label>
-        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarm.stale_data_after_minutes" name="staleDataAfterMinutes" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Intervalo de repetición (minutos)</mat-label>
-        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarm.repeat_interval_minutes" name="repeatIntervalMinutes" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Cantidad de repeticiones</mat-label>
-        <input matInput type="number" min="1" max="100" [(ngModel)]="alarm.repeat_count" name="repeatCount" />
-      </mat-form-field>
-      <mat-form-field appearance="outline">
-        <mat-label>Intervalo posterior (minutos)</mat-label>
-        <input matInput type="number" min="1" max="10080" [(ngModel)]="alarm.post_repeat_interval_minutes" name="postRepeatIntervalMinutes" />
-      </mat-form-field>
-    </div>
-    <div class="alarm-actions">
-      <span class="validation-hint" *ngIf="!isAlarmConfigurationValid()">Usa números enteros positivos dentro de los límites permitidos.</span>
-      <button mat-raised-button color="primary" type="button" [disabled]="alarmConfigurationSaving || !isAlarmConfigurationValid()" (click)="saveAlarmConfiguration()">
-        <mat-spinner *ngIf="alarmConfigurationSaving" diameter="18"></mat-spinner>
-        <span *ngIf="!alarmConfigurationSaving">Guardar configuración</span>
-      </button>
-    </div>
   </section>
 
   <section
