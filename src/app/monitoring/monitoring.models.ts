@@ -69,6 +69,9 @@ export interface DeviceOverviewItem {
   modelo: string | null;
   activo: boolean;
   activo_id: string | null;
+  client_id?: number | null;
+  client_name?: string | null;
+  ubicacion?: string | null;
   is_live: boolean;
   last_reading_at: string | null;
   readings: MonitoringReading[];

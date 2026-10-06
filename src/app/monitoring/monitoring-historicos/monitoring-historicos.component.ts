@@ -412,10 +412,7 @@ export class MonitoringHistoricosComponent implements OnInit {
       {
         label: 'ΔT/kWh',
         color: '#0d9488',
-        value: (reading) => {
-          const index = readings.indexOf(reading);
-          return efficiencyValues[index];
-        },
+        value: (_reading, index) => efficiencyValues[index],
       },
     ], { lineTension: 0.35 });
     this.consumptionChartTitle = 'Análisis de consumo (kWh)';

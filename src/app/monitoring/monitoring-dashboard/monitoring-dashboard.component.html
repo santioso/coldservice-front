@@ -66,6 +66,20 @@
 
     <div class="controls-filters">
       <mat-form-field appearance="outline">
+        <mat-label>Cliente</mat-label>
+        <mat-select
+          [(ngModel)]="clientFilter"
+          (ngModelChange)="onClientFilterChange($event)"
+        >
+          <mat-option value="all">Todos</mat-option>
+          <mat-option value="unassigned">Sin cliente</mat-option>
+          <mat-option *ngFor="let client of clients" [value]="client.id">
+            {{ client.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Orden</mat-label>
         <mat-select [value]="sort" (selectionChange)="onSortChange($any($event).value)">
           <mat-option *ngFor="let option of sortOptions" [value]="option.value" >
@@ -85,12 +99,41 @@
           </mat-option>
         </mat-select>
       </mat-form-field>
+
+      <div class="view-toggle" role="group" aria-label="Vista de dispositivos">
+        <button
+          mat-icon-button
+          type="button"
+          [class.active]="viewMode === 'charts'"
+          title="Vista de gráficas"
+          aria-label="Vista de gráficas"
+          (click)="setViewMode('charts')"
+        >
+          <i class="fas fa-chart-bar"></i>
+        </button>
+        <button
+          mat-icon-button
+          type="button"
+          [class.active]="viewMode === 'table'"
+          title="Vista de tabla"
+          aria-label="Vista de tabla"
+          (click)="setViewMode('table')"
+        >
+          <i class="fas fa-table"></i>
+        </button>
+      </div>
     </div>
   </section>
 
   <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
 
-  <section class="device-grid" *ngIf="items.length > 0">
+  <app-monitoring-loading-skeleton
+    *ngIf="showClientChangeSkeleton"
+    [viewMode]="viewMode"
+    [showClientColumn]="clientFilter === 'all'"
+  ></app-monitoring-loading-skeleton>
+
+  <section class="device-grid" *ngIf="!showClientChangeSkeleton && items.length > 0 && viewMode === 'charts'">
     <article
       class="device-card"
       [class.card-alarm-low]="item.alarm_status === 'low_alarm'"
@@ -134,7 +177,47 @@
     </article>
   </section>
 
-  <section class="empty-state panel" *ngIf="!loading && items.length === 0">
+  <section class="device-table panel" *ngIf="!showClientChangeSkeleton && items.length > 0 && viewMode === 'table'">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th *ngIf="clientFilter === 'all'">Cliente</th>
+            <th>Equipo/aparato</th>
+            <th>Ubicación</th>
+            <th>Temperatura</th>
+            <th>Estado</th>
+            <th>Última lectura</th>
+            <th>Rango permitido</th>
+            <th>Alerta activa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let item of items"
+            class="monitoring-table-row"
+            [class.card-alarm-low]="item.alarm_status === 'low_alarm'"
+            [class.card-alarm-high]="item.alarm_status === 'high_alarm'"
+            (click)="openDevice(item.device_id)"
+          >
+            <td *ngIf="clientFilter === 'all'">{{ item.client_name || 'Sin cliente' }}</td>
+            <td>
+              <strong>{{ item.activo_id || item.device_id }}</strong>
+              <small *ngIf="item.activo_id">Dispositivo: {{ item.device_id }}</small>
+            </td>
+            <td>{{ item.ubicacion || '—' }}</td>
+            <td>{{ formatTemperature(latestTemperature(item)) }}</td>
+            <td>En vivo</td>
+            <td>{{ formatTime(item.last_reading_at) }}</td>
+            <td>{{ formatAllowedRange(item) }}</td>
+            <td>{{ formatAlarmStatus(item.alarm_status) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="empty-state panel" *ngIf="hasLoadedOverview && !showClientChangeSkeleton && items.length === 0">
     <h2>No hay dispositivos midiendo en vivo en este momento.</h2>
     <p>Consulta mediciones anteriores desde el historial.</p>
     <button mat-raised-button color="primary" type="button" (click)="openHistory()">
