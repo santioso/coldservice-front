@@ -131,6 +131,21 @@
   flex-wrap: wrap;
 }
 
+.view-toggle {
+  align-items: center;
+  display: flex;
+  gap: 2px;
+}
+
+.view-toggle button {
+  color: #64748b;
+}
+
+.view-toggle button.active {
+  background: #e2e8f0;
+  color: #17375e;
+}
+
 .device-grid {
   display: grid;
   gap: 18px;
@@ -191,6 +206,10 @@
   text-align: left;
 }
 
+app-monitoring-loading-skeleton {
+  display: block;
+}
+
 .device-card h2 {
   color: #17375e;
   font-size: 18px;
@@ -238,6 +257,66 @@
   justify-self: end;
   padding: 4px 10px;
   white-space: nowrap;
+}
+
+.device-table {
+  overflow: hidden;
+  padding: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.device-table table {
+  border-collapse: collapse;
+  min-width: 980px;
+  width: 100%;
+}
+
+.device-table th,
+.device-table td {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 13px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.device-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.monitoring-table-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.monitoring-table-row:hover {
+  background: #f8fafc;
+}
+
+.monitoring-table-row strong,
+.monitoring-table-row small {
+  display: block;
+}
+
+.monitoring-table-row small {
+  color: #64748b;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.monitoring-table-row.card-alarm-low {
+  border-left: 4px solid #d97706;
+  animation: alarmFlashAmber 1s ease-in-out infinite;
+}
+
+.monitoring-table-row.card-alarm-high {
+  border-left: 4px solid #dc2626;
+  animation: alarmFlashRed 1s ease-in-out infinite;
 }
 
 .live-badge.live {

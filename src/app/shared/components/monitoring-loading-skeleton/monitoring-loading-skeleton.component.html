@@ -1,0 +1,35 @@
+<section class="monitoring-loading-skeleton" role="status" aria-live="polite" aria-label="Cargando datos">
+  <div class="chart-skeleton-grid" *ngIf="viewMode === 'charts'">
+    <article class="chart-skeleton-card" *ngFor="let card of chartCards">
+      <div class="skeleton-line skeleton-title"></div>
+      <div class="skeleton-line skeleton-subtitle"></div>
+      <div class="skeleton-data-row">
+        <div class="skeleton-line skeleton-data"></div>
+        <div class="skeleton-line skeleton-data short"></div>
+      </div>
+      <div class="skeleton-chart-area">
+      </div>
+    </article>
+  </div>
+
+  <div class="table-skeleton panel" *ngIf="viewMode === 'table'">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="skeleton-cell" *ngIf="showClientColumn"></th>
+            <th class="skeleton-cell" *ngFor="let column of [1, 2, 3, 4, 5, 6, 7]"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of tableRows">
+            <td *ngIf="showClientColumn"><div class="skeleton-line skeleton-table-text"></div></td>
+            <td *ngFor="let column of [1, 2, 3, 4, 5, 6, 7]">
+              <div class="skeleton-line skeleton-table-text"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

@@ -13,6 +13,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SharedModule } from '@shared';
+import { ComponentsModule } from '@shared/components/components.module';
 import { MonitoringDashboardComponent } from './monitoring-dashboard/monitoring-dashboard.component';
 import { MonitoringDeviceDetailComponent } from './monitoring-device-detail/monitoring-device-detail.component';
 import { MonitoringHistoricosComponent } from './monitoring-historicos/monitoring-historicos.component';
@@ -43,6 +44,7 @@ import { MonitoringRoutingModule } from './monitoring-routing.module';
     FormsModule,
     ReactiveFormsModule,
     SharedModule,
+    ComponentsModule,
     MonitoringRoutingModule,
     NgChartsModule,
     MatButtonModule,

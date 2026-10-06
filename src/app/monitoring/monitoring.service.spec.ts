@@ -47,6 +47,59 @@ describe('MonitoringService notification recipients', () => {
   });
 });
 
+describe('MonitoringService overview', () => {
+  let service: MonitoringService;
+  let http: HttpTestingController;
+  const url = `${environment.apiUrl}/api/v1/monitoring/devices/overview`;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [MonitoringService],
+    });
+    service = TestBed.inject(MonitoringService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('sends the selected client filter to the overview endpoint', () => {
+    service.overview(1, 10, 'latest', [], 'unassigned').subscribe();
+
+    const request = http.expectOne(url);
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('clientFilter')).toBe('unassigned');
+    request.flush({ page: 1, page_size: 10, total: 0, items: [] });
+  });
+});
+
+describe('MonitoringService client snapshot update', () => {
+  let service: MonitoringService;
+  let http: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+      providers: [MonitoringService],
+    });
+    service = TestBed.inject(MonitoringService);
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('patches the measurement client snapshot endpoint', () => {
+    service.updateSessionCliente('device-1', 7, 3).subscribe();
+
+    const request = http.expectOne(
+      `${environment.apiUrl}/api/v1/monitoring/devices/device-1/sessions/7/client-snapshot`,
+    );
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.body).toEqual({ newClientId: 3 });
+    request.flush({ session_id: 7, device_id: 'device-1', is_live: true });
+  });
+});
+
 describe('MonitoringService alarm configuration', () => {
   let service: MonitoringService;
   let http: HttpTestingController;

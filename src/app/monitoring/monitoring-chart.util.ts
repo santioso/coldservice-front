@@ -5,10 +5,12 @@ export type ChartSeriesConfig = {
   label: string;
   color: string;
   unit?: string;
-  value: (reading: MonitoringReading) => number | undefined;
+  value: (reading: MonitoringReading, index: number) => number | undefined;
 };
 
 export type MonitoringChartOptions = {
+  animateOnUpdate?: boolean;
+  updateAnimationDuration?: number;
   detailedTimeAxis?: boolean;
   lowerLimit?: number | null;
   upperLimit?: number | null;
@@ -18,6 +20,29 @@ export type MonitoringChartOptions = {
   pointHoverRadius?: number;
   yAxisTitle?: string;
 };
+
+const DEFAULT_UPDATE_ANIMATION_DURATION = 700;
+const LIVE_UPDATE_ANIMATION = {
+  duration: DEFAULT_UPDATE_ANIMATION_DURATION,
+  easing: 'easeOutCubic' as const,
+};
+
+function buildAnimationOptions(
+  options: MonitoringChartOptions,
+): { animation?: false | typeof LIVE_UPDATE_ANIMATION } {
+  if (options.animateOnUpdate === undefined) {
+    return {};
+  }
+
+  return {
+    animation: options.animateOnUpdate
+      ? {
+          ...LIVE_UPDATE_ANIMATION,
+          duration: options.updateAnimationDuration ?? DEFAULT_UPDATE_ANIMATION_DURATION,
+        }
+      : false,
+  };
+}
 
 export function formatTimeLabel(timestamp: string): string {
   const date = new Date(timestamp);
@@ -337,6 +362,7 @@ export function buildDualAxisChart(
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...buildAnimationOptions(options),
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true },
@@ -424,8 +450,8 @@ export function buildMultiSeriesChart(
       datasets: [
         ...series.map((item) => ({
           label: item.label,
-          data: readings.map((reading) => {
-            const value = item.value(reading);
+          data: readings.map((reading, index) => {
+            const value = item.value(reading, index);
             return typeof value === 'number' ? value : null;
           }),
           borderColor: item.color,
@@ -443,6 +469,7 @@ export function buildMultiSeriesChart(
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...buildAnimationOptions(options),
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true },

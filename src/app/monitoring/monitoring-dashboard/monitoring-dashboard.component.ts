@@ -4,8 +4,14 @@ import { ChartConfiguration } from 'chart.js';
 import { Subscription, interval } from 'rxjs';
 import { MonitoringAuthService } from '../monitoring-auth.service';
 import { buildDualAxisChart } from '../monitoring-chart.util';
-import { DeviceOverviewItem, DeviceSortMode } from '../monitoring.models';
+import {
+  DeviceOverviewItem,
+  DeviceSortMode,
+  MonitoringClient,
+} from '../monitoring.models';
 import { MonitoringService } from '../monitoring.service';
+
+export type MonitoringClientFilter = 'all' | 'unassigned' | number;
 
 @Component({
   selector: 'app-monitoring-dashboard',
@@ -19,6 +25,9 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   pageSize = 10;
   total = 0;
   sort: DeviceSortMode = 'serial_asc';
+  clients: MonitoringClient[] = [];
+  clientFilter: MonitoringClientFilter = 'all';
+  viewMode: 'charts' | 'table' = 'charts';
   readonly pageSizeOptions = [6, 10, 14, 20];
   readonly sortOptions: Array<{ value: DeviceSortMode; label: string }> = [
     { value: 'latest', label: 'Última lectura' },
@@ -28,9 +37,14 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
     { value: 'custom', label: 'Orden personalizado' },
   ];
   loading = false;
+  showClientChangeSkeleton = false;
+  hasLoadedOverview = false;
   error = '';
   private pollingSubscription: Subscription | null = null;
+  private overviewSubscription: Subscription | null = null;
   private customOrder: string[] = [];
+  private overviewRequestGeneration = 0;
+  private lastRenderedLatestReadingByDevice = new Map<string, string | null>();
 
   // Alarma global
   globalAlarm: 'low_alarm' | 'high_alarm' | null = null;
@@ -47,12 +61,14 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.customOrder = this.readCustomOrder();
     this.soundEnabled = this.readSoundPreference();
+    this.loadClients();
     this.loadOverview();
     this.startPolling();
   }
 
   ngOnDestroy(): void {
     this.pollingSubscription?.unsubscribe();
+    this.overviewSubscription?.unsubscribe();
     this.audioCtx?.close();
   }
 
@@ -61,12 +77,24 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   }
 
   loadOverview(): void {
+    this.overviewSubscription?.unsubscribe();
+    const requestGeneration = ++this.overviewRequestGeneration;
+    if (!this.hasLoadedOverview) {
+      this.showClientChangeSkeleton = true;
+    }
     this.loading = true;
     this.error = '';
-    this.monitoringService
-      .overview(this.page, this.pageSize, this.sort, this.customOrder)
+    this.overviewSubscription = this.monitoringService
+      .overview(
+        this.page,
+        this.pageSize,
+        this.sort,
+        this.customOrder,
+        String(this.clientFilter),
+      )
       .subscribe({
         next: (response) => {
+          if (requestGeneration !== this.overviewRequestGeneration) return;
           const liveItems = response.items.filter((item) => item.is_live === true);
           this.items = liveItems;
           this.total = response.total;
@@ -74,20 +102,42 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
           this.pageSize = response.page_size;
           this.chartByDevice = {};
           for (const item of liveItems) {
+            const latestReadingTimestamp =
+              item.last_reading_at ??
+              item.readings[item.readings.length - 1]?.timestamp ??
+              null;
+            const hasRenderedReading = this.lastRenderedLatestReadingByDevice.has(
+              item.device_id,
+            );
+            const animateOnUpdate =
+              !hasRenderedReading ||
+              this.lastRenderedLatestReadingByDevice.get(item.device_id) !==
+                latestReadingTimestamp;
             this.chartByDevice[item.device_id] = buildDualAxisChart(item.readings, {
               lowerLimit: item.limite_inferior_celsius,
               upperLimit: item.limite_superior_celsius,
+              animateOnUpdate,
             });
+            this.lastRenderedLatestReadingByDevice.set(
+              item.device_id,
+              latestReadingTimestamp,
+            );
           }
           this.evaluateAlarms(liveItems);
+          this.hasLoadedOverview = true;
           this.loading = false;
+          this.showClientChangeSkeleton = false;
+          this.overviewSubscription = null;
         },
         error: () => {
+          if (requestGeneration !== this.overviewRequestGeneration) return;
           if (!this.authService.currentSession?.token) {
             this.pollingSubscription?.unsubscribe();
           }
           this.error = 'No fue posible cargar el panel de dispositivos';
           this.loading = false;
+          this.showClientChangeSkeleton = false;
+          this.overviewSubscription = null;
         },
       });
   }
@@ -102,6 +152,18 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
     this.sort = value;
     this.page = 1;
     this.loadOverview();
+  }
+
+  onClientFilterChange(value: MonitoringClientFilter): void {
+    this.clientFilter = value;
+    this.page = 1;
+    this.showClientChangeSkeleton = true;
+    this.clearOverviewData();
+    this.loadOverview();
+  }
+
+  setViewMode(viewMode: 'charts' | 'table'): void {
+    this.viewMode = viewMode;
   }
 
   onPageChange(page: number): void {
@@ -144,6 +206,27 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
     return timestamp ? new Date(timestamp).toLocaleString() : 'Sin lecturas';
   }
 
+  formatTemperature(value: number | undefined): string {
+    return typeof value === 'number' ? `${value.toFixed(1)} °C` : '—';
+  }
+
+  latestTemperature(item: DeviceOverviewItem): number | undefined {
+    return item.readings[item.readings.length - 1]?.T1;
+  }
+
+  formatAllowedRange(item: DeviceOverviewItem): string {
+    const lower = item.limite_inferior_celsius;
+    const upper = item.limite_superior_celsius;
+    if (lower == null && upper == null) return '—';
+    return `${lower ?? '—'} a ${upper ?? '—'} °C`;
+  }
+
+  formatAlarmStatus(status: DeviceOverviewItem['alarm_status']): string {
+    if (status === 'low_alarm') return 'Alarma baja';
+    if (status === 'high_alarm') return 'Alarma alta';
+    return 'Sin alerta';
+  }
+
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.total / this.pageSize));
   }
@@ -162,21 +245,11 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
     const lowAlarm = items.find((item) => item.alarm_status === 'low_alarm');
     this.globalAlarm = highAlarm ? 'high_alarm' : lowAlarm ? 'low_alarm' : null;
 
-    // Detectar NUEVAS alarmas para reproducir sonido
     const currentAlarming = new Set(
       items
         .filter((item) => item.alarm_status !== 'ok')
         .map((item) => item.device_id),
     );
-
-    const newAlarms: string[] = [];
-    for (const deviceId of currentAlarming) {
-      if (!this.previousAlarmingDevices.has(deviceId)) {
-        newAlarms.push(deviceId);
-      }
-    }
-
-    this.previousAlarmingDevices = currentAlarming;
 
     // Sonido continuo mientras haya alarmas activas y sonido activado
     if (currentAlarming.size > 0 && this.soundEnabled) {
@@ -261,7 +334,32 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
 
   private startPolling(): void {
     this.pollingSubscription = interval(8000).subscribe(() => {
+      if (
+        this.loading ||
+        (this.overviewSubscription !== null && !this.overviewSubscription.closed)
+      ) {
+        return;
+      }
       this.loadOverview();
+    });
+  }
+
+  private clearOverviewData(): void {
+    this.items = [];
+    this.chartByDevice = {};
+    this.lastRenderedLatestReadingByDevice.clear();
+    this.total = 0;
+    this.hasLoadedOverview = false;
+    this.globalAlarm = null;
+    this.previousAlarmingDevices.clear();
+    this.stopContinuousSound();
+  }
+
+  private loadClients(): void {
+    this.monitoringService.clients().subscribe({
+      next: (clients) => {
+        this.clients = clients;
+      },
     });
   }
 

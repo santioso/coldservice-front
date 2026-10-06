@@ -46,7 +46,10 @@ import { MonitoringService } from '../monitoring.service';
 type ChartsPerRow = 1 | 2 | 3 | 4;
 const CHARTS_PER_ROW_STORAGE_KEY = 'monitoring-device-charts-per-row';
 const LARGE_SCREEN_MIN_WIDTH = 960;
-const LIVE_LINE_OPTIONS: MonitoringChartOptions = { pointRadius: 0 };
+const LIVE_LINE_OPTIONS: MonitoringChartOptions = {
+  pointRadius: 0,
+  updateAnimationDuration: 400,
+};
 
 @Component({
   selector: 'app-monitoring-device-detail',
@@ -76,6 +79,11 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   private savedChartsPerRow: ChartsPerRow | null = null;
   private pollingSubscription: Subscription | null = null;
   private routeSubscription: Subscription | null = null;
+  private liveMeasurementSubscription: Subscription | null = null;
+  private liveMeasurementRequestSequence = 0;
+  private clientSnapshotUpdateInProgress = false;
+  private clientSnapshotUpdateSequence = 0;
+  private lastAppliedLatestReadingTimestamp: string | null | undefined;
   notificationRecipients: MonitoringNotificationRecipientsResponse | null = null;
   alarmConfiguration: MonitoringAlarmConfiguration | null = null;
   alarmConfigurationLoading = false;
@@ -96,6 +104,13 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       if (!deviceId || deviceId === this.deviceId) {
         return;
       }
+      this.clientSnapshotUpdateSequence += 1;
+      this.clientSnapshotUpdateInProgress = false;
+      if (this.editingCard === 'cliente') {
+        this.editingCard = null;
+      }
+      this.cancelLiveMeasurement();
+      this.lastAppliedLatestReadingTimestamp = undefined;
       this.deviceId = deviceId;
       this.detail = null;
       this.loadLiveMeasurement();
@@ -122,6 +137,8 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.clientSnapshotUpdateSequence += 1;
+    this.cancelLiveMeasurement();
     this.pollingSubscription?.unsubscribe();
     this.routeSubscription?.unsubscribe();
   }
@@ -131,22 +148,22 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   loadLiveMeasurement(): void {
+    this.cancelLiveMeasurement();
+    const requestSequence = this.liveMeasurementRequestSequence;
+    const requestedDeviceId = this.deviceId;
     this.loading = true;
     this.error = '';
-    this.monitoringService.live(this.deviceId).subscribe({
+    this.liveMeasurementSubscription = this.monitoringService.live(this.deviceId).subscribe({
       next: (detail) => {
-        this.detail = detail;
-        this.noLiveMeasurement = !detail;
-        if (detail) {
-          this.kwhPrice = detail.installation?.valor_kwh ?? null;
-          this.buildCharts(detail);
-        } else {
-          this.kwhPrice = null;
-          this.clearCharts();
+        if (requestSequence !== this.liveMeasurementRequestSequence || requestedDeviceId !== this.deviceId) {
+          return;
         }
-        this.loading = false;
+        this.applyLiveMeasurementDetail(detail);
       },
       error: () => {
+        if (requestSequence !== this.liveMeasurementRequestSequence || requestedDeviceId !== this.deviceId) {
+          return;
+        }
         this.error = 'No fue posible cargar la medición en vivo';
         this.loading = false;
       },
@@ -331,8 +348,8 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         this.monitoringService.updateSessionInstallation(this.deviceId, detail.session_id, {
           equipo_placa: result.equipo_placa ?? undefined,
           equipo_modelo: result.equipo_modelo ?? undefined,
-          limite_inferior_celsius: result.limite_inferior_celsius ?? undefined,
-          limite_superior_celsius: result.limite_superior_celsius ?? undefined,
+          limite_inferior_celsius: result.limite_inferior_celsius ?? null,
+          limite_superior_celsius: result.limite_superior_celsius ?? null,
           valor_kwh: result.kwhPrice ?? null,
           ubicacion: result.ubicacion ?? undefined,
           observaciones: result.observaciones ?? undefined,
@@ -365,18 +382,30 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     });
     dialogRef.afterClosed().subscribe((result: ClienteDialogResult | undefined) => {
       if (!result?.cliente_id) return;
+      const requestedDeviceId = this.deviceId;
+      const requestedSessionId = this.detail!.session_id;
+      const snapshotUpdateSequence = ++this.clientSnapshotUpdateSequence;
+      this.clientSnapshotUpdateInProgress = true;
       this.editingCard = 'cliente';
+      this.cancelLiveMeasurement();
+      this.error = '';
       this.monitoringService
-        .updateSessionCliente(this.deviceId, this.detail!.session_id, result.cliente_id)
+        .updateSessionCliente(requestedDeviceId, requestedSessionId, result.cliente_id)
         .subscribe({
           next: (detail) => {
+            if (snapshotUpdateSequence !== this.clientSnapshotUpdateSequence || requestedDeviceId !== this.deviceId) {
+              return;
+            }
+            this.applyLiveMeasurementDetail(detail);
+            this.clientSnapshotUpdateInProgress = false;
             this.editingCard = null;
-            this.detail = detail;
-            this.kwhPrice = detail.installation?.valor_kwh ?? null;
-            this.buildCharts(detail);
             this.snackBar.open('Información guardada — se verá reflejada en la próxima toma de lectura', 'Cerrar', { duration: 4000 });
           },
           error: () => {
+            if (snapshotUpdateSequence !== this.clientSnapshotUpdateSequence || requestedDeviceId !== this.deviceId) {
+              return;
+            }
+            this.clientSnapshotUpdateInProgress = false;
             this.editingCard = null;
             this.snackBar.open('Error al actualizar el cliente', 'Cerrar', { duration: 5000 });
           },
@@ -565,8 +594,42 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
 
   private startPolling(): void {
     this.pollingSubscription = interval(8000).subscribe(() => {
+      if (this.clientSnapshotUpdateInProgress) {
+        return;
+      }
+      if (this.liveMeasurementSubscription && !this.liveMeasurementSubscription.closed) {
+        return;
+      }
       this.loadLiveMeasurement();
     });
+  }
+
+  private cancelLiveMeasurement(): void {
+    this.liveMeasurementRequestSequence += 1;
+    this.liveMeasurementSubscription?.unsubscribe();
+    this.liveMeasurementSubscription = null;
+    this.loading = false;
+  }
+
+  private applyLiveMeasurementDetail(detail: MeasurementSessionDetail | null): void {
+    this.detail = detail;
+    this.noLiveMeasurement = !detail;
+    this.error = '';
+    if (detail) {
+      const latestReadingTimestamp =
+        detail.readings[detail.readings.length - 1]?.timestamp ?? null;
+      const animateOnUpdate =
+        this.lastAppliedLatestReadingTimestamp === undefined ||
+        this.lastAppliedLatestReadingTimestamp !== latestReadingTimestamp;
+      this.lastAppliedLatestReadingTimestamp = latestReadingTimestamp;
+      this.kwhPrice = detail.installation?.valor_kwh ?? null;
+      this.buildCharts(detail, animateOnUpdate);
+    } else {
+      this.lastAppliedLatestReadingTimestamp = undefined;
+      this.kwhPrice = null;
+      this.clearCharts();
+    }
+    this.loading = false;
   }
 
   private loadChartsPerRowPreference(): void {
@@ -593,10 +656,17 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     return globalThis.window.innerWidth >= LARGE_SCREEN_MIN_WIDTH ? 2 : 1;
   }
 
-  private buildCharts(detail: MeasurementSessionDetail): void {
+  private buildCharts(
+    detail: MeasurementSessionDetail,
+    animateOnUpdate: boolean,
+  ): void {
     const readings = detail.readings;
-    this.mainChart = buildDualAxisChart(readings, {
+    const liveChartOptions: MonitoringChartOptions = {
       ...LIVE_LINE_OPTIONS,
+      animateOnUpdate,
+    };
+    this.mainChart = buildDualAxisChart(readings, {
+      ...liveChartOptions,
       lowerLimit: detail.installation?.limite_inferior_celsius,
       upperLimit: detail.installation?.limite_superior_celsius,
     });
@@ -605,12 +675,12 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
       { label: 'Evaporador', color: '#16a34a', value: (r) => r.T2 },
       { label: 'Ambiente', color: '#f59e0b', value: (r) => r.T3 },
       { label: 'Condensador', color: '#dc2626', value: (r) => r.T4 },
-    ], LIVE_LINE_OPTIONS);
+    ], liveChartOptions);
     this.electricalChart = buildMultiSeriesChart(readings, [
       { label: 'V', color: '#2563eb', value: (r) => r.V },
       { label: 'A', color: '#ff8f00', value: (r) => r.A },
       { label: 'Vatios (W)', color: '#7c3aed', value: (r) => computePower(r) },
-    ], { ...LIVE_LINE_OPTIONS, yAxisTitle: 'Variables eléctricas (V, A, W)', nonNegativeYAxis: true });
+    ], { ...liveChartOptions, yAxisTitle: 'Variables eléctricas (V, A, W)', nonNegativeYAxis: true });
     this.deltaChart = buildMultiSeriesChart(readings, [
       {
         label: 'Delta T evaporación',
@@ -622,21 +692,18 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         color: '#ea580c',
         value: (r) => computeDeltaTCond(r),
       },
-    ], LIVE_LINE_OPTIONS);
+    ], liveChartOptions);
     this.powerChart = buildMultiSeriesChart(readings, [
       { label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) },
-    ], LIVE_LINE_OPTIONS);
+    ], liveChartOptions);
     const efficiencyValues = computeEfficiencyIndex(readings);
     this.efficiencyChart = buildMultiSeriesChart(readings, [
       {
         label: 'ΔT/kWh',
         color: '#0d9488',
-        value: (reading) => {
-          const index = readings.indexOf(reading);
-          return efficiencyValues[index];
-        },
+        value: (_reading, index) => efficiencyValues[index],
       },
-    ], { ...LIVE_LINE_OPTIONS, lineTension: 0.35 });
+    ], { ...liveChartOptions, lineTension: 0.35 });
     this.consumptionChartTitle = 'Análisis de consumo (kWh)';
     this.consumptionChart = buildMultiSeriesChart(readings, [
       {
@@ -645,7 +712,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         unit: 'kWh',
         value: (r) => r.kWh,
       },
-    ], { ...LIVE_LINE_OPTIONS, lineTension: 0.35, nonNegativeYAxis: true });
+    ], { ...liveChartOptions, lineTension: 0.35, nonNegativeYAxis: true });
   }
 
   get temperatureAlert(): { status: 'ok' | 'low' | 'high' | 'none'; message: string } | null {

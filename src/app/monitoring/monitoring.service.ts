@@ -44,11 +44,13 @@ export class MonitoringService {
     pageSize: number,
     sort: DeviceSortMode,
     customOrder: string[],
+    clientFilter: string | number = 'all',
   ): Observable<DeviceOverviewPage> {
     let params = new HttpParams()
       .set('page', String(page))
       .set('pageSize', String(pageSize))
-      .set('sort', sort);
+      .set('sort', sort)
+      .set('clientFilter', String(clientFilter));
     if (sort === 'custom' && customOrder.length) {
       params = params.set('customOrder', customOrder.join(','));
     }
@@ -250,8 +252,8 @@ export class MonitoringService {
     data: {
       equipo_placa?: string;
       equipo_modelo?: string;
-      limite_inferior_celsius?: number;
-      limite_superior_celsius?: number;
+      limite_inferior_celsius?: number | null;
+      limite_superior_celsius?: number | null;
       valor_kwh?: number | null;
       observaciones?: string;
       ubicacion?: string;
