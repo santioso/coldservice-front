@@ -1,5 +1,5 @@
 import { fakeAsync, tick } from '@angular/core/testing';
-import { Subject } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { Router } from '@angular/router';
 import { MonitoringAuthService } from '../monitoring-auth.service';
 import { DeviceOverviewItem, DeviceOverviewPage } from '../monitoring.models';
@@ -10,6 +10,7 @@ describe('MonitoringDashboardComponent', () => {
   let component: MonitoringDashboardComponent;
   let overviewRequests: Subject<DeviceOverviewPage>[];
   let monitoringService: jasmine.SpyObj<MonitoringService>;
+  let authService: { currentSession: any };
 
   const emptyOverview = (): DeviceOverviewPage => ({
     page: 1,
@@ -20,18 +21,22 @@ describe('MonitoringDashboardComponent', () => {
 
   beforeEach(() => {
     overviewRequests = [];
-    monitoringService = jasmine.createSpyObj<MonitoringService>('MonitoringService', ['overview']);
+    monitoringService = jasmine.createSpyObj<MonitoringService>('MonitoringService', [
+      'clients',
+      'overview',
+    ]);
+    monitoringService.clients.and.returnValue(of([]));
     monitoringService.overview.and.callFake(() => {
       const request = new Subject<DeviceOverviewPage>();
       overviewRequests.push(request);
       return request.asObservable();
     });
 
-    const authService = {
+    authService = {
       currentSession: { token: 'token' },
-    } as MonitoringAuthService;
+    };
     component = new MonitoringDashboardComponent(
-      authService,
+      authService as MonitoringAuthService,
       monitoringService,
       {} as Router,
     );
@@ -80,6 +85,51 @@ describe('MonitoringDashboardComponent', () => {
     expect(component.clientFilter).toBe(7);
   });
 
+  it('restores the table view for the authenticated monitoring user during initialization', () => {
+    authService.currentSession = {
+      token: 'token',
+      user: { id: 7, client_id: 11 },
+    };
+    localStorage.setItem('monitoringViewMode-7', 'table');
+
+    component.ngOnInit();
+
+    expect(component.viewMode).toBe('table');
+    component.ngOnDestroy();
+  });
+
+  it('restores the charts view for the authenticated monitoring user during initialization', () => {
+    authService.currentSession = {
+      token: 'token',
+      user: { id: 7, client_id: 11 },
+    };
+    localStorage.setItem('monitoringViewMode-7', 'charts');
+
+    component.ngOnInit();
+
+    expect(component.viewMode).toBe('charts');
+    component.ngOnDestroy();
+  });
+
+  it('persists view changes under the authenticated monitoring user id', () => {
+    authService.currentSession = {
+      token: 'token',
+      user: { id: 7, client_id: 11 },
+    };
+
+    component.setViewMode('table');
+
+    expect(localStorage.getItem('monitoringViewMode-7')).toBe('table');
+    expect(localStorage.getItem('monitoringViewMode-11')).toBeNull();
+  });
+
+  it('defaults to charts without a complete monitoring session', () => {
+    component.ngOnInit();
+
+    expect(component.viewMode).toBe('charts');
+    component.ngOnDestroy();
+  });
+
   it('stops showing the loading skeleton when the overview request fails', () => {
     component.onClientFilterChange(42);
 
@@ -119,16 +169,18 @@ describe('MonitoringDashboardComponent', () => {
     expect(component.showClientChangeSkeleton).toBeFalse();
     expect(component.items).toEqual([liveItem]);
     expect(component.chartByDevice['COLD-004-TEST']).toBeDefined();
+    const initialChart = component.chartByDevice['COLD-004-TEST'];
     expect((component.chartByDevice['COLD-004-TEST'].options as any).animation).toEqual({
       duration: 700,
       easing: 'easeOutCubic',
     });
 
     (component as any).startPolling();
-    tick(8000);
+    tick(30000);
 
     expect(monitoringService.overview).toHaveBeenCalledTimes(2);
     expect(component.loading).toBeTrue();
+    expect(component.refreshing).toBeTrue();
     expect(component.showClientChangeSkeleton).toBeFalse();
     expect(component.items).toEqual([liveItem]);
     expect(component.chartByDevice['COLD-004-TEST']).toBeDefined();
@@ -140,28 +192,39 @@ describe('MonitoringDashboardComponent', () => {
     });
 
     expect(component.loading).toBeFalse();
+    expect(component.refreshing).toBeFalse();
     expect(component.items).toEqual([liveItem]);
-    expect(component.chartByDevice['COLD-004-TEST']).toBeDefined();
-    expect((component.chartByDevice['COLD-004-TEST'].options as any).animation).toBeFalse();
-
-    overviewRequests[1].next({
-      ...emptyOverview(),
-      total: 1,
-      items: [
-        {
-          ...liveItem,
-          last_reading_at: '2026-10-03T12:00:08.000Z',
-          readings: [
-            { timestamp: '2026-10-03T12:00:08.000Z', T1: 4.6 },
-          ],
-        },
-      ],
-    });
-
+    expect(component.chartByDevice['COLD-004-TEST']).toBe(initialChart);
     expect((component.chartByDevice['COLD-004-TEST'].options as any).animation).toEqual({
       duration: 700,
       easing: 'easeOutCubic',
     });
+
+    const updatedLiveItem = {
+      ...liveItem,
+      last_reading_at: '2026-10-03T12:00:08.000Z',
+      readings: [
+        { timestamp: '2026-10-03T12:00:08.000Z', T1: 4.6 },
+      ],
+    } as DeviceOverviewItem;
+    overviewRequests[1].next({
+      ...emptyOverview(),
+      total: 1,
+      items: [updatedLiveItem],
+    });
+
+    expect(component.chartByDevice['COLD-004-TEST']).not.toBe(initialChart);
+    expect((component.chartByDevice['COLD-004-TEST'].options as any).animation).toEqual({
+      duration: 700,
+      easing: 'easeOutCubic',
+    });
+
+    component.loadOverview(true);
+    expect(component.refreshing).toBeTrue();
+    overviewRequests[2].error(new Error('network failure'));
+
+    expect(component.refreshing).toBeFalse();
+    expect(component.items).toEqual([updatedLiveItem]);
 
     component.ngOnDestroy();
   }));

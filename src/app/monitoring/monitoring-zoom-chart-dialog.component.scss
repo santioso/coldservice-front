@@ -1,8 +1,26 @@
 .range-controls {
-  display: grid;
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 16px;
+}
+
+.date-field {
+  min-width: 170px;
+}
+
+.time-field {
+  min-width: 110px;
+}
+
+.range-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #b91c1c;
+  margin: -4px 0 16px;
+  padding: 8px 12px;
 }
 
 .zoom-chart {
@@ -12,6 +30,13 @@
 
 @media (max-width: 900px) {
   .range-controls {
-    grid-template-columns: 1fr;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .date-field,
+  .time-field,
+  .range-controls button {
+    width: 100%;
   }
 }

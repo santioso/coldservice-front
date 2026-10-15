@@ -37,6 +37,7 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
     { value: 'custom', label: 'Orden personalizado' },
   ];
   loading = false;
+  refreshing = false;
   showClientChangeSkeleton = false;
   hasLoadedOverview = false;
   error = '';
@@ -45,6 +46,7 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   private customOrder: string[] = [];
   private overviewRequestGeneration = 0;
   private lastRenderedLatestReadingByDevice = new Map<string, string | null>();
+  private chartSignatureByDevice = new Map<string, string>();
 
   // Alarma global
   globalAlarm: 'low_alarm' | 'high_alarm' | null = null;
@@ -59,6 +61,7 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.viewMode = this.readViewModePreference();
     this.customOrder = this.readCustomOrder();
     this.soundEnabled = this.readSoundPreference();
     this.loadClients();
@@ -69,6 +72,7 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.pollingSubscription?.unsubscribe();
     this.overviewSubscription?.unsubscribe();
+    this.refreshing = false;
     this.audioCtx?.close();
   }
 
@@ -76,8 +80,10 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
-  loadOverview(): void {
+  loadOverview(backgroundRefresh = false): void {
     this.overviewSubscription?.unsubscribe();
+    this.overviewSubscription = null;
+    this.refreshing = backgroundRefresh;
     const requestGeneration = ++this.overviewRequestGeneration;
     if (!this.hasLoadedOverview) {
       this.showClientChangeSkeleton = true;
@@ -100,32 +106,46 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
           this.total = response.total;
           this.page = response.page;
           this.pageSize = response.page_size;
-          this.chartByDevice = {};
+          const nextChartByDevice: Record<string, ChartConfiguration<'line'>> = {};
+          const nextChartSignatures = new Map<string, string>();
           for (const item of liveItems) {
             const latestReadingTimestamp =
               item.last_reading_at ??
               item.readings[item.readings.length - 1]?.timestamp ??
               null;
-            const hasRenderedReading = this.lastRenderedLatestReadingByDevice.has(
-              item.device_id,
-            );
-            const animateOnUpdate =
-              !hasRenderedReading ||
-              this.lastRenderedLatestReadingByDevice.get(item.device_id) !==
-                latestReadingTimestamp;
-            this.chartByDevice[item.device_id] = buildDualAxisChart(item.readings, {
-              lowerLimit: item.limite_inferior_celsius,
-              upperLimit: item.limite_superior_celsius,
-              animateOnUpdate,
-            });
+            const chartSignature = this.getChartSignature(item);
+            const previousChart = this.chartByDevice[item.device_id];
+            if (
+              previousChart &&
+              this.chartSignatureByDevice.get(item.device_id) === chartSignature
+            ) {
+              nextChartByDevice[item.device_id] = previousChart;
+            } else {
+              const hasRenderedReading = this.lastRenderedLatestReadingByDevice.has(
+                item.device_id,
+              );
+              const animateOnUpdate =
+                !hasRenderedReading ||
+                this.lastRenderedLatestReadingByDevice.get(item.device_id) !==
+                  latestReadingTimestamp;
+              nextChartByDevice[item.device_id] = buildDualAxisChart(item.readings, {
+                lowerLimit: item.limite_inferior_celsius,
+                upperLimit: item.limite_superior_celsius,
+                animateOnUpdate,
+              });
+            }
+            nextChartSignatures.set(item.device_id, chartSignature);
             this.lastRenderedLatestReadingByDevice.set(
               item.device_id,
               latestReadingTimestamp,
             );
           }
+          this.chartByDevice = nextChartByDevice;
+          this.chartSignatureByDevice = nextChartSignatures;
           this.evaluateAlarms(liveItems);
           this.hasLoadedOverview = true;
           this.loading = false;
+          this.refreshing = false;
           this.showClientChangeSkeleton = false;
           this.overviewSubscription = null;
         },
@@ -136,6 +156,7 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
           }
           this.error = 'No fue posible cargar el panel de dispositivos';
           this.loading = false;
+          this.refreshing = false;
           this.showClientChangeSkeleton = false;
           this.overviewSubscription = null;
         },
@@ -163,7 +184,9 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   }
 
   setViewMode(viewMode: 'charts' | 'table'): void {
+    if (this.viewMode === viewMode) return;
     this.viewMode = viewMode;
+    this.persistViewModePreference();
   }
 
   onPageChange(page: number): void {
@@ -333,21 +356,23 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   }
 
   private startPolling(): void {
-    this.pollingSubscription = interval(8000).subscribe(() => {
+    this.pollingSubscription = interval(30000).subscribe(() => {
       if (
         this.loading ||
         (this.overviewSubscription !== null && !this.overviewSubscription.closed)
       ) {
         return;
       }
-      this.loadOverview();
+      this.loadOverview(true);
     });
   }
 
   private clearOverviewData(): void {
     this.items = [];
     this.chartByDevice = {};
+    this.refreshing = false;
     this.lastRenderedLatestReadingByDevice.clear();
+    this.chartSignatureByDevice.clear();
     this.total = 0;
     this.hasLoadedOverview = false;
     this.globalAlarm = null;
@@ -363,8 +388,17 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  private getChartSignature(item: DeviceOverviewItem): string {
+    return JSON.stringify([
+      item.readings[item.readings.length - 1]?.timestamp ?? item.last_reading_at ?? null,
+      item.readings.length,
+      item.limite_inferior_celsius,
+      item.limite_superior_celsius,
+    ]);
+  }
+
   private readCustomOrder(): string[] {
-    const clientId = this.authService.currentSession?.user.client_id;
+    const clientId = this.authService.currentSession?.user?.client_id;
     if (!clientId) return [];
     const raw = localStorage.getItem(`monitoringDeviceOrder-${clientId}`);
     if (!raw) return [];
@@ -377,7 +411,7 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   }
 
   private persistCustomOrder(): void {
-    const clientId = this.authService.currentSession?.user.client_id;
+    const clientId = this.authService.currentSession?.user?.client_id;
     if (!clientId) return;
     localStorage.setItem(
       `monitoringDeviceOrder-${clientId}`,
@@ -386,17 +420,34 @@ export class MonitoringDashboardComponent implements OnInit, OnDestroy {
   }
 
   private readSoundPreference(): boolean {
-    const clientId = this.authService.currentSession?.user.client_id;
+    const clientId = this.authService.currentSession?.user?.client_id;
     if (!clientId) return true;
     return localStorage.getItem(`monitoringSoundEnabled-${clientId}`) !== 'false';
   }
 
   private persistSoundPreference(): void {
-    const clientId = this.authService.currentSession?.user.client_id;
+    const clientId = this.authService.currentSession?.user?.client_id;
     if (!clientId) return;
     localStorage.setItem(
       `monitoringSoundEnabled-${clientId}`,
       String(this.soundEnabled),
     );
+  }
+
+  private readViewModePreference(): 'charts' | 'table' {
+    const userId = this.authService.currentSession?.user?.id;
+    if (userId == null) return 'charts';
+
+    const storedViewMode = localStorage.getItem(`monitoringViewMode-${userId}`);
+    return storedViewMode === 'table' || storedViewMode === 'charts'
+      ? storedViewMode
+      : 'charts';
+  }
+
+  private persistViewModePreference(): void {
+    const userId = this.authService.currentSession?.user?.id;
+    if (userId == null) return;
+
+    localStorage.setItem(`monitoringViewMode-${userId}`, this.viewMode);
   }
 }

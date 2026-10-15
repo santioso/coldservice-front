@@ -2,22 +2,71 @@
 
 <mat-dialog-content>
   <div class="range-controls">
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="date-field">
       <mat-label>Desde</mat-label>
-      <input matInput type="datetime-local" #fromInput />
+      <input
+        matInput
+        readonly
+        [matDatepicker]="fromPicker"
+        [(ngModel)]="fromDate"
+        aria-label="Fecha inicial"
+      />
+      <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+      <mat-datepicker #fromPicker></mat-datepicker>
     </mat-form-field>
-    <mat-form-field appearance="outline">
+    <mat-form-field appearance="outline" class="time-field">
+      <mat-label>Hora inicial</mat-label>
+      <mat-select [(ngModel)]="fromHour" aria-label="Hora inicial">
+        <mat-option *ngFor="let hour of hourOptions" [value]="hour">
+          {{ hour | number: '2.0-0' }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="time-field">
+      <mat-label>Minuto inicial</mat-label>
+      <mat-select [(ngModel)]="fromMinute" aria-label="Minuto inicial">
+        <mat-option *ngFor="let minute of minuteOptions" [value]="minute">
+          {{ minute | number: '2.0-0' }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="date-field">
       <mat-label>Hasta</mat-label>
-      <input matInput type="datetime-local" #toInput />
+      <input
+        matInput
+        readonly
+        [matDatepicker]="toPicker"
+        [(ngModel)]="toDate"
+        aria-label="Fecha final"
+      />
+      <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+      <mat-datepicker #toPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="time-field">
+      <mat-label>Hora final</mat-label>
+      <mat-select [(ngModel)]="toHour" aria-label="Hora final">
+        <mat-option *ngFor="let hour of hourOptions" [value]="hour">
+          {{ hour | number: '2.0-0' }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="time-field">
+      <mat-label>Minuto final</mat-label>
+      <mat-select [(ngModel)]="toMinute" aria-label="Minuto final">
+        <mat-option *ngFor="let minute of minuteOptions" [value]="minute">
+          {{ minute | number: '2.0-0' }}
+        </mat-option>
+      </mat-select>
     </mat-form-field>
     <button
       mat-stroked-button
       type="button"
-      (click)="applyRange(fromInput.value, toInput.value)"
+      (click)="applyRange()"
     >
       Aplicar rango
     </button>
   </div>
+  <div class="range-error" role="alert" *ngIf="rangeError">{{ rangeError }}</div>
 
   <div class="zoom-chart">
     <canvas

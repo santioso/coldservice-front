@@ -34,18 +34,26 @@ import {
   computeEfficiencyIndex,
   computePower,
   MonitoringChartOptions,
+  selectLatestReadings,
 } from '../monitoring-chart.util';
 import {
   MeasurementSessionDetail,
   getWhatsappRecipient,
   MonitoringAlarmConfiguration,
   MonitoringNotificationRecipientsResponse,
+  MonitoringReading,
 } from '../monitoring.models';
 import { MonitoringService } from '../monitoring.service';
 
 type ChartsPerRow = 1 | 2 | 3 | 4;
+type ChartRangeHours = 2 | 6 | 8 | 12 | 24;
 const CHARTS_PER_ROW_STORAGE_KEY = 'monitoring-device-charts-per-row';
 const LARGE_SCREEN_MIN_WIDTH = 960;
+const HOUR_MS = 60 * 60 * 1000;
+const CHART_RANGE_OPTIONS: readonly ChartRangeHours[] = [2, 6, 8, 12, 24];
+const EFFICIENCY_CHART_TITLE =
+  'Mostrando el índice de eficiencia de los últimos 15 minutos de las lecturas en pantalla';
+const EFFICIENCY_CHART_LABEL = `${EFFICIENCY_CHART_TITLE} (ΔT/kWh)`;
 const LIVE_LINE_OPTIONS: MonitoringChartOptions = {
   pointRadius: 0,
   updateAnimationDuration: 400,
@@ -59,8 +67,13 @@ const LIVE_LINE_OPTIONS: MonitoringChartOptions = {
 export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   deviceId = '';
   detail: MeasurementSessionDetail | null = null;
+  displayedReadings: MonitoringReading[] = [];
+  displayedRangeFrom: Date | null = null;
+  displayedRangeTo: Date | null = null;
   noLiveMeasurement = false;
   loading = false;
+  refreshing = false;
+  displayedRangeLoading = false;
   error = '';
   editingCard: 'cliente' | 'activo' | 'tecnico' | null = null;
   whatsappLoading = false;
@@ -75,15 +88,21 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   consumptionChartTitle = 'Análisis de consumo (kWh)';
   kwhPrice: number | null = null;
   readonly chartsPerRowOptions: ChartsPerRow[] = [1, 2, 3, 4];
+  readonly chartRangeOptions = CHART_RANGE_OPTIONS;
+  selectedChartRangeHours: ChartRangeHours = 8;
   chartsPerRow: ChartsPerRow = 2;
   private savedChartsPerRow: ChartsPerRow | null = null;
   private pollingSubscription: Subscription | null = null;
   private routeSubscription: Subscription | null = null;
   private liveMeasurementSubscription: Subscription | null = null;
+  private displayedReadingsSubscription: Subscription | null = null;
   private liveMeasurementRequestSequence = 0;
+  private displayedReadingsRequestSequence = 0;
   private clientSnapshotUpdateInProgress = false;
   private clientSnapshotUpdateSequence = 0;
   private lastAppliedLatestReadingTimestamp: string | null | undefined;
+  private chartRenderSignature: string | null = null;
+  private historicalChartRange = false;
   notificationRecipients: MonitoringNotificationRecipientsResponse | null = null;
   alarmConfiguration: MonitoringAlarmConfiguration | null = null;
   alarmConfigurationLoading = false;
@@ -110,7 +129,13 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         this.editingCard = null;
       }
       this.cancelLiveMeasurement();
+      this.cancelDisplayedReadingsRequest();
       this.lastAppliedLatestReadingTimestamp = undefined;
+      this.chartRenderSignature = null;
+      this.historicalChartRange = false;
+      this.displayedReadings = [];
+      this.displayedRangeFrom = null;
+      this.displayedRangeTo = null;
       this.deviceId = deviceId;
       this.detail = null;
       this.loadLiveMeasurement();
@@ -136,11 +161,48 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     this.setChartsPerRow(parsed as ChartsPerRow);
   }
 
+  onChartRangeChange(value: ChartRangeHours | string | null): void {
+    if (this.displayedRangeLoading) {
+      return;
+    }
+
+    const parsed = Number(value);
+    if (!CHART_RANGE_OPTIONS.includes(parsed as ChartRangeHours)) {
+      return;
+    }
+
+    const selectedHours = parsed as ChartRangeHours;
+    if (this.isChartRangeOptionDisabled(selectedHours)) {
+      return;
+    }
+
+    if (selectedHours === this.selectedChartRangeHours) {
+      return;
+    }
+
+    this.selectedChartRangeHours = selectedHours;
+    if (!this.detail) {
+      return;
+    }
+
+    if (this.historicalChartRange && this.displayedRangeTo) {
+      const to = new Date(this.displayedRangeTo.getTime());
+      const from = new Date(to.getTime() - this.chartWindowMs);
+      this.loadChartReadings(from, to);
+      return;
+    }
+
+    this.historicalChartRange = false;
+    this.applyLatestDisplayedReadings(this.detail, false);
+  }
+
   ngOnDestroy(): void {
     this.clientSnapshotUpdateSequence += 1;
     this.cancelLiveMeasurement();
+    this.cancelDisplayedReadingsRequest();
     this.pollingSubscription?.unsubscribe();
     this.routeSubscription?.unsubscribe();
+    this.refreshing = false;
   }
 
   backToPanel(): void {
@@ -148,14 +210,21 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   loadLiveMeasurement(): void {
+    const hasRenderedDetail = this.detail !== null;
     this.cancelLiveMeasurement();
     const requestSequence = this.liveMeasurementRequestSequence;
     const requestedDeviceId = this.deviceId;
     this.loading = true;
+    this.refreshing = hasRenderedDetail;
     this.error = '';
     this.liveMeasurementSubscription = this.monitoringService.live(this.deviceId).subscribe({
       next: (detail) => {
         if (requestSequence !== this.liveMeasurementRequestSequence || requestedDeviceId !== this.deviceId) {
+          return;
+        }
+        if (detail === null && hasRenderedDetail) {
+          this.loading = false;
+          this.refreshing = false;
           return;
         }
         this.applyLiveMeasurementDetail(detail);
@@ -166,6 +235,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         }
         this.error = 'No fue posible cargar la medición en vivo';
         this.loading = false;
+        this.refreshing = false;
       },
     });
   }
@@ -179,21 +249,21 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   openMainZoom(): void {
-    if (!this.detail) return;
+    if (!this.detail || !this.displayedReadings.length) return;
     this.openZoom({
       title: 'Corriente vs temp. gabinete',
       mode: 'dual',
-      readings: this.detail.readings,
+      readings: this.displayedReadings,
       options: LIVE_LINE_OPTIONS,
     });
   }
 
   openTempsZoom(): void {
-    if (!this.detail) return;
+    if (!this.detail || !this.displayedReadings.length) return;
     this.openZoom({
       title: 'Temperaturas',
       mode: 'multi',
-      readings: this.detail.readings,
+      readings: this.displayedReadings,
       series: [
         { label: 'Gabinete', color: '#0057b8', value: (r) => r.T1 },
         { label: 'Evaporador', color: '#16a34a', value: (r) => r.T2 },
@@ -205,11 +275,11 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   openElectricalZoom(): void {
-    if (!this.detail) return;
+    if (!this.detail || !this.displayedReadings.length) return;
     this.openZoom({
       title: 'Variables eléctricas',
       mode: 'multi',
-      readings: this.detail.readings,
+      readings: this.displayedReadings,
       series: [
         { label: 'V', color: '#2563eb', value: (r) => r.V },
         { label: 'A', color: '#ff8f00', value: (r) => r.A },
@@ -220,11 +290,11 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   openDeltaZoom(): void {
-    if (!this.detail) return;
+    if (!this.detail || !this.displayedReadings.length) return;
     this.openZoom({
       title: 'Eficiencia de intercambio',
       mode: 'multi',
-      readings: this.detail.readings,
+      readings: this.displayedReadings,
       series: [
         {
           label: 'Delta T evaporación',
@@ -242,31 +312,28 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   openPowerZoom(): void {
-    if (!this.detail) return;
+    if (!this.detail || !this.displayedReadings.length) return;
     this.openZoom({
       title: 'Vatios (W)',
       mode: 'multi',
-      readings: this.detail.readings,
+      readings: this.displayedReadings,
       series: [{ label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) }],
       options: LIVE_LINE_OPTIONS,
     });
   }
 
   openEfficiencyZoom(): void {
-    if (!this.detail) return;
-    const efficiencyValues = computeEfficiencyIndex(this.detail.readings);
+    if (!this.detail || !this.displayedReadings.length) return;
     this.openZoom({
-      title: 'Índice de eficiencia',
+      title: EFFICIENCY_CHART_TITLE,
       mode: 'multi',
-      readings: this.detail.readings,
+      readings: this.displayedReadings,
+      isEfficiency: true,
       series: [
         {
-          label: 'ΔT/kWh',
+          label: EFFICIENCY_CHART_LABEL,
           color: '#0d9488',
-          value: (reading) => {
-            const index = this.detail!.readings.indexOf(reading);
-            return efficiencyValues[index];
-          },
+          value: () => 0,
         },
       ],
       options: { ...LIVE_LINE_OPTIONS, lineTension: 0.35 },
@@ -274,11 +341,11 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   openConsumptionZoom(): void {
-    if (!this.detail) return;
+    if (!this.detail || !this.displayedReadings.length) return;
     this.openZoom({
       title: this.consumptionChartTitle,
       mode: 'multi',
-      readings: this.detail.readings,
+      readings: this.displayedReadings,
       series: [
         {
           label: 'Consumo (kWh)',
@@ -293,6 +360,109 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
 
   formatDate(value: string | null | undefined): string {
     return value ? new Date(value).toLocaleString() : '--';
+  }
+
+  get latestMeasurementAt(): string | null {
+    if (!this.detail) {
+      return null;
+    }
+    return this.detail.last_reading_at ||
+      this.detail.readings[this.detail.readings.length - 1]?.timestamp ||
+      null;
+  }
+
+  get firstMeasurementAt(): string | null {
+    if (!this.detail) {
+      return null;
+    }
+
+    const backendTimestamp = this.validTimestamp(this.detail.first_reading_at);
+    if (backendTimestamp) {
+      return backendTimestamp;
+    }
+
+    const earliestVisibleReading = [...this.detail.readings]
+      .filter((reading) => this.validTimestamp(reading.timestamp))
+      .sort(
+        (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp),
+      )[0];
+    if (earliestVisibleReading) {
+      return earliestVisibleReading.timestamp;
+    }
+    return this.detail.readings.length === 0 ? this.detail.started_at || null : null;
+  }
+
+  get readingsReceivedCount(): number {
+    return this.detail?.readings_received_count ?? this.detail?.readings_count ?? 0;
+  }
+
+  get displayedRangeLabel(): string {
+    if (!this.displayedRangeFrom || !this.displayedRangeTo) {
+      return '--';
+    }
+    return `${this.formatDate(this.displayedRangeFrom.toISOString())} — ${this.formatDate(this.displayedRangeTo.toISOString())}`;
+  }
+
+  get isHistoricalChartRange(): boolean {
+    return this.historicalChartRange;
+  }
+
+  get chartWindowMs(): number {
+    return this.selectedChartRangeHours * HOUR_MS;
+  }
+
+  isChartRangeOptionDisabled(hours: ChartRangeHours): boolean {
+    if (hours <= 8) {
+      return false;
+    }
+
+    const availableSpan = this.availableReadingSpanMs();
+    return availableSpan == null || availableSpan.last - availableSpan.first < hours * HOUR_MS;
+  }
+
+  get nextChartRangeDisabled(): boolean {
+    if (this.displayedRangeLoading || !this.displayedRangeTo) {
+      return true;
+    }
+    const latestTimestamp = this.latestKnownReadingTimestampMs();
+    return latestTimestamp == null || this.displayedRangeTo.getTime() + this.chartWindowMs > latestTimestamp;
+  }
+
+  get previousChartRangeDisabled(): boolean {
+    if (this.displayedRangeLoading || !this.detail || !this.displayedRangeFrom) {
+      return true;
+    }
+
+    const displayedFromMs = this.displayedRangeFrom.getTime();
+    const earliestTimestampMs = this.earliestAuthoritativeReadingTimestampMs();
+    return !Number.isFinite(displayedFromMs)
+      || earliestTimestampMs == null
+      || displayedFromMs <= earliestTimestampMs;
+  }
+
+  navigateToPreviousChartRange(): void {
+    if (this.previousChartRangeDisabled || !this.detail || !this.displayedRangeFrom || !this.displayedRangeTo) return;
+    const to = new Date(this.displayedRangeFrom.getTime());
+    const from = new Date(to.getTime() - this.chartWindowMs);
+    this.loadChartReadings(from, to);
+  }
+
+  navigateToNextChartRange(): void {
+    if (this.nextChartRangeDisabled || !this.displayedRangeFrom || !this.displayedRangeTo) return;
+    const from = new Date(this.displayedRangeTo.getTime());
+    const to = new Date(from.getTime() + this.chartWindowMs);
+    this.loadChartReadings(from, to);
+  }
+
+  returnToLatestChartRange(): void {
+    if (!this.detail) return;
+    this.cancelDisplayedReadingsRequest();
+    this.historicalChartRange = false;
+    this.applyLatestDisplayedReadings(this.detail, false);
+  }
+
+  private validTimestamp(value: string | null | undefined): string | null {
+    return value && Number.isFinite(Date.parse(value)) ? value : null;
   }
 
   formatDateOnly(value: string | null | undefined): string {
@@ -593,7 +763,7 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   private startPolling(): void {
-    this.pollingSubscription = interval(8000).subscribe(() => {
+    this.pollingSubscription = interval(30000).subscribe(() => {
       if (this.clientSnapshotUpdateInProgress) {
         return;
       }
@@ -609,6 +779,14 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     this.liveMeasurementSubscription?.unsubscribe();
     this.liveMeasurementSubscription = null;
     this.loading = false;
+    this.refreshing = false;
+  }
+
+  private cancelDisplayedReadingsRequest(): void {
+    this.displayedReadingsRequestSequence += 1;
+    this.displayedReadingsSubscription?.unsubscribe();
+    this.displayedReadingsSubscription = null;
+    this.displayedRangeLoading = false;
   }
 
   private applyLiveMeasurementDetail(detail: MeasurementSessionDetail | null): void {
@@ -616,20 +794,32 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     this.noLiveMeasurement = !detail;
     this.error = '';
     if (detail) {
+      if (!this.historicalChartRange && this.selectedChartRangeHours > 8 &&
+        this.isChartRangeOptionDisabled(this.selectedChartRangeHours)) {
+        this.selectedChartRangeHours = 8;
+      }
+
       const latestReadingTimestamp =
         detail.readings[detail.readings.length - 1]?.timestamp ?? null;
+      const chartSignature = this.getChartSignature(detail, this.displayedReadings);
       const animateOnUpdate =
         this.lastAppliedLatestReadingTimestamp === undefined ||
         this.lastAppliedLatestReadingTimestamp !== latestReadingTimestamp;
       this.lastAppliedLatestReadingTimestamp = latestReadingTimestamp;
       this.kwhPrice = detail.installation?.valor_kwh ?? null;
-      this.buildCharts(detail, animateOnUpdate);
+      if (!this.historicalChartRange) {
+        this.applyLatestDisplayedReadings(detail, animateOnUpdate);
+      } else if (this.chartRenderSignature !== chartSignature) {
+        this.chartRenderSignature = chartSignature;
+        this.buildCharts(detail, this.displayedReadings, false);
+      }
     } else {
       this.lastAppliedLatestReadingTimestamp = undefined;
       this.kwhPrice = null;
       this.clearCharts();
     }
     this.loading = false;
+    this.refreshing = false;
   }
 
   private loadChartsPerRowPreference(): void {
@@ -658,9 +848,9 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
 
   private buildCharts(
     detail: MeasurementSessionDetail,
+    readings: MonitoringReading[],
     animateOnUpdate: boolean,
   ): void {
-    const readings = detail.readings;
     const liveChartOptions: MonitoringChartOptions = {
       ...LIVE_LINE_OPTIONS,
       animateOnUpdate,
@@ -696,10 +886,11 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     this.powerChart = buildMultiSeriesChart(readings, [
       { label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) },
     ], liveChartOptions);
-    const efficiencyValues = computeEfficiencyIndex(readings);
-    this.efficiencyChart = buildMultiSeriesChart(readings, [
+    const efficiencyReadings = selectLatestReadings(readings);
+    const efficiencyValues = computeEfficiencyIndex(readings, efficiencyReadings);
+    this.efficiencyChart = buildMultiSeriesChart(efficiencyReadings, [
       {
-        label: 'ΔT/kWh',
+        label: EFFICIENCY_CHART_LABEL,
         color: '#0d9488',
         value: (_reading, index) => efficiencyValues[index],
       },
@@ -713,6 +904,20 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
         value: (r) => r.kWh,
       },
     ], { ...liveChartOptions, lineTension: 0.35, nonNegativeYAxis: true });
+  }
+
+  private getChartSignature(
+    detail: MeasurementSessionDetail,
+    readings: MonitoringReading[] = this.displayedReadings,
+  ): string {
+    const latestReadingTimestamp =
+      readings[readings.length - 1]?.timestamp ?? null;
+    return JSON.stringify([
+      latestReadingTimestamp,
+      readings.length,
+      detail.installation?.limite_inferior_celsius ?? null,
+      detail.installation?.limite_superior_celsius ?? null,
+    ]);
   }
 
   get temperatureAlert(): { status: 'ok' | 'low' | 'high' | 'none'; message: string } | null {
@@ -735,16 +940,35 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   get accumulatedConsumptionKwh(): number | null {
+    const backendConsumption = this.detail?.total_consumption_kwh;
+    if (this.detail && Object.prototype.hasOwnProperty.call(this.detail, 'total_consumption_kwh')) {
+      return typeof backendConsumption === 'number' && Number.isFinite(backendConsumption)
+        ? backendConsumption
+        : null;
+    }
+    if (typeof backendConsumption === 'number' && Number.isFinite(backendConsumption)) {
+      return backendConsumption;
+    }
     return this.consumptionDeltaKwh(this.detail?.readings ?? []);
   }
 
   get accumulatedConsumptionCost(): number | null {
     const consumption = this.accumulatedConsumptionKwh;
-    return consumption != null && this.kwhPrice != null ? consumption * this.kwhPrice : null;
+    const kwhPrice = this.kwhPrice ?? this.detail?.installation?.valor_kwh ?? null;
+    return consumption != null && kwhPrice != null ? consumption * kwhPrice : null;
   }
 
   get setPointDuration(): string {
     const detail = this.detail;
+    const backendDuration = detail?.set_point_duration_minutes;
+    if (detail && Object.prototype.hasOwnProperty.call(detail, 'set_point_duration_minutes')) {
+      return typeof backendDuration === 'number' && Number.isFinite(backendDuration) && backendDuration >= 0
+        ? this.formatCompactMinutes(Math.round(backendDuration))
+        : '—';
+    }
+    if (typeof backendDuration === 'number' && Number.isFinite(backendDuration) && backendDuration >= 0) {
+      return this.formatCompactMinutes(Math.round(backendDuration));
+    }
     const lower = detail?.installation?.limite_inferior_celsius;
     if (lower == null || !detail?.readings?.length) return '—';
 
@@ -799,6 +1023,10 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
   }
 
   clearCharts(): void {
+    this.chartRenderSignature = null;
+    this.displayedReadings = [];
+    this.displayedRangeFrom = null;
+    this.displayedRangeTo = null;
     this.mainChart = null;
     this.tempsChart = null;
     this.electricalChart = null;
@@ -807,5 +1035,142 @@ export class MonitoringDeviceDetailComponent implements OnInit, OnDestroy {
     this.efficiencyChart = null;
     this.consumptionChart = null;
     this.consumptionChartTitle = 'Análisis de consumo (kWh)';
+  }
+
+  private loadChartReadings(from: Date, to: Date): void {
+    this.loadDisplayedReadings(from, to, true);
+  }
+
+  private loadDisplayedReadings(
+    from: Date,
+    to: Date,
+    historical: boolean,
+    animateOnUpdate = false,
+  ): void {
+    const requestSequence = ++this.displayedReadingsRequestSequence;
+    this.displayedReadingsSubscription?.unsubscribe();
+    this.historicalChartRange = historical;
+    this.displayedRangeLoading = true;
+    this.error = '';
+    this.displayedReadingsSubscription = this.monitoringService.readings(this.deviceId, from, to).subscribe({
+      next: (response) => {
+        if (requestSequence !== this.displayedReadingsRequestSequence || !this.detail) return;
+        this.displayedRangeFrom = from;
+        this.displayedRangeTo = to;
+        this.displayedReadings = response.readings;
+        this.displayedRangeLoading = false;
+        this.chartRenderSignature = this.getChartSignature(this.detail, this.displayedReadings);
+        this.buildCharts(this.detail, this.displayedReadings, animateOnUpdate);
+        this.displayedReadingsSubscription = null;
+      },
+      error: () => {
+        if (requestSequence !== this.displayedReadingsRequestSequence) return;
+        this.displayedRangeLoading = false;
+        this.error = 'No fue posible cargar las lecturas del rango seleccionado';
+        this.displayedReadingsSubscription = null;
+      },
+    });
+  }
+
+  private applyLatestDisplayedReadings(
+    detail: MeasurementSessionDetail,
+    animateOnUpdate: boolean,
+  ): void {
+    const latestTimestamp = this.latestKnownReadingTimestampMs(detail);
+    if (latestTimestamp == null) {
+      this.cancelDisplayedReadingsRequest();
+      this.displayedReadings = [];
+      this.displayedRangeFrom = null;
+      this.displayedRangeTo = null;
+      this.clearCharts();
+      return;
+    }
+
+    const to = new Date(latestTimestamp);
+    const from = new Date(latestTimestamp - this.chartWindowMs);
+    this.displayedRangeFrom = from;
+    this.displayedRangeTo = to;
+
+    if (this.selectedChartRangeHours > 8) {
+      this.loadDisplayedReadings(from, to, false, animateOnUpdate);
+      return;
+    }
+
+    this.cancelDisplayedReadingsRequest();
+    this.displayedReadings = this.filterReadingsToRange(detail.readings, from, to);
+    const chartSignature = this.getChartSignature(detail, this.displayedReadings);
+    if (this.chartRenderSignature !== chartSignature) {
+      this.chartRenderSignature = chartSignature;
+      this.buildCharts(detail, this.displayedReadings, animateOnUpdate);
+    }
+  }
+
+  private filterReadingsToRange(
+    readings: MonitoringReading[],
+    from: Date,
+    to: Date,
+  ): MonitoringReading[] {
+    const fromMs = from.getTime();
+    const toMs = to.getTime();
+    return readings.filter((reading) => {
+      const timestamp = Date.parse(reading.timestamp);
+      return Number.isFinite(timestamp) && timestamp >= fromMs && timestamp <= toMs;
+    });
+  }
+
+  private latestKnownReadingTimestampMs(detail: MeasurementSessionDetail | null = this.detail): number | null {
+    if (!detail) return null;
+    const timestamps = [
+      detail.last_reading_at,
+      ...detail.readings.map((reading) => reading.timestamp),
+    ]
+      .map((timestamp) => timestamp ? Date.parse(timestamp) : Number.NaN)
+      .filter((timestamp) => Number.isFinite(timestamp));
+    return timestamps.length ? Math.max(...timestamps) : null;
+  }
+
+  private availableReadingSpanMs(
+    detail: MeasurementSessionDetail | null = this.detail,
+  ): { first: number; last: number } | null {
+    if (!detail) return null;
+
+    const readings = Array.isArray(detail.readings) ? detail.readings : [];
+    const visibleTimestamps = readings
+      .map((reading) => this.parseTimestamp(reading.timestamp))
+      .filter((timestamp): timestamp is number => timestamp != null);
+    const first = this.parseTimestamp(detail.first_reading_at) ??
+      (visibleTimestamps.length ? Math.min(...visibleTimestamps) : null);
+    const last = this.parseTimestamp(detail.last_reading_at) ??
+      (visibleTimestamps.length ? Math.max(...visibleTimestamps) : null);
+
+    if (first == null || last == null || last < first) {
+      return null;
+    }
+
+    return { first, last };
+  }
+
+  private earliestAuthoritativeReadingTimestampMs(): number | null {
+    if (!this.detail) return null;
+
+    const firstReadingTimestamp = this.detail.first_reading_at;
+    if (firstReadingTimestamp && Number.isFinite(Date.parse(firstReadingTimestamp))) {
+      return Date.parse(firstReadingTimestamp);
+    }
+
+    const readings = Array.isArray(this.detail.readings) ? this.detail.readings : [];
+    const readingTimestamps = readings
+      .map((reading) => Date.parse(reading.timestamp))
+      .filter((timestamp) => Number.isFinite(timestamp));
+    if (readingTimestamps.length) {
+      return Math.min(...readingTimestamps);
+    }
+
+    if (readings.length === 0 && this.detail.started_at) {
+      const startedAt = Date.parse(this.detail.started_at);
+      return Number.isFinite(startedAt) ? startedAt : null;
+    }
+
+    return null;
   }
 }
