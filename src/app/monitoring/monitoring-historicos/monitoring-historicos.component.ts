@@ -12,6 +12,7 @@ import {
   computeDeltaTEvap,
   computeEfficiencyIndex,
   computePower,
+  selectLatestReadings,
 } from '../monitoring-chart.util';
 import {
   ActivoDialogResult,
@@ -407,15 +408,13 @@ export class MonitoringHistoricosComponent implements OnInit {
     this.powerChart = buildMultiSeriesChart(readings, [
       { label: 'Vatios (W)', color: '#0f766e', value: (r) => computePower(r) },
     ]);
-    const efficiencyValues = computeEfficiencyIndex(readings);
-    this.efficiencyChart = buildMultiSeriesChart(readings, [
+    const efficiencyReadings = selectLatestReadings(readings);
+    const efficiencyValues = computeEfficiencyIndex(readings, efficiencyReadings);
+    this.efficiencyChart = buildMultiSeriesChart(efficiencyReadings, [
       {
-        label: 'ΔT/kWh',
+        label: 'IE 15 min (ΔT/kWh)',
         color: '#0d9488',
-        value: (reading) => {
-          const index = readings.indexOf(reading);
-          return efficiencyValues[index];
-        },
+        value: (_reading, index) => efficiencyValues[index],
       },
     ], { lineTension: 0.35 });
     this.consumptionChartTitle = 'Análisis de consumo (kWh)';

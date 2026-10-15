@@ -69,6 +69,9 @@ export interface DeviceOverviewItem {
   modelo: string | null;
   activo: boolean;
   activo_id: string | null;
+  client_id?: number | null;
+  client_name?: string | null;
+  ubicacion?: string | null;
   is_live: boolean;
   last_reading_at: string | null;
   readings: MonitoringReading[];
@@ -110,6 +113,11 @@ export interface MeasurementSessionDetail {
   activo: ActivoInfo | null;
   started_at: string;
   readings_count: number;
+  readings_received_count?: number;
+  first_reading_at?: string | null;
+  last_reading_at?: string | null;
+  total_consumption_kwh?: number | null;
+  set_point_duration_minutes?: number | null;
   photos_count: number;
   is_live: boolean;
   client: {

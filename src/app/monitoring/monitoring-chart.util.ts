@@ -5,10 +5,12 @@ export type ChartSeriesConfig = {
   label: string;
   color: string;
   unit?: string;
-  value: (reading: MonitoringReading) => number | undefined;
+  value: (reading: MonitoringReading, index: number) => number | undefined;
 };
 
 export type MonitoringChartOptions = {
+  animateOnUpdate?: boolean;
+  updateAnimationDuration?: number;
   detailedTimeAxis?: boolean;
   lowerLimit?: number | null;
   upperLimit?: number | null;
@@ -18,6 +20,29 @@ export type MonitoringChartOptions = {
   pointHoverRadius?: number;
   yAxisTitle?: string;
 };
+
+const DEFAULT_UPDATE_ANIMATION_DURATION = 700;
+const LIVE_UPDATE_ANIMATION = {
+  duration: DEFAULT_UPDATE_ANIMATION_DURATION,
+  easing: 'easeOutCubic' as const,
+};
+
+function buildAnimationOptions(
+  options: MonitoringChartOptions,
+): { animation?: false | typeof LIVE_UPDATE_ANIMATION } {
+  if (options.animateOnUpdate === undefined) {
+    return {};
+  }
+
+  return {
+    animation: options.animateOnUpdate
+      ? {
+          ...LIVE_UPDATE_ANIMATION,
+          duration: options.updateAnimationDuration ?? DEFAULT_UPDATE_ANIMATION_DURATION,
+        }
+      : false,
+  };
+}
 
 export function formatTimeLabel(timestamp: string): string {
   const date = new Date(timestamp);
@@ -130,7 +155,7 @@ function formatAxisTick(value: string | number, unit: string): string {
 
 function resolveAxisTitle(unit: string, labels: string[]): string {
   const normalizedLabels = labels.join(' ').toLowerCase();
-  if (unit === '°C/kWh') return 'Eficiencia (°C/kWh)';
+  if (unit === '°C/kWh') return 'IE 15 min (°C/kWh)';
   if (unit === 'Wh') return 'Consumo (Wh)';
   if (unit === 'kWh') return 'Consumo (kWh)';
   if (unit === 'W') return 'Vatios (W)';
@@ -337,6 +362,7 @@ export function buildDualAxisChart(
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...buildAnimationOptions(options),
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true },
@@ -424,8 +450,8 @@ export function buildMultiSeriesChart(
       datasets: [
         ...series.map((item) => ({
           label: item.label,
-          data: readings.map((reading) => {
-            const value = item.value(reading);
+          data: readings.map((reading, index) => {
+            const value = item.value(reading, index);
             return typeof value === 'number' ? value : null;
           }),
           borderColor: item.color,
@@ -443,6 +469,7 @@ export function buildMultiSeriesChart(
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      ...buildAnimationOptions(options),
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { display: true },
@@ -473,15 +500,91 @@ export function buildMultiSeriesChart(
   };
 }
 
-export function computeEfficiencyIndex(readings: MonitoringReading[]): number[] {
-  if (!readings.length) return [];
-  const initial = readings[0].T1 ?? 0;
-  return readings.map((reading) => {
-    const current = reading.T1 ?? 0;
-    const kwh = Math.max(0, reading.kWh ?? 0);
-    const delta = initial - current;
-    if (delta <= 0 || kwh <= 0) return 0;
-    return delta / kwh;
+export const IE15_MINUTE_WINDOW_MS = 15 * 60 * 1000;
+
+export function selectLatestReadings(
+  readings: MonitoringReading[],
+): MonitoringReading[] {
+  const timestamps = readings
+    .map((reading) => new Date(reading.timestamp).getTime())
+    .filter((timestamp) => Number.isFinite(timestamp));
+  if (!timestamps.length) return [];
+
+  const latestTimestamp = Math.max(...timestamps);
+  const earliestTimestamp = latestTimestamp - IE15_MINUTE_WINDOW_MS;
+  return readings.filter((reading) => {
+    const timestamp = new Date(reading.timestamp).getTime();
+    return (
+      Number.isFinite(timestamp) &&
+      timestamp >= earliestTimestamp &&
+      timestamp <= latestTimestamp
+    );
+  });
+}
+
+export function computeEfficiencyIndex(
+  readings: MonitoringReading[],
+  plottedReadings: MonitoringReading[] = readings,
+): number[] {
+  if (!readings.length || !plottedReadings.length) return [];
+
+  const timestampedReadings = readings
+    .map((reading, index) => ({
+      reading,
+      index,
+      timestamp: new Date(reading.timestamp).getTime(),
+    }))
+    .filter(({ timestamp }) => Number.isFinite(timestamp))
+    .sort((a, b) => a.timestamp - b.timestamp || a.index - b.index);
+  const findPreviousReading = (targetTimestamp: number): MonitoringReading | undefined => {
+    let low = 0;
+    let high = timestampedReadings.length - 1;
+    let match = -1;
+
+    while (low <= high) {
+      const middle = Math.floor((low + high) / 2);
+      if (timestampedReadings[middle].timestamp <= targetTimestamp) {
+        match = middle;
+        low = middle + 1;
+      } else {
+        high = middle - 1;
+      }
+    }
+
+    return match >= 0 ? timestampedReadings[match].reading : undefined;
+  };
+
+  return plottedReadings.map((reading) => {
+    const currentTimestamp = new Date(reading.timestamp).getTime();
+    const currentT1 = reading.T1;
+    const currentKwh = reading.kWh;
+    if (
+      !Number.isFinite(currentTimestamp) ||
+      typeof currentT1 !== 'number' ||
+      !Number.isFinite(currentT1) ||
+      typeof currentKwh !== 'number' ||
+      !Number.isFinite(currentKwh)
+    ) {
+      return 0;
+    }
+
+    const previous = findPreviousReading(
+      currentTimestamp - IE15_MINUTE_WINDOW_MS,
+    );
+    const previousT1 = previous?.T1;
+    const previousKwh = previous?.kWh;
+    if (
+      typeof previousT1 !== 'number' ||
+      !Number.isFinite(previousT1) ||
+      typeof previousKwh !== 'number' ||
+      !Number.isFinite(previousKwh)
+    ) {
+      return 0;
+    }
+
+    const kwhDelta = currentKwh - previousKwh;
+    if (!Number.isFinite(kwhDelta) || kwhDelta <= 0) return 0;
+    return (previousT1 - currentT1) / kwhDelta;
   });
 }
 

@@ -61,24 +61,139 @@
   <section class="info-grid" *ngIf="detail as current">
     <article class="info-card live-summary-card">
       <h2>Resumen live</h2>
-      <p><strong>Fecha:</strong> {{ formatDate(current.started_at).split(',')[0] }}</p>
-      <p><strong>Hora:</strong> {{ formatDate(current.started_at).split(',')[1] || '--' }}</p>
-      <p><strong>Número de mediciones recibidas:</strong> {{ current.readings_count }}</p>
+      <p>
+        <strong>Lecturas recibidas:</strong>
+        Se muestran {{ current.readings_count }} de {{ readingsReceivedCount }} lecturas recibidas
+      </p>
+      <p><strong>Primera medición:</strong> {{ formatDate(firstMeasurementAt) }}</p>
+      <span class="latest-measurement-label">
+        Última medición: {{ formatDate(latestMeasurementAt) }}
+      </span>
       <!-- Toolbar de gráficas al final del card -->
       <div class="charts-toolbar-inline" *ngIf="current.readings?.length">
-        <span class="toolbar-label">Gráficas por fila</span>
-        <mat-button-toggle-group
-          [value]="chartsPerRow"
-          (change)="onChartsPerRowChange($any($event).value)"
-          aria-label="Gráficas por fila"
-        >
-          <mat-button-toggle
-            *ngFor="let option of chartsPerRowOptions"
-            [value]="option"
+        <div class="charts-toolbar-controls">
+          <span class="toolbar-label">Gráficas por fila</span>
+          <mat-button-toggle-group
+            [value]="chartsPerRow"
+            (change)="onChartsPerRowChange($any($event).value)"
+            aria-label="Gráficas por fila"
           >
-            {{ option }}
-          </mat-button-toggle>
-        </mat-button-toggle-group>
+            <mat-button-toggle
+              *ngFor="let option of chartsPerRowOptions"
+              [value]="option"
+            >
+              {{ option }}
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+      </div>
+      <div
+        class="chart-range-section"
+        *ngIf="displayedRangeFrom && displayedRangeTo"
+        [class.is-loading]="displayedRangeLoading"
+      >
+        <div class="chart-range-header">
+          <div class="chart-range-title-group">
+            <div class="chart-range-title">
+              <mat-icon aria-hidden="true">timeline</mat-icon>
+              <strong>Ventana de gráficas</strong>
+            </div>
+          </div>
+          <div class="chart-range-header-controls">
+            <mat-form-field appearance="outline" class="chart-range-select">
+              <mat-label>Duración</mat-label>
+              <mat-select
+                [value]="selectedChartRangeHours"
+                [disabled]="displayedRangeLoading"
+                (selectionChange)="onChartRangeChange($any($event).value)"
+                aria-label="Duración de la ventana de gráficas"
+              >
+                <mat-option
+                  *ngFor="let hours of chartRangeOptions"
+                  [value]="hours"
+                  [disabled]="isChartRangeOptionDisabled(hours)"
+                >
+                  {{ hours }} h
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+            <span class="chart-range-loading" *ngIf="displayedRangeLoading && !isHistoricalChartRange" role="status">
+              <mat-spinner diameter="18"></mat-spinner>
+              <span>Cargando lecturas...</span>
+            </span>
+            <span class="chart-range-mode chart-range-mode-live" *ngIf="!displayedRangeLoading && !isHistoricalChartRange">
+              <mat-icon aria-hidden="true">radio_button_checked</mat-icon>
+              <span>Live actual</span>
+            </span>
+            <div class="chart-range-historical-controls" *ngIf="isHistoricalChartRange">
+              <span class="chart-range-loading" *ngIf="displayedRangeLoading" role="status">
+                <mat-spinner diameter="18"></mat-spinner>
+                <span>Cargando lecturas...</span>
+              </span>
+              <span class="chart-range-mode chart-range-mode-historical" *ngIf="!displayedRangeLoading">
+                <mat-icon aria-hidden="true">history</mat-icon>
+                <span>Rango histórico</span>
+              </span>
+              <button
+                mat-stroked-button
+                color="primary"
+                type="button"
+                class="chart-range-live-action"
+                (click)="returnToLatestChartRange()"
+              >
+                <mat-icon aria-hidden="true">play_arrow</mat-icon>
+                Volver a Live
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="chart-range-navigation">
+          <button
+            mat-icon-button
+            color="primary"
+            type="button"
+            [disabled]="previousChartRangeDisabled"
+            [attr.aria-label]="'Ver las ' + selectedChartRangeHours + ' horas anteriores'"
+            [attr.title]="'Ver las ' + selectedChartRangeHours + ' horas anteriores'"
+            (click)="navigateToPreviousChartRange()"
+          >
+            <mat-icon>arrow_back</mat-icon>
+          </button>
+          <div
+            class="chart-range-display"
+            role="group"
+            [attr.aria-label]="displayedRangeLabel"
+            [attr.title]="displayedRangeLabel"
+          >
+            <div class="chart-range-endpoints">
+              <div class="chart-range-endpoint">
+                <span>Desde</span>
+                <strong>{{ displayedRangeFrom | date:'dd/MM/yy, HH:mm' }}</strong>
+              </div>
+              <mat-icon class="chart-range-separator" aria-hidden="true">east</mat-icon>
+              <div class="chart-range-endpoint">
+                <span>Hasta</span>
+                <strong>{{ displayedRangeTo | date:'dd/MM/yy, HH:mm' }}</strong>
+              </div>
+            </div>
+          </div>
+          <button
+            mat-icon-button
+            color="primary"
+            type="button"
+            [disabled]="nextChartRangeDisabled"
+            [attr.aria-label]="'Ver las ' + selectedChartRangeHours + ' horas siguientes'"
+            [attr.title]="'Ver las ' + selectedChartRangeHours + ' horas siguientes'"
+            (click)="navigateToNextChartRange()"
+          >
+            <mat-icon>arrow_forward</mat-icon>
+          </button>
+
+        </div>
+        <p class="chart-range-note">
+          <mat-icon aria-hidden="true">sync</mat-icon>
+          <span>Solo se actualizarán las lecturas en modo Live.</span>
+        </p>
       </div>
     </article>
 
@@ -169,7 +284,7 @@
 
   <section
     class="chart-grid"
-    *ngIf="detail?.readings?.length"
+    *ngIf="displayedReadings.length"
     [style.--charts-per-row]="chartsPerRow"
   >
     <article class="chart-card" (click)="openMainZoom()">
